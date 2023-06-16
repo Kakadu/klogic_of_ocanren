@@ -1,0 +1,10 @@
+# [submodule "OCanren"]
+# 	path = OCanren
+# 	url = https://github.com/Kakadu/OCanren.git
+# 	branch = syntax-hack
+# 	shallow = true
+
+[submodule "OCanren"]
+	path = OCanren
+	url = git@github.com:Kakadu/OCanren.git
+	branch = miniKanren2023
