@@ -1,0 +1,10 @@
+(executable
+ (name klogic_of_ocanren)
+ (modules klogic_of_ocanren)
+ (public_name kotlin_of_ocanren)
+ (libraries klogic_of_ocanren_lib))
+
+(library
+ (name klogic_of_ocanren_lib)
+ (modules lib)
+ (libraries Tast_pattern ppxlib.stdppx compiler-libs.common))

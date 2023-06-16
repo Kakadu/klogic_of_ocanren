@@ -1,0 +1,15 @@
+(env
+ (_
+  (flags
+   (:standard -w -9-32-39))))
+
+(library
+ (name Tast_pattern)
+ (modules Tast_pattern MyPrinttyped MyUntype Tast_folder)
+ (wrapped false)
+ (libraries ppxlib)
+ (preprocess
+  (pps ppx_optcomp ppx_inline_test ppx_assert))
+ (instrumentation
+  (backend bisect_ppx))
+ (inline_tests))
