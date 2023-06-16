@@ -1,0 +1,14 @@
+(env
+ (dev
+  (flags
+   (:standard -warn-error -9-21 -warn-error -unused-var-strict))))
+
+(library
+ (name ppx_hack)
+ ;(public_name -)
+ (kind ppx_rewriter)
+ (libraries ppxlib.stdppx ppxlib)
+ (modules ppx_fresh)
+ (flags (:standard))
+ (preprocess
+  (pps ppxlib.metaquot)))

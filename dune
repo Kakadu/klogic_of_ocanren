@@ -1,0 +1,19 @@
+(library
+ (name oleg_numbers)
+ (modules oleg_numbers)
+ (libraries OCanren)
+ (wrapped false)
+ (flags
+  (:standard -rectypes))
+ (preprocess
+  (pps ppx_hack GT.ppx_all)))
+
+(library
+ (name test_numbers)
+ (modules test_numbers)
+ (libraries oleg_numbers)
+ (flags
+  (:standard -rectypes))
+ (inline_tests)
+ (preprocess
+  (pps ppx_hack ppx_expect ppx_inline_test)))
