@@ -38,7 +38,7 @@ let translate_expr fallback : (unit, _ ast) Tast_folder.t =
 
     let pat_pause () : (Typedtree.expression, _ ast -> 'a, 'b) Tast_pattern.t =
       texp_apply1
-        (texp_ident (path [ "OCanren!"; "pause" ]))
+        (texp_ident (path [ "OCanren"; "pause" ] ||| path [ "OCanren!"; "pause" ]))
         (texp_function (case tpat_unit drop __ ^:: nil))
       |> map1 ~f:(fun x -> Pause x)
     ;;
@@ -50,11 +50,10 @@ let translate_expr fallback : (unit, _ ast) Tast_folder.t =
            none
            (* (texp_function (case tpat_unit none __ ^:: nil)) *)
            __
-         ^:: nil)
+        ^:: nil)
       |> map1 ~f:(fun x -> St_abstr x)
     ;;
 
-    (*  *)
     let pat_mplus () : (Typedtree.expression, _ -> 'a, 'b) Tast_pattern.t =
       texp_let (value_binding drop drop ^:: nil)
       @@ texp_apply2 (texp_ident (path [ "OCanren!"; "mplus " ])) __ __
@@ -119,10 +118,10 @@ let translate fallback : (unit, unit) Tast_folder.t =
           typ_arrow drop __
           |> map1 ~f:(fun x -> `Arr x)
           ||| (typ_constr (path [ "OCanren"; "goal" ]) nil
-               ||| typ_arrow
-                     (typ_constr (path [ "OCanren"; "State"; "t" ]) nil)
-                     (typ_constr (path [ "OCanren"; "Stream"; "t" ]) drop)
-               |> map0 ~f:`Goal))
+              ||| typ_arrow
+                    (typ_constr (path [ "OCanren"; "State"; "t" ]) nil)
+                    (typ_constr (path [ "OCanren"; "Stream"; "t" ]) drop)
+              |> map0 ~f:`Goal))
         Location.none
         e
         (fun x ->

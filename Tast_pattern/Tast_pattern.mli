@@ -206,3 +206,8 @@ val value_binding
   :  (pattern, 'a, 'b) t
   -> (expression, 'b, 'c) t
   -> (value_binding, 'a, 'c) t
+
+type context
+
+val of_func : (context -> Location.t -> 'a -> 'b -> 'c) -> ('a, 'b, 'c) t
+val to_func : ('a, 'b, 'c) t -> context -> Location.t -> 'a -> 'b -> 'c

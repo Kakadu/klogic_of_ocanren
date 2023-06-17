@@ -22,6 +22,9 @@ let to_int : int Std.List.ground -> int =
   helper 1 0
 ;;
 
+(*  *)
+(*  *)
+(*  *)
 let poso : _ -> OCanren.goal = fun n -> fresh (h t) (n === h % t)
 (*  *)
 (* Appendo is used in multiplication *)

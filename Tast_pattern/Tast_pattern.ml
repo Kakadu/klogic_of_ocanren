@@ -269,12 +269,12 @@ let path_pident (T fident) =
 ;;
 
 let path xs =
+  let cmp_names l r =
+    let ans = String.equal l r in
+    (* printf "\t\tCompare names %s and %s:  %b\n%!" l r ans; *)
+    ans
+  in
   let rec helper ps ctx loc x k =
-    let cmp_names l r =
-      let ans = String.equal l r in
-      (* printf "\t\tCompare names %s and %s:  %b\n%!" l r ans; *)
-      ans
-    in
     let __ _ = Format.printf "path = %a\n%!" Path.print x in
     match x, ps with
     | Path.Pident id, [ id0 ] ->
@@ -285,7 +285,10 @@ let path xs =
       else fail loc "path"
     | Path.Pdot (next, id), id0 :: ids when cmp_names id id0 -> helper ids ctx loc next k
     | Path.Papply _, _ -> fail loc "path got Papply"
-    | _ -> fail loc (sprintf "path %s" (String.concat ~sep:"." xs))
+    | _ ->
+      let msg = sprintf "path %s" (String.concat ~sep:"." xs) in
+      (* Format.printf "path failed: %s\n%!" msg; *)
+      fail loc msg
   in
   T (helper (List.rev xs))
 ;;
@@ -404,14 +407,16 @@ let tpat_any =
 let texp_ident (T fpath) =
   T
     (fun ctx loc x k ->
-      let __ _ = log "texp_ident %a\n%!" MyPrinttyped.expr x in
+      let _ = log "texp_ident %a\n%!" MyPrinttyped.expr x in
       match x.exp_desc with
       | Texp_ident (path, _, _) ->
         ctx.matched <- ctx.matched + 1;
         let ans = fpath ctx loc path k in
         log "texp_ident + %a\n%!" MyPrinttyped.expr x;
         ans
-      | _ -> fail loc "texp_ident")
+      | _ ->
+        let _ = log "FAILED: texp_ident %a\n%!" MyPrinttyped.expr x in
+        fail loc "texp_ident")
 ;;
 
 let pident (T fstr) =
@@ -757,3 +762,8 @@ let tsig_docattr (T f) =
         k |> f ctx loc docstr
       | _ -> fail loc "tsig_docattr")
 ;;
+
+type context = Ast_pattern0.context
+
+let of_func f = T f
+let to_func (T f) = f
