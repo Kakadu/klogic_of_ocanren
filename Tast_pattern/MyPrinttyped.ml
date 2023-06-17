@@ -2,6 +2,7 @@
 
 (** SPDX-License-Identifier: LGPL-3.0-or-later *)
 
+open Typedtree
 include Printtyped
 
 [%%if ocaml_version < (4, 11, 0)]
@@ -11,7 +12,6 @@ let untype_expression = default_mapper.expr default_mapper
 [%%endif]
 
 let expr ppf e =
-  let open Typedtree in
   implementation
     ppf
     { str_items =
@@ -22,7 +22,6 @@ let expr ppf e =
 ;;
 
 let me ppf me =
-  let open Typedtree in
   implementation
     ppf
     { str_items =
@@ -42,6 +41,10 @@ let me ppf me =
     ; str_final_env = me.mod_env
     ; str_type = []
     }
+;;
+
+let stru_item ppf item =
+  implementation ppf { str_items = [ item ]; str_final_env = item.str_env; str_type = [] }
 ;;
 
 let attrs ppf attrs =

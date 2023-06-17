@@ -2,9 +2,13 @@
  (name klogic_of_ocanren)
  (modules klogic_of_ocanren)
  (public_name kotlin_of_ocanren)
+ (flags
+  (:standard -rectypes))
  (libraries klogic_of_ocanren_lib))
 
 (library
  (name klogic_of_ocanren_lib)
  (modules lib)
+ (flags
+  (:standard -rectypes))
  (libraries Tast_pattern ppxlib.stdppx compiler-libs.common))

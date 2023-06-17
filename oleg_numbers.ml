@@ -22,13 +22,16 @@ let to_int : int Std.List.ground -> int =
   helper 1 0
 ;;
 
+let poso : _ -> OCanren.goal = fun n -> fresh (h t) (n === h % t)
+(*  *)
 (* Appendo is used in multiplication *)
-let rec appendo l s out =
+(* let rec appendo : _ -> _ -> _ -> goal =
+ fun l s out ->
   conde
     [ l === Std.nil () &&& (s === out)
     ; fresh (a d res) (a % d === l) (a % res === out) (appendo d s res)
     ]
-;;
+;; *)
 
 (* let rec appendo l s out st =
   pause
@@ -45,12 +48,12 @@ let rec appendo l s out =
                     let res = State.fresh st in
                       bind (bind (((a % d) === l) st) ((a % res) === out))
                       (appendo d s res))) st))) *)
-
+(*
 let zero : injected = Std.nil ()
 let one : injected = !<(!!1)
 let three : injected = !!1 % !<(!!1)
 let zeroo n = zero === n
-let poso n = fresh (h t) (n === h % t)
+
 let gt1o n = fresh (a ad dd) (n === a % (ad % dd))
 
 (** Satisfies [b] + [x] + [y] = [r] + 2 * [c]  *)
@@ -170,6 +173,8 @@ and gen_addero d n m r =
     (addero e x y z)
 ;;
 
+*)
+
 (** Adds a carry-in bit [d] to arbitrarily large numbers [n] and [m] to produce a number [r]. *)
 (* let rec addero d n m r st =
   pause (fun () ->
@@ -262,9 +267,9 @@ and gen_addero d n m r st =
 ;;
  *)
 
-let pluso n m k = addero !!0 n m k
-let minuso n m k = pluso m k n
-
+(* let pluso n m k = addero !!0 n m k
+let minuso n m k = pluso m k n *)
+(*
 let rec bound_multo q p n m =
   conde
     [ q === zero &&& poso p
@@ -604,3 +609,5 @@ let show_num = GT.(show List.ground @@ show int)
 
 (* let num_reifier h = List.reify OCanren.reify h *)
 (* let runL n = run_r num_reifier show_num_logic n *)
+
+ *)

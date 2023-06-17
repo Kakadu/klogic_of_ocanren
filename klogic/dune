@@ -1,6 +1,8 @@
 (rule
  ;(alias)
- (deps %{project_root}/bin/klogic_of_ocanren.exe)
+ (deps
+  %{project_root}/bin/klogic_of_ocanren.exe
+  ../.oleg_numbers.objs/byte/oleg_numbers.cmt)
  (targets asdf.kt)
  (mode promote)
  (action
