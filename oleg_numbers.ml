@@ -22,19 +22,25 @@ let to_int : int Std.List.ground -> int =
   helper 1 0
 ;;
 
-(*  *)
-(*  *)
-(*  *)
-let poso : _ -> OCanren.goal = fun n -> fresh (h t) (n === h % t)
-(*  *)
+[@@@klogic.mangle_types []]
+
+let poso : int ilogic Std.List.injected -> OCanren.goal =
+ fun n -> fresh (h t) (n === h % t)
+;;
+
+let zeroo : int ilogic Std.List.injected -> goal = fun n -> OCanren.Std.nil () === n
+
 (* Appendo is used in multiplication *)
-(* let rec appendo : _ -> _ -> _ -> goal =
+let rec appendo
+  :  int ilogic Std.List.injected -> int ilogic Std.List.injected
+  -> int ilogic Std.List.injected -> goal
+  =
  fun l s out ->
   conde
     [ l === Std.nil () &&& (s === out)
     ; fresh (a d res) (a % d === l) (a % res === out) (appendo d s res)
     ]
-;; *)
+;;
 
 (* let rec appendo l s out st =
   pause
@@ -55,7 +61,7 @@ let poso : _ -> OCanren.goal = fun n -> fresh (h t) (n === h % t)
 let zero : injected = Std.nil ()
 let one : injected = !<(!!1)
 let three : injected = !!1 % !<(!!1)
-let zeroo n = zero === n
+
 
 let gt1o n = fresh (a ad dd) (n === a % (ad % dd))
 

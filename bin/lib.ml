@@ -6,28 +6,145 @@ let log fmt =
   else Format.ifprintf Format.std_formatter fmt
 ;;
 
+type 'a term =
+  | T_int of int
+  | T_list_init of 'a list
+  | T_list_nil
+  | T_list_cons of 'a * 'a
+  | Tident of Path.t
+  | Tapp of 'a * 'a list
+  | Tother of Typedtree.expression
+
 type 'a ast =
   | Pause of 'a
   | St_abstr of 'a
+  | St_app of 'a
   | Mplus of 'a * 'a
+  | Bind of 'a * 'a
+  | Fresh of string list * 'a
+  | Unify of ('t term as 't) * 't
+  | Call_rel of Path.t * ('t term as 't) list
   | Other of Typedtree.expression
   | Error
 
+(** Relational value bindings *)
+module Rvb = struct
+  type t =
+    { name : string
+    ; args : (string * Types.type_expr) list
+    ; body : 'a ast as 'a
+    }
+
+  let mk name args body = { name; args; body }
+end
+
+let pp_comma_list ppf =
+  Format.pp_print_list ~pp_sep:(fun ppf () -> Format.fprintf ppf ",") ppf
+;;
+
+[@@@ocaml.warnerror "-11"]
+
+let pp_term_as_kotlin =
+  let open Format in
+  let rec helper ppf = function
+    | T_int n -> fprintf ppf "%d" n
+    (* | _ -> fprintf ppf "%d" 42 *)
+    | T_list_init ls ->
+      fprintf ppf "@[%a@]" (pp_print_list ~pp_sep:pp_print_space helper) ls
+    | T_list_nil -> fprintf ppf "logicListOf()"
+    | T_list_cons (h, tl) -> fprintf ppf "@[(%a + %a)@]" helper h helper tl
+    | Tident p -> fprintf ppf "%a" Printtyp.path p
+    | Tapp (f, args) -> fprintf ppf "@[%a(%a)@]" helper f (pp_comma_list helper) args
+    | Tother e -> fprintf ppf "{| %a |}" Pprintast.expression (MyUntype.expr e)
+  in
+  helper
+;;
+
 let map_ast f = function
   | Pause x -> Pause (f x)
-  | St_abstr x -> St_abstr (f x)
+  | St_abstr e -> St_abstr (f e)
+  | St_app e -> St_app (f e)
+  | Fresh (xs, e) -> Fresh (xs, f e)
   | Mplus (a, b) -> Mplus (f a, f b)
-  | (Other _ | Error) as other -> other
+  | Bind (a, b) -> Bind (f a, f b)
+  | (Call_rel _ | Unify _ | Other _ | Error) as other -> other
 ;;
 
 let pp_ast_as_kotlin =
   let open Format in
   let rec helper ppf = function
-    | Pause e -> fprintf ppf "pause { %a } " helper e
-    | St_abstr l -> fprintf ppf "({ st -> %a })" helper l
-    | Mplus (l, r) -> fprintf ppf "mplus(%a, %a)" helper l helper r
-    | Other e -> fprintf ppf "Other %a" Pprintast.expression (MyUntype.expr e)
+    | Pause e -> fprintf ppf "@[pause { %a@ }@]" helper e
+    | St_abstr l -> fprintf ppf "@[<v 2>@[{ st ->@ %a@ }@]" helper l
+    | St_app l -> fprintf ppf "%a(st)" helper l
+    | Mplus (l, r) ->
+      fprintf ppf "@[<v 2>@[mplus(@]@,@[%a,@]@,@[%a@]@[)@]@]" helper l helper r
+    | Bind (l, r) ->
+      fprintf ppf "@[<v 2>@[bind(@]@,@[%a@]@,@[%a@]@ @[)@]@]" helper l helper r
+    | Fresh (xs, e) ->
+      fprintf
+        ppf
+        "@[<v 2>@[fresh { %a ->@]@,@[%a@]@[}@]@]"
+        (pp_print_list ~pp_sep:(fun ppf () -> fprintf ppf ", ") pp_print_string)
+        xs
+        helper
+        e
+    | Unify (l, r) ->
+      (* fprintf ppf "@[(@[%a@]@ `===`@ @[%a@])@]" pp_term_as_kotlin l pp_term_as_kotlin r *)
+      fprintf ppf "(%a `===` %a)" pp_term_as_kotlin l pp_term_as_kotlin r
+    | Call_rel (p, args) ->
+      fprintf ppf "@[%a(%a)@]" Printtyp.path p (pp_comma_list pp_term_as_kotlin) args
+    | Other e -> fprintf ppf "@[{| Other %a |}@]" Pprintast.expression (MyUntype.expr e)
     | Error -> fprintf ppf "ERROR "
+  in
+  helper
+;;
+
+let pp_typ_as_kotlin ppf typ =
+  match Format.asprintf "%a" Printtyp.type_expr typ with
+  | s -> Format.fprintf ppf "%s" s
+;;
+
+let pp_rvb_as_kotlin ppf { Rvb.name; args; body } =
+  let open Format in
+  let pp_args ppf =
+    pp_comma_list
+      (fun ppf (name, typ) -> fprintf ppf "%s: %a" name pp_typ_as_kotlin typ)
+      ppf
+  in
+  Format.fprintf
+    ppf
+    "@[<v 2>@[fun %s(%a) =@]@ @[%a@]@]\n%!"
+    name
+    pp_args
+    args
+    pp_ast_as_kotlin
+    body
+;;
+
+let translate_term =
+  let open Typedtree in
+  let rec helper e =
+    Tast_pattern.(
+      parse_conde
+        [ texp_apply1
+            (texp_ident
+               (path [ "OCanren!"; "Std"; "nil" ] ||| path [ "OCanren"; "Std"; "nil" ]))
+            drop
+          |> map0 ~f:T_list_nil
+        ; texp_apply2
+            (texp_ident
+               (path [ "OCanren!"; "Std"; "%" ] ||| path [ "OCanren"; "Std"; "%" ]))
+            __
+            __
+          |> map2 ~f:(fun a b -> T_list_cons (helper a, helper b))
+        ; texp_apply_nolabelled __ __
+          |> map2 ~f:(fun x args -> Tapp (helper x, List.map ~f:helper args))
+        ; texp_ident __ |> map1 ~f:(fun x -> Tident x)
+        ; __ |> map1 ~f:(fun x -> Tother x)
+        ])
+      e.exp_loc
+      e
+      Fun.id
   in
   helper
 ;;
@@ -54,13 +171,75 @@ let translate_expr fallback : (unit, _ ast) Tast_folder.t =
       |> map1 ~f:(fun x -> St_abstr x)
     ;;
 
+    let pat_st_app () : (Typedtree.expression, _ ast -> 'a, 'b) Tast_pattern.t =
+      texp_apply1 __ (texp_ident (path [ "st" ])) |> map1 ~f:(fun x -> St_app x)
+    ;;
+
     let pat_mplus () : (Typedtree.expression, _ -> 'a, 'b) Tast_pattern.t =
       texp_let (value_binding drop drop ^:: nil)
-      @@ texp_apply2 (texp_ident (path [ "OCanren!"; "mplus " ])) __ __
+      @@ texp_apply2
+           (texp_ident (path [ "OCanren!"; "mplus" ] ||| path [ "OCanren"; "mplus" ]))
+           __
+           __
       |> map2 ~f:(fun x y -> Mplus (x, y))
     ;;
 
-    let pat () = pat_pause () ||| pat_mplus () ||| pat_st_abstr ()
+    let pat_unify () : (Typedtree.expression, _ -> 'a, 'b) Tast_pattern.t =
+      texp_apply2
+        (texp_ident (path [ "OCanren!"; "===" ] ||| path [ "OCanren"; "===" ]))
+        __
+        __
+      |> map2 ~f:(fun x y -> Unify (translate_term x, translate_term y))
+    ;;
+
+    let pat_bind () : (Typedtree.expression, _ -> 'a, 'b) Tast_pattern.t =
+      texp_apply2
+        (texp_ident (path [ "OCanren!"; "bind" ] ||| path [ "OCanren"; "bind" ]))
+        __
+        __
+      |> map2 ~f:(fun x y -> Bind (x, y))
+    ;;
+
+    let pat_call () : (Typedtree.expression, _ -> 'a, 'b) Tast_pattern.t =
+      texp_apply_nolabelled (texp_ident __) __
+      |> map2 ~f:(fun f args -> Call_rel (f, List.map ~f:translate_term args))
+    ;;
+
+    let pat_fresh () : _ =
+      let rec helper acc e =
+        parse
+          (texp_let
+             (value_binding
+                (tpat_var __)
+                (texp_apply1
+                   (texp_ident (path [ "OCanren"; "State"; "fresh" ]))
+                   (texp_ident (path [ "st" ])))
+             ^:: nil)
+             __
+          |> map2 ~f:(fun a b -> `Let (a, b))
+          ||| (__ |> map1 ~f:(fun x -> `Other x)))
+          e.Typedtree.exp_loc
+          e
+          ~on_error:(fun _ -> failwith "should not happen")
+          (fun rez ->
+            match rez, acc with
+            | `Other _, [] -> fail e.exp_loc ""
+            | `Other e, acc -> Fresh (List.rev acc, e)
+            | `Let (name, e), acc -> helper (name :: acc) e)
+      in
+      of_func (fun _ctx _loc e k -> k (helper [] e))
+    ;;
+
+    let pat () =
+      pat_pause ()
+      ||| pat_mplus ()
+      ||| pat_bind ()
+      ||| pat_st_abstr ()
+      ||| pat_st_app ()
+      ||| pat_fresh ()
+      ||| pat_unify ()
+      ||| pat_call ()
+    ;;
   end in
   Printf.printf "%s %d\n" __FILE__ __LINE__;
   let open Tast_folder in
@@ -88,7 +267,7 @@ let translate_expr fallback : (unit, _ ast) Tast_folder.t =
         | Other e -> Other e, expr
         | Error -> Error, expr) *))
   ; stru_item =
-      (fun self inh si ->
+      (fun _self _inh _si ->
         assert false
         (* match si.str_desc with
         | Tstr_attribute _ -> ()
@@ -96,16 +275,16 @@ let translate_expr fallback : (unit, _ ast) Tast_folder.t =
   }
 ;;
 
-let translate fallback : (unit, unit) Tast_folder.t =
+let translate fallback : (Rvb.t list ref, unit) Tast_folder.t =
   let extract_rel_arguments n e =
     let rec helper n acc e =
       if n <= 0
       then List.rev acc, e
       else
-        Tast_pattern.(parse (texp_function (case (tpat_var __) none __ ^:: nil)))
+        Tast_pattern.(parse (texp_function (case (tpat_var_type __ __) none __ ^:: nil)))
           Location.none
           e
-          (fun name body -> helper (n - 1) (name :: acc) body)
+          (fun name typ body -> helper (n - 1) ((name, typ) :: acc) body)
           ~on_error:(fun _ -> assert false)
     in
     helper n [] e
@@ -142,14 +321,14 @@ let translate fallback : (unit, unit) Tast_folder.t =
   let open Tast_folder in
   { fallback with
     expr =
-      (fun self inh expr ->
+      (fun _self _inh expr ->
         let _ =
           let te = translate_expr Tast_folder.default in
           te.expr te () expr
         in
         (), expr)
   ; stru_item =
-      (fun self inh si ->
+      (fun _self inh si ->
         let on_rel_decl = function
           | { Typedtree.vb_pat = { pat_desc = Tpat_var (_, { txt = name; _ }); _ }; _ } as
             vb ->
@@ -166,21 +345,15 @@ let translate fallback : (unit, unit) Tast_folder.t =
                  match rez with
                  | Error -> Format.eprintf "an error in value_binding name = %s\n%!" name
                  | rez ->
-                   Format.printf
-                     "\n@[fun %s(%d) { %a }@]\n"
-                     name
-                     (List.length args)
-                     pp_ast_as_kotlin
-                     rez
+                   let rvb = Rvb.mk name args rez in
+                   inh := rvb :: !inh;
+                   Format.printf "%a\n" pp_rvb_as_kotlin rvb
                in
                (), si)
           | _ -> assert false
         in
         match si.str_desc with
-        | Tstr_value
-            ( _
-            , [ ({ vb_pat = { pat_desc = Tpat_var (_, { txt = name; _ }); _ }; _ } as vb)
-              ] ) ->
+        | Tstr_value (_, [ vb ]) ->
           on_rel_decl vb
           (* (match expr_is_a_goal vb.vb_expr with
            | None -> (), si
@@ -200,8 +373,10 @@ let translate fallback : (unit, unit) Tast_folder.t =
           Printf.ksprintf failwith "Not implemented in 'folder' (%s %d)" __FILE__ __LINE__ *)
         | Tstr_value (_, []) ->
           Printf.ksprintf failwith "Should not happen (%s %d)" __FILE__ __LINE__
-        (* | Tstr_value (_, [ _ ])  *)
-        | Tstr_type _ | Tstr_open _ | Tstr_attribute _ -> (), si
+        | Tstr_attribute _
+        (* TODO: specify mangling of names as an attribute *)
+        | Tstr_type _
+        | Tstr_open _ -> (), si
         | _ ->
           Format.eprintf "%a\n%!" Pprintast.structure_item (MyUntype.untype_stru_item si);
           Printf.ksprintf failwith "Not implemented in 'folder' (%s %d)" __FILE__ __LINE__
@@ -209,12 +384,21 @@ let translate fallback : (unit, unit) Tast_folder.t =
   }
 ;;
 
+let translate_implementation stru =
+  let acc = ref [] in
+  let folder = translate Tast_folder.default in
+  let _rez, _ = folder.Tast_folder.stru folder acc stru in
+  Stdlib.Result.Ok (List.rev !acc)
+;;
+
 let analyze_cmt source_file stru =
-  Out_channel.with_file "asdf.kt" ~f:(fun _ ->
-    let folder = translate Tast_folder.default in
-    (* let (_ : int) = folder.Tast_folder.stru in *)
-    let _rez, _ = folder.Tast_folder.stru folder () stru in
-    ())
+  Out_channel.with_file "asdf.kt" ~f:(fun ch ->
+    match translate_implementation stru with
+    | Stdlib.Result.Ok xs ->
+      Printf.fprintf ch "// There are %d realtions\n" (List.length xs);
+      let ppf = Format.formatter_of_out_channel ch in
+      List.iter ~f:(pp_rvb_as_kotlin ppf) xs
+    | Error _ -> assert false)
 ;;
 
 let run source_file =

@@ -7,6 +7,15 @@ type ('a, 'b, 'c) t
 (** Matches a value against a pattern. *)
 val parse : ('a, 'b, 'c) t -> Location.t -> ?on_error:(string -> 'c) -> 'a -> 'b -> 'c
 
+(** Matches a value against a list of patterns. *)
+val parse_conde
+  :  ('a, 'b, 'c) t list
+  -> Location.t
+  -> ?on_error:(string -> 'c)
+  -> 'a
+  -> 'b
+  -> 'c
+
 module Packed : sig
   type ('a, 'b, 'c) pattern = ('a, 'b, 'c) t
   type ('a, 'b) t
@@ -89,6 +98,12 @@ type comp_pat = computation pattern_desc pattern_data
 val nolabel : (Asttypes.arg_label, 'a, 'a) t
 val labelled : (string, 'a, 'b) t -> (Asttypes.arg_label, 'a, 'b) t
 val tpat_var : (string, 'a, 'b) t -> (pattern, 'a, 'b) t
+
+val tpat_var_type
+  :  (string, 'a, 'b) t
+  -> (Types.type_expr, 'b, 'c) t
+  -> (value pattern_desc pattern_data, 'a, 'c) t
+
 val tpat_exception : (value_pat, 'a, 'b) t -> (comp_pat, 'a, 'b) t
 val tpat_unit : (_ pattern_desc pattern_data, 'a, 'a) t
 val tpat_any : (value_pat, 'a, 'a) t
@@ -108,6 +123,14 @@ val texp_ident_typ
   -> (expression, 'a, 'c) t
 
 val texp_assert : (expression, 'a, 'b) t -> (expression, 'a, 'b) t
+
+val texp_construct
+  :  (Longident.t, 'a, 'b) t
+  -> (Types.constructor_description, 'b, 'c) t
+  -> (expression list, 'c, 'd) t
+  -> (expression, 'a, 'd) t
+
+val texp_unit : (expression, 'a, 'a) t
 
 val texp_let
   :  (value_binding list, 'a, 'b) t
@@ -211,3 +234,4 @@ type context
 
 val of_func : (context -> Location.t -> 'a -> 'b -> 'c) -> ('a, 'b, 'c) t
 val to_func : ('a, 'b, 'c) t -> context -> Location.t -> 'a -> 'b -> 'c
+val fail : Warnings.loc -> string -> 'a

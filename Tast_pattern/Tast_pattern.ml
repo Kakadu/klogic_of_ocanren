@@ -271,7 +271,7 @@ let path_pident (T fident) =
 let path xs =
   let cmp_names l r =
     let ans = String.equal l r in
-    (* printf "\t\tCompare names %s and %s:  %b\n%!" l r ans; *)
+    let __ _ = printf "\t\tCompare names %s and %s:  %b\n%!" l r ans in
     ans
   in
   let rec helper ps ctx loc x k =
@@ -287,7 +287,7 @@ let path xs =
     | Path.Papply _, _ -> fail loc "path got Papply"
     | _ ->
       let msg = sprintf "path %s" (String.concat ~sep:"." xs) in
-      (* Format.printf "path failed: %s\n%!" msg; *)
+      (* let __ _ = Format.printf "path failed: %s\n%!" msg in  *)
       fail loc msg
   in
   T (helper (List.rev xs))
@@ -372,6 +372,16 @@ let tpat_var (T fname) =
         ctx.matched <- ctx.matched + 1;
         k |> fname ctx loc txt
       | _ -> fail loc "tpat_var")
+;;
+
+let tpat_var_type (T fname) (T ftyp) =
+  T
+    (fun ctx loc x k ->
+      match x.pat_desc with
+      | Tpat_var (_, { txt }) ->
+        ctx.matched <- ctx.matched + 1;
+        k |> fname ctx loc txt |> ftyp ctx loc x.pat_type
+      | _ -> fail loc "tpat_var_type")
 ;;
 
 let tpat_unit =
@@ -506,6 +516,16 @@ let texp_construct (T fpath) (T fcd) (T fargs) =
         let k = fpath ctx loc path.txt k in
         k |> fcd ctx loc cd |> fargs ctx loc args
       | _ -> fail loc (sprintf "texp_construct"))
+;;
+
+let texp_unit =
+  T
+    (fun ctx loc x k ->
+      match x.exp_desc with
+      | Texp_construct ({ txt = Lident "()" }, _cd, []) ->
+        ctx.matched <- ctx.matched + 1;
+        k
+      | _ -> fail loc (sprintf "texp_unit"))
 ;;
 
 let texp_assert_false () = texp_assert (texp_construct (lident (string "false")) drop nil)
@@ -763,7 +783,17 @@ let tsig_docattr (T f) =
       | _ -> fail loc "tsig_docattr")
 ;;
 
+let parse_conde cases loc =
+  let pats =
+    match cases with
+    | [] -> failwith "Bad argument"
+    | h :: tl -> List.fold_left ~f:( ||| ) ~init:h tl
+  in
+  parse pats loc
+;;
+
 type context = Ast_pattern0.context
 
+let fail = fail
 let of_func f = T f
 let to_func (T f) = f
