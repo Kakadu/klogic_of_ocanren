@@ -309,8 +309,6 @@ let translate fallback : (Rvb.t list ref, unit) Tast_folder.t =
           | `Arr x -> helper (acc + 1) x)
         ~on_error:(fun _ -> None)
     in
-    (*  *)
-    (* Format.eprintf "@[<2>Check expr_is_a_goal:@,%a@]\n" MyPrinttyped.expr e; *)
     Format.eprintf
       "@[<2>Check expr_is_a_goal:@,%a@]\n"
       Printtyp.type_expr
@@ -318,6 +316,33 @@ let translate fallback : (Rvb.t list ref, unit) Tast_folder.t =
     helper 0 e.Typedtree.exp_type
   in
   Printf.printf "%s %d\n" __FILE__ __LINE__;
+  let on_type_mangle_spec payl =
+    match payl with
+    | Parsetree.PStr [ { pstr_desc = Pstr_eval (e, _); _ } ] ->
+      let open Ppxlib.Ast_pattern in
+      let rec helper acc e =
+        parse
+          (pexp_construct (lident (string "::")) none
+          |>
+
+          |||
+          pexp_construct
+             (lident (string "::"))
+             (some
+                (pexp_tuple
+                   (pexp_tuple
+                      (pexp_constant (pconst_string __ drop none)
+                      ^:: pexp_constant (pconst_string __ drop none)
+                      ^:: nil)
+                   ^:: __
+                   ^:: nil))))
+          e.Parsetree.pexp_loc
+          e
+          (fun key v rest -> helper acc rest)
+      in
+      helper [] e
+    | _ -> ()
+  in
   let open Tast_folder in
   { fallback with
     expr =
@@ -353,30 +378,21 @@ let translate fallback : (Rvb.t list ref, unit) Tast_folder.t =
           | _ -> assert false
         in
         match si.str_desc with
-        | Tstr_value (_, [ vb ]) ->
-          on_rel_decl vb
-          (* (match expr_is_a_goal vb.vb_expr with
-           | None -> (), si
-           | Some argcount ->
-             (* we need extract arguments and run on expression *)
-             let iter_expr = translate_expr Tast_folder.default in
-             let args, body = extract_rel_arguments argcount vb.vb_expr in
-             let _ = iter_expr.expr iter_expr () body in
-             Format.printf " fun %s(%d) { }\n" name (List.length args);
-             (), si) *)
+        | Tstr_value (_, [ vb ]) -> on_rel_decl vb
         | Tstr_value (_, (_ :: _ :: _ as vbs)) ->
           List.iter vbs ~f:(fun x ->
             let _, _ = on_rel_decl x in
             ());
           (), si
-          (* Format.eprintf "%a\n%!" Pprintast.structure_item (MyUntype.untype_stru_item si);
-          Printf.ksprintf failwith "Not implemented in 'folder' (%s %d)" __FILE__ __LINE__ *)
         | Tstr_value (_, []) ->
           Printf.ksprintf failwith "Should not happen (%s %d)" __FILE__ __LINE__
-        | Tstr_attribute _
-        (* TODO: specify mangling of names as an attribute *)
-        | Tstr_type _
-        | Tstr_open _ -> (), si
+        | Tstr_attribute
+            { attr_name = { txt = "klogic.type.mangle"; _ }; attr_payload; _ } ->
+          log "%s\n%!" "klogic.type.mangle";
+          on_type_mangle_spec attr_payload;
+          (* TODO: specify mangling of names as an attribute *)
+          (), si
+        | Tstr_attribute _ | Tstr_type _ | Tstr_open _ -> (), si
         | _ ->
           Format.eprintf "%a\n%!" Pprintast.structure_item (MyUntype.untype_stru_item si);
           Printf.ksprintf failwith "Not implemented in 'folder' (%s %d)" __FILE__ __LINE__

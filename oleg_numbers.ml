@@ -22,8 +22,6 @@ let to_int : int Std.List.ground -> int =
   helper 1 0
 ;;
 
-[@@@klogic.mangle_types []]
-
 let poso : int ilogic Std.List.injected -> OCanren.goal =
  fun n -> fresh (h t) (n === h % t)
 ;;
@@ -42,6 +40,7 @@ let rec appendo
     ]
 ;;
 
+[@@@klogic.type.mangle [ "int ilogic Std.List.injected", "Term<LogicList<LogicInt>>" ]]
 (* let rec appendo l s out st =
   pause
     (fun () ->
