@@ -99,16 +99,39 @@ let pp_ast_as_kotlin =
   helper
 ;;
 
-let pp_typ_as_kotlin ppf typ =
-  match Format.asprintf "%a" Printtyp.type_expr typ with
+module Inh_info = struct
+  type t =
+    { type_mangle_hints : (string, string) Hashtbl.t
+    ; mutable rvbs : Rvb.t list
+    }
+
+  let create () = { type_mangle_hints = Hashtbl.create 13; rvbs = [] }
+  let add_rvb t rvb = t.rvbs <- rvb :: t.rvbs
+  let lookup_typ_exn t typ = Hashtbl.find t.type_mangle_hints typ
+
+  let add_hints info hints =
+    log "add %d hints" (List.length hints);
+    List.iter hints ~f:(fun (key, data) ->
+      log "adding a type hint %s -> %s%!" key data;
+      Hashtbl.add_exn info.type_mangle_hints ~key ~data)
+  ;;
+
+  let iter_vbs { rvbs; _ } ~f = List.iter ~f (List.rev rvbs)
+end
+
+let pp_typ_as_kotlin inh_info ppf typ =
+  let caml_repr = Format.asprintf "%a" Printtyp.type_expr typ in
+  match Inh_info.lookup_typ_exn inh_info caml_repr with
   | s -> Format.fprintf ppf "%s" s
+  | exception Not_found -> Format.fprintf ppf "%s" caml_repr
 ;;
 
-let pp_rvb_as_kotlin ppf { Rvb.name; args; body } =
+let pp_rvb_as_kotlin inh_info ppf { Rvb.name; args; body } =
   let open Format in
   let pp_args ppf =
-    pp_comma_list
-      (fun ppf (name, typ) -> fprintf ppf "%s: %a" name pp_typ_as_kotlin typ)
+    pp_print_list
+      ~pp_sep:(fun ppf () -> fprintf ppf ",@ ")
+      (fun ppf (name, typ) -> fprintf ppf "%s: %a" name (pp_typ_as_kotlin inh_info) typ)
       ppf
   in
   Format.fprintf
@@ -167,7 +190,7 @@ let translate_expr fallback : (unit, _ ast) Tast_folder.t =
            none
            (* (texp_function (case tpat_unit none __ ^:: nil)) *)
            __
-        ^:: nil)
+         ^:: nil)
       |> map1 ~f:(fun x -> St_abstr x)
     ;;
 
@@ -214,10 +237,10 @@ let translate_expr fallback : (unit, _ ast) Tast_folder.t =
                 (texp_apply1
                    (texp_ident (path [ "OCanren"; "State"; "fresh" ]))
                    (texp_ident (path [ "st" ])))
-             ^:: nil)
+              ^:: nil)
              __
-          |> map2 ~f:(fun a b -> `Let (a, b))
-          ||| (__ |> map1 ~f:(fun x -> `Other x)))
+           |> map2 ~f:(fun a b -> `Let (a, b))
+           ||| (__ |> map1 ~f:(fun x -> `Other x)))
           e.Typedtree.exp_loc
           e
           ~on_error:(fun _ -> failwith "should not happen")
@@ -259,23 +282,12 @@ let translate_expr fallback : (unit, _ ast) Tast_folder.t =
               | _ -> ast)
             ()
         in
-        map_ast (fun e -> fst (self.expr self inh e)) ast, expr
-        (* match ast with
-        | Pause e -> self.expr self inh e
-        | St_abstr e -> self.expr self inh e
-        | Mplus (a, b) -> failwith "mplus not supported"
-        | Other e -> Other e, expr
-        | Error -> Error, expr) *))
-  ; stru_item =
-      (fun _self _inh _si ->
-        assert false
-        (* match si.str_desc with
-        | Tstr_attribute _ -> ()
-        | _ -> self.stru_item self inh si *))
+        map_ast (fun e -> fst (self.expr self inh e)) ast, expr)
+  ; stru_item = (fun _self _inh _si -> assert false)
   }
 ;;
 
-let translate fallback : (Rvb.t list ref, unit) Tast_folder.t =
+let translate fallback : (Inh_info.t, unit) Tast_folder.t =
   let extract_rel_arguments n e =
     let rec helper n acc e =
       if n <= 0
@@ -297,10 +309,10 @@ let translate fallback : (Rvb.t list ref, unit) Tast_folder.t =
           typ_arrow drop __
           |> map1 ~f:(fun x -> `Arr x)
           ||| (typ_constr (path [ "OCanren"; "goal" ]) nil
-              ||| typ_arrow
-                    (typ_constr (path [ "OCanren"; "State"; "t" ]) nil)
-                    (typ_constr (path [ "OCanren"; "Stream"; "t" ]) drop)
-              |> map0 ~f:`Goal))
+               ||| typ_arrow
+                     (typ_constr (path [ "OCanren"; "State"; "t" ]) nil)
+                     (typ_constr (path [ "OCanren"; "Stream"; "t" ]) drop)
+               |> map0 ~f:`Goal))
         Location.none
         e
         (fun x ->
@@ -316,31 +328,40 @@ let translate fallback : (Rvb.t list ref, unit) Tast_folder.t =
     helper 0 e.Typedtree.exp_type
   in
   Printf.printf "%s %d\n" __FILE__ __LINE__;
-  let on_type_mangle_spec payl =
+  let on_type_mangle_spec inh_info payl =
     match payl with
     | Parsetree.PStr [ { pstr_desc = Pstr_eval (e, _); _ } ] ->
       let open Ppxlib.Ast_pattern in
       let rec helper acc e =
+        log "run helper on %a, acc.length = %d" Pprintast.expression e (List.length acc);
         parse
-          (pexp_construct (lident (string "::")) none
-          |>
-
-          |||
-          pexp_construct
-             (lident (string "::"))
-             (some
-                (pexp_tuple
-                   (pexp_tuple
-                      (pexp_constant (pconst_string __ drop none)
-                      ^:: pexp_constant (pconst_string __ drop none)
-                      ^:: nil)
-                   ^:: __
-                   ^:: nil))))
+          (pexp_construct (lident (string "[]")) drop
+           |> map0 ~f:None
+           ||| (pexp_construct
+                  (lident (string "::"))
+                  (some
+                     (pexp_tuple
+                        (pexp_tuple
+                           (pexp_constant (pconst_string __ drop none)
+                            ^:: pexp_constant (pconst_string __ drop none)
+                            ^:: nil)
+                         ^:: __
+                         ^:: nil)))
+                |> map2 ~f:(fun a b -> a, b)
+                |> map2 ~f:(fun p tl -> Some (p, tl))))
           e.Parsetree.pexp_loc
           e
-          (fun key v rest -> helper acc rest)
+          ~on_error:(fun () ->
+            Format.eprintf
+              "Error during during parsing:\n%a\n%!"
+              (Printast.expression 2)
+              e;
+            assert false)
+          (function
+           | None -> List.rev acc
+           | Some (item, rest) -> helper (item :: acc) rest)
       in
-      helper [] e
+      helper [] e |> Inh_info.add_hints inh_info
     | _ -> ()
   in
   let open Tast_folder in
@@ -371,8 +392,8 @@ let translate fallback : (Rvb.t list ref, unit) Tast_folder.t =
                  | Error -> Format.eprintf "an error in value_binding name = %s\n%!" name
                  | rez ->
                    let rvb = Rvb.mk name args rez in
-                   inh := rvb :: !inh;
-                   Format.printf "%a\n" pp_rvb_as_kotlin rvb
+                   Inh_info.add_rvb inh rvb;
+                   Format.printf "%a\n" (pp_rvb_as_kotlin inh) rvb
                in
                (), si)
           | _ -> assert false
@@ -389,7 +410,7 @@ let translate fallback : (Rvb.t list ref, unit) Tast_folder.t =
         | Tstr_attribute
             { attr_name = { txt = "klogic.type.mangle"; _ }; attr_payload; _ } ->
           log "%s\n%!" "klogic.type.mangle";
-          on_type_mangle_spec attr_payload;
+          on_type_mangle_spec inh attr_payload;
           (* TODO: specify mangling of names as an attribute *)
           (), si
         | Tstr_attribute _ | Tstr_type _ | Tstr_open _ -> (), si
@@ -401,19 +422,19 @@ let translate fallback : (Rvb.t list ref, unit) Tast_folder.t =
 ;;
 
 let translate_implementation stru =
-  let acc = ref [] in
   let folder = translate Tast_folder.default in
-  let _rez, _ = folder.Tast_folder.stru folder acc stru in
-  Stdlib.Result.Ok (List.rev !acc)
+  let inh = Inh_info.create () in
+  let _, _ = folder.Tast_folder.stru folder inh stru in
+  Stdlib.Result.Ok inh
 ;;
 
-let analyze_cmt source_file stru =
+let analyze_cmt _source_file stru =
   Out_channel.with_file "asdf.kt" ~f:(fun ch ->
     match translate_implementation stru with
     | Stdlib.Result.Ok xs ->
-      Printf.fprintf ch "// There are %d realtions\n" (List.length xs);
+      Printf.fprintf ch "// There are %d realtions\n" (List.length xs.Inh_info.rvbs);
       let ppf = Format.formatter_of_out_channel ch in
-      List.iter ~f:(pp_rvb_as_kotlin ppf) xs
+      Inh_info.iter_vbs ~f:(pp_rvb_as_kotlin xs ppf) xs
     | Error _ -> assert false)
 ;;
 
@@ -429,3 +450,4 @@ let run source_file =
       Printf.eprintf "%s %d\n%!" Caml.__FILE__ Caml.__LINE__;
       Caml.exit 1)
 ;;
+(*  *)

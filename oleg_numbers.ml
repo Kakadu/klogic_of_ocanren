@@ -22,6 +22,12 @@ let to_int : int Std.List.ground -> int =
   helper 1 0
 ;;
 
+(*  *)
+[@@@klogic.type.mangle
+[ "int OCanren.ilogic OCanren.Std.List.injected", "Term<LogicList<LogicInt>>"
+; "int OCanren__.Logic.ilogic", "Term<LogicInt>"
+]]
+
 let poso : int ilogic Std.List.injected -> OCanren.goal =
  fun n -> fresh (h t) (n === h % t)
 ;;
@@ -40,7 +46,8 @@ let rec appendo
     ]
 ;;
 
-[@@@klogic.type.mangle [ "int ilogic Std.List.injected", "Term<LogicList<LogicInt>>" ]]
+(*  *)
+
 (* let rec appendo l s out st =
   pause
     (fun () ->
@@ -56,16 +63,15 @@ let rec appendo
                     let res = State.fresh st in
                       bind (bind (((a % d) === l) st) ((a % res) === out))
                       (appendo d s res))) st))) *)
-(*
+
 let zero : injected = Std.nil ()
 let one : injected = !<(!!1)
 let three : injected = !!1 % !<(!!1)
-
-
 let gt1o n = fresh (a ad dd) (n === a % (ad % dd))
 
 (** Satisfies [b] + [x] + [y] = [r] + 2 * [c]  *)
-let full_addero b x y r c =
+let full_addero : _ -> _ -> _ -> _ -> _ -> OCanren.goal =
+ fun b x y r c ->
   conde
     [ !!0 === b &&& (!!0 === x) &&& (!!0 === y) &&& (!!0 === r) &&& (!!0 === c)
     ; !!1 === b &&& (!!0 === x) &&& (!!0 === y) &&& (!!1 === r) &&& (!!0 === c)
@@ -180,8 +186,6 @@ and gen_addero d n m r =
     (full_addero d a b c e)
     (addero e x y z)
 ;;
-
-*)
 
 (** Adds a carry-in bit [d] to arbitrarily large numbers [n] and [m] to produce a number [r]. *)
 (* let rec addero d n m r st =
