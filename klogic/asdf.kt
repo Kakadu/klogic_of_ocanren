@@ -1,4 +1,5 @@
-// There are 4 realtions
+// Put imports here
+// There are 4 relations
 fun poso(n: Term<LogicList<LogicInt>>) =
   { st -> pause { fresh { h, t ->
                     (n/1 `===` (h + t))(st)} } }

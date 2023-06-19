@@ -22,6 +22,8 @@ let to_int : int Std.List.ground -> int =
   helper 1 0
 ;;
 
+[@@@klogic.preamble {|// Put imports here|}]
+
 (*  *)
 [@@@klogic.type.mangle
 [ "int OCanren.ilogic OCanren.Std.List.injected", "Term<LogicList<LogicInt>>"

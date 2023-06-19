@@ -103,9 +103,10 @@ module Inh_info = struct
   type t =
     { type_mangle_hints : (string, string) Hashtbl.t
     ; mutable rvbs : Rvb.t list
+    ; mutable preamble : string
     }
 
-  let create () = { type_mangle_hints = Hashtbl.create 13; rvbs = [] }
+  let create () = { type_mangle_hints = Hashtbl.create 13; rvbs = []; preamble = "" }
   let add_rvb t rvb = t.rvbs <- rvb :: t.rvbs
   let lookup_typ_exn t typ = Hashtbl.find t.type_mangle_hints typ
 
@@ -117,6 +118,8 @@ module Inh_info = struct
   ;;
 
   let iter_vbs { rvbs; _ } ~f = List.iter ~f (List.rev rvbs)
+  let add_preamble t s = t.preamble <- t.preamble ^ s
+  let preamble { preamble; _ } = preamble
 end
 
 let pp_typ_as_kotlin inh_info ppf typ =
@@ -408,6 +411,24 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
         | Tstr_value (_, []) ->
           Printf.ksprintf failwith "Should not happen (%s %d)" __FILE__ __LINE__
         | Tstr_attribute
+            { attr_name = { txt = "klogic.preamble"; _ }
+            ; attr_payload =
+                Parsetree.PStr
+                  [ { pstr_desc =
+                        Pstr_eval
+                          ( { pexp_desc =
+                                Pexp_constant (Pconst_string (s, _, (None | Some "")))
+                            ; _
+                            }
+                          , _ )
+                    ; _
+                    }
+                  ]
+            ; _
+            } ->
+          Inh_info.add_preamble inh s;
+          (), si
+        | Tstr_attribute
             { attr_name = { txt = "klogic.type.mangle"; _ }; attr_payload; _ } ->
           log "%s\n%!" "klogic.type.mangle";
           on_type_mangle_spec inh attr_payload;
@@ -431,10 +452,11 @@ let translate_implementation stru =
 let analyze_cmt _source_file stru =
   Out_channel.with_file "asdf.kt" ~f:(fun ch ->
     match translate_implementation stru with
-    | Stdlib.Result.Ok xs ->
-      Printf.fprintf ch "// There are %d realtions\n" (List.length xs.Inh_info.rvbs);
+    | Stdlib.Result.Ok info ->
+      Printf.fprintf ch "%s\n" (Inh_info.preamble info);
+      Printf.fprintf ch "// There are %d relations\n" (List.length info.Inh_info.rvbs);
       let ppf = Format.formatter_of_out_channel ch in
-      Inh_info.iter_vbs ~f:(pp_rvb_as_kotlin xs ppf) xs
+      Inh_info.iter_vbs ~f:(pp_rvb_as_kotlin info ppf) info
     | Error _ -> assert false)
 ;;
 
@@ -450,4 +472,3 @@ let run source_file =
       Printf.eprintf "%s %d\n%!" Caml.__FILE__ Caml.__LINE__;
       Caml.exit 1)
 ;;
-(*  *)
