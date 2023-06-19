@@ -1,25 +1,27 @@
 // Put imports here
-// There are 4 relations
+// Multilines are supported
+
+// There are 8 relations
 fun poso(n: Term<LogicList<LogicInt>>) =
   { st -> pause { fresh { h, t ->
-                    (n/1 `===` (h + t))(st)} } }
+                    (n `===` (h + t))(st)} } }
 fun zeroo(n: Term<LogicList<LogicInt>>) =
-  (logicListOf() `===` n/2)
+  (logicListOf() `===` n)
 fun appendo(l: Term<LogicList<LogicInt>>, s: Term<LogicList<LogicInt>>,
 out: Term<LogicList<LogicInt>>) =
   { st ->
   pause { mplus(
             bind(
-              (l `===` logicListOf())(st)
+              (l `===` logicListOf())(st),
               (s `===` out)
               ),
             pause { { st ->
                     pause { fresh { a, d, res ->
                               bind(
                                 bind(
-                                  ((a + d) `===` l)(st)
+                                  ((a + d) `===` l)(st),
                                   ((a + res) `===` out)
-                                  )
+                                  ),
                                 appendo(d,s,res)
                                 )}
                     } }(st)
@@ -34,119 +36,234 @@ r: Term<LogicInt>, c: Term<LogicInt>) =
               bind(
                 bind(
                   bind(
-                    (OCanren.!!({| 0 |}) `===` b)(st)
-                    (OCanren.!!({| 0 |}) `===` x)
-                    )
-                  (OCanren.!!({| 0 |}) `===` y)
-                  )
-                (OCanren.!!({| 0 |}) `===` r)
-                )
-              (OCanren.!!({| 0 |}) `===` c)
+                    (0 `===` b)(st),
+                    (0 `===` x)
+                    ),
+                  (0 `===` y)
+                  ),
+                (0 `===` r)
+                ),
+              (0 `===` c)
               ),
-            pause { OCanren.mplus(OCanren.bind(OCanren.bind(OCanren.bind(
-                                                            OCanren.bind(
-                                                            OCanren.===(
-                                                            OCanren.!!({| 
-                                                            1 |}),b)(st),
-                                                            OCanren.===(
-                                                            OCanren.!!({| 
-                                                            0 |}),x)),
-                                                            OCanren.===(
-                                                            OCanren.!!({| 
-                                                            0 |}),y)),
-                                               OCanren.===(OCanren.!!({| 
-                                                           1 |}),r)),
-                                  OCanren.===(OCanren.!!({| 0 |}),c)),
-                    OCanren.pause({| fun () ->
-                                       mplus
-                                         (bind
-                                            (bind
-                                               (bind
-                                                  (bind (((!! 0) === b) st)
-                                                     ((!! 1) === x))
-                                                  ((!! 0) === y))
-                                               ((!! 1) === r)) ((!! 0) === c))
-                                         (pause
-                                            (fun () ->
-                                               mplus
-                                                 (bind
-                                                    (bind
-                                                       (bind
-                                                          (bind
-                                                             (((!! 1) === b)
-                                                                st)
-                                                             ((!! 1) === x))
-                                                          ((!! 0) === y))
-                                                       ((!! 0) === r))
-                                                    ((!! 1) === c))
-                                                 (pause
-                                                    (fun () ->
-                                                       mplus
-                                                         (bind
-                                                            (bind
-                                                               (bind
-                                                                  (bind
-                                                                    (((!! 0)
-                                                                    === b) st)
-                                                                    ((!! 0)
-                                                                    === x))
-                                                                  ((!! 1) ===
-                                                                    y))
-                                                               ((!! 1) === r))
-                                                            ((!! 0) === c))
-                                                         (pause
-                                                            (fun () ->
-                                                               mplus
-                                                                 (bind
-                                                                    (
-                                                                    bind
-                                                                    (bind
-                                                                    (bind
-                                                                    (((!! 1)
-                                                                    === b) st)
-                                                                    ((!! 0)
-                                                                    === x))
-                                                                    ((!! 1)
-                                                                    === y))
-                                                                    ((!! 0)
-                                                                    === r))
-                                                                    (
-                                                                    (!! 1)
-                                                                    === c))
-                                                                 (pause
-                                                                    (
-                                                                    fun () ->
-                                                                    mplus
-                                                                    (bind
-                                                                    (bind
-                                                                    (bind
-                                                                    (bind
-                                                                    (((!! 0)
-                                                                    === b) st)
-                                                                    ((!! 1)
-                                                                    === x))
-                                                                    ((!! 1)
-                                                                    === y))
-                                                                    ((!! 0)
-                                                                    === r))
-                                                                    ((!! 1)
-                                                                    === c))
-                                                                    (pause
-                                                                    (fun ()
-                                                                    ->
-                                                                    bind
-                                                                    (bind
-                                                                    (bind
-                                                                    (bind
-                                                                    (((!! 1)
-                                                                    === b) st)
-                                                                    ((!! 1)
-                                                                    === x))
-                                                                    ((!! 1)
-                                                                    === y))
-                                                                    ((!! 1)
-                                                                    === r))
-                                                                    ((!! 1)
-                                                                    === c))))))))))) |}))
+            pause { mplus(
+                      bind(
+                        bind(
+                          bind(
+                            bind(
+                              (1 `===` b)(st),
+                              (0 `===` x)
+                              ),
+                            (0 `===` y)
+                            ),
+                          (1 `===` r)
+                          ),
+                        (0 `===` c)
+                        ),
+                      pause { mplus(
+                                bind(
+                                  bind(
+                                    bind(
+                                      bind(
+                                        (0 `===` b)(st),
+                                        (1 `===` x)
+                                        ),
+                                      (0 `===` y)
+                                      ),
+                                    (1 `===` r)
+                                    ),
+                                  (0 `===` c)
+                                  ),
+                                pause { mplus(
+                                          bind(
+                                            bind(
+                                              bind(
+                                                bind(
+                                                  (1 `===` b)(st),
+                                                  (1 `===` x)
+                                                  ),
+                                                (0 `===` y)
+                                                ),
+                                              (0 `===` r)
+                                              ),
+                                            (1 `===` c)
+                                            ),
+                                          pause { mplus(
+                                                    bind(
+                                                      bind(
+                                                        bind(
+                                                          bind(
+                                                            (0 `===` b)(st),
+                                                            (0 `===` x)
+                                                            ),
+                                                          (1 `===` y)
+                                                          ),
+                                                        (1 `===` r)
+                                                        ),
+                                                      (0 `===` c)
+                                                      ),
+                                                    pause { mplus(
+                                                              bind(
+                                                                bind(
+                                                                  bind(
+                                                                    bind(
+                                                                    (1 `===` b)(st),
+                                                                    (0 `===` x)
+                                                                    ),
+                                                                    (1 `===` y)
+                                                                    ),
+                                                                  (0 `===` r)
+                                                                  ),
+                                                                (1 `===` c)
+                                                                ),
+                                                              pause { 
+                                                              mplus(
+                                                                bind(
+                                                                  bind(
+                                                                    bind(
+                                                                    bind(
+                                                                    (0 `===` b)(st),
+                                                                    (1 `===` x)
+                                                                    ),
+                                                                    (1 `===` y)
+                                                                    ),
+                                                                    (0 `===` r)
+                                                                    ),
+                                                                  (1 `===` c)
+                                                                  ),
+                                                                pause { 
+                                                                bind(
+                                                                  bind(
+                                                                    bind(
+                                                                    bind(
+                                                                    (1 `===` b)(st),
+                                                                    (1 `===` x)
+                                                                    ),
+                                                                    (1 `===` y)
+                                                                    ),
+                                                                    (1 `===` r)
+                                                                    ),
+                                                                  (1 `===` c)
+                                                                  )
+                                                                })
+                                                              })
+                                                    })
+                                          })
+                                })
+                      })
             })
   } }
+fun addero(d: Term<LogicInt>, n: Term<LogicList<LogicInt>>,
+m: Term<LogicList<LogicInt>>, r: Term<LogicList<LogicInt>>) =
+  { st ->
+  pause { mplus(
+            bind(
+              bind(
+                (0 `===` d)(st),
+                (logicListOf() `===` m)
+                ),
+              (n `===` r)
+              ),
+            pause { mplus(
+                      bind(
+                        bind(
+                          bind(
+                            (0 `===` d)(st),
+                            (logicListOf() `===` n)
+                            ),
+                          (m `===` r)
+                          ),
+                        poso(m)
+                        ),
+                      pause { mplus(
+                                bind(
+                                  bind(
+                                    (1 `===` d)(st),
+                                    (logicListOf() `===` m)
+                                    ),
+                                  addero(0,n,one,r)
+                                  ),
+                                pause { mplus(
+                                          bind(
+                                            bind(
+                                              bind(
+                                                (1 `===` d)(st),
+                                                (logicListOf() `===` n)
+                                                ),
+                                              poso(m)
+                                              ),
+                                            addero(0,m,one,r)
+                                            ),
+                                          pause { mplus(
+                                                    bind(
+                                                      bind(
+                                                        (n `===` one)(st),
+                                                        (m `===` one)
+                                                        ),
+                                                      { st ->
+                                                      pause { fresh { a, c ->
+                                                                bind(
+                                                                  (OCanren.Std.%<(a,c) `===` r)(st),
+                                                                  full_addero(d,1,1,a,c)
+                                                                  )}
+                                                      } } ),
+                                                    pause { mplus(
+                                                              bind(
+                                                                (n `===` one)(st),
+                                                                gen_addero(d,n,m,r)
+                                                                ),
+                                                              pause { 
+                                                              mplus(
+                                                                bind(
+                                                                  bind(
+                                                                    bind(
+                                                                    (m `===` one)(st),
+                                                                    gt1o(n)
+                                                                    ),
+                                                                    gt1o(r)
+                                                                    ),
+                                                                  addero(d,one,n,r)
+                                                                  ),
+                                                                pause { 
+                                                                bind(
+                                                                  gt1o(n)(st),
+                                                                  gen_addero(d,n,m,r)
+                                                                  )
+                                                                })
+                                                              })
+                                                    })
+                                                    })
+                                          })
+                                })
+                      })
+            }
+  }
+fun gen_addero(d: Term<LogicInt>, n: Term<LogicList<LogicInt>>,
+m: Term<LogicList<LogicInt>>, r: Term<LogicList<LogicInt>>) =
+  { st ->
+  pause { fresh { a, b, c, e, x, y, z ->
+            bind(
+              bind(
+                bind(
+                  bind(
+                    bind(
+                      bind(
+                        ((a + x) `===` n)(st),
+                        ((b + y) `===` m)
+                        ),
+                      poso(y)
+                      ),
+                    ((c + z) `===` r)
+                    ),
+                  poso(z)
+                  ),
+                full_addero(d,a,b,c,e)
+                ),
+              addero(e,x,y,z)
+              )}
+  } }
+fun pluso(n: Term<LogicList<LogicInt>>, m: Term<LogicList<LogicInt>>,
+k: Term<LogicList<LogicInt>>) =
+  addero(0,n,m,k)
+fun minuso(n: Term<LogicList<LogicInt>>, m: Term<LogicList<LogicInt>>,
+k: Term<LogicList<LogicInt>>) =
+  pluso(m,k,n)

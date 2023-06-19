@@ -20,6 +20,7 @@ type 'a ast =
   | St_abstr of 'a
   | St_app of 'a
   | Mplus of 'a * 'a
+  | New_scope of 'a
   | Bind of 'a * 'a
   | Fresh of string list * 'a
   | Unify of ('t term as 't) * 't
@@ -48,14 +49,16 @@ let pp_term_as_kotlin =
   let open Format in
   let rec helper ppf = function
     | T_int n -> fprintf ppf "%d" n
-    (* | _ -> fprintf ppf "%d" 42 *)
     | T_list_init ls ->
       fprintf ppf "@[%a@]" (pp_print_list ~pp_sep:pp_print_space helper) ls
     | T_list_nil -> fprintf ppf "logicListOf()"
     | T_list_cons (h, tl) -> fprintf ppf "@[(%a + %a)@]" helper h helper tl
-    | Tident p -> fprintf ppf "%a" Printtyp.path p
+    (* | Tident p -> fprintf ppf "%a" Printtyp.path p *)
+    (* TODO: Printtyp.path sometimes fives /n in the end. *)
+    | Tident p -> fprintf ppf "%s" (Path.name p)
     | Tapp (f, args) -> fprintf ppf "@[%a(%a)@]" helper f (pp_comma_list helper) args
-    | Tother e -> fprintf ppf "{| %a |}" Pprintast.expression (MyUntype.expr e)
+    | Tother e ->
+      fprintf ppf "/* ERROR ? */{|  %a |}" Pprintast.expression (MyUntype.expr e)
   in
   helper
 ;;
@@ -65,6 +68,7 @@ let map_ast f = function
   | St_abstr e -> St_abstr (f e)
   | St_app e -> St_app (f e)
   | Fresh (xs, e) -> Fresh (xs, f e)
+  | New_scope x -> New_scope (f x)
   | Mplus (a, b) -> Mplus (f a, f b)
   | Bind (a, b) -> Bind (f a, f b)
   | (Call_rel _ | Unify _ | Other _ | Error) as other -> other
@@ -76,10 +80,11 @@ let pp_ast_as_kotlin =
     | Pause e -> fprintf ppf "@[pause { %a@ }@]" helper e
     | St_abstr l -> fprintf ppf "@[<v 2>@[{ st ->@ %a@ }@]" helper l
     | St_app l -> fprintf ppf "%a(st)" helper l
+    | New_scope x -> helper ppf x
     | Mplus (l, r) ->
       fprintf ppf "@[<v 2>@[mplus(@]@,@[%a,@]@,@[%a@]@[)@]@]" helper l helper r
     | Bind (l, r) ->
-      fprintf ppf "@[<v 2>@[bind(@]@,@[%a@]@,@[%a@]@ @[)@]@]" helper l helper r
+      fprintf ppf "@[<v 2>@[bind(@]@,@[%a,@]@,@[%a@]@ @[)@]@]" helper l helper r
     | Fresh (xs, e) ->
       fprintf
         ppf
@@ -163,10 +168,17 @@ let translate_term =
             __
             __
           |> map2 ~f:(fun a b -> T_list_cons (helper a, helper b))
+        ; texp_apply1
+            (texp_ident (path [ "OCanren!"; "!!" ] ||| path [ "OCanren"; "!!" ]))
+            (eint __)
+          |> map1 ~f:(fun n -> T_int n)
         ; texp_apply_nolabelled __ __
           |> map2 ~f:(fun x args -> Tapp (helper x, List.map ~f:helper args))
         ; texp_ident __ |> map1 ~f:(fun x -> Tident x)
-        ; __ |> map1 ~f:(fun x -> Tother x)
+        ; __
+          |> map1 ~f:(fun x ->
+               Format.printf "Tother parsed: @[%a@]\n%!" MyPrinttyped.expr x;
+               Tother x)
         ])
       e.exp_loc
       e
@@ -201,12 +213,18 @@ let translate_expr fallback : (unit, _ ast) Tast_folder.t =
       texp_apply1 __ (texp_ident (path [ "st" ])) |> map1 ~f:(fun x -> St_app x)
     ;;
 
+    let pat_new_scope () : (Typedtree.expression, _ -> 'a, 'b) Tast_pattern.t =
+      texp_let (value_binding (tpat_var (string "st")) drop ^:: nil) __
+      |> map1 ~f:(fun x -> New_scope x)
+    ;;
+
     let pat_mplus () : (Typedtree.expression, _ -> 'a, 'b) Tast_pattern.t =
-      texp_let (value_binding drop drop ^:: nil)
-      @@ texp_apply2
-           (texp_ident (path [ "OCanren!"; "mplus" ] ||| path [ "OCanren"; "mplus" ]))
-           __
-           __
+      (* texp_let (value_binding drop drop ^:: nil)
+      @@ *)
+      texp_apply2
+        (texp_ident (path [ "OCanren!"; "mplus" ] ||| path [ "OCanren"; "mplus" ]))
+        __
+        __
       |> map2 ~f:(fun x y -> Mplus (x, y))
     ;;
 
@@ -258,6 +276,7 @@ let translate_expr fallback : (unit, _ ast) Tast_folder.t =
 
     let pat () =
       pat_pause ()
+      ||| pat_new_scope ()
       ||| pat_mplus ()
       ||| pat_bind ()
       ||| pat_st_abstr ()

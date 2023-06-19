@@ -4,7 +4,7 @@ open OCanren.Std
 
 type injected = int ilogic Std.List.injected
 
-let prj_exn : (injected, _) Reifier.t = Std.List.prj_exn OCanren.prj_exn
+(* let prj_exn : (injected, _) Reifier.t = Std.List.prj_exn OCanren.prj_exn
 let reify : (injected, _) Reifier.t = Std.List.reify OCanren.reify
 let show_logic x = [%show: GT.int OCanren.logic Std.List.logic] () x
 
@@ -20,11 +20,12 @@ let to_int : int Std.List.ground -> int =
     | h :: tl -> helper (base * 2) (acc + (h * base)) tl
   in
   helper 1 0
-;;
-
-[@@@klogic.preamble {|// Put imports here|}]
-
+;; *)
 (*  *)
+[@@@klogic.preamble {|// Put imports here
+// Multilines are supported
+|}]
+
 [@@@klogic.type.mangle
 [ "int OCanren.ilogic OCanren.Std.List.injected", "Term<LogicList<LogicInt>>"
 ; "int OCanren__.Logic.ilogic", "Term<LogicInt>"
@@ -71,7 +72,17 @@ let one : injected = !<(!!1)
 let three : injected = !!1 % !<(!!1)
 let gt1o n = fresh (a ad dd) (n === a % (ad % dd))
 
+(* let check1 : _ -> _ -> _ -> OCanren.goal =
+ fun b x c ->
+  conde
+    [ !!0 === b &&& (!!0 === x) &&& (!!0 === c)
+    ; !!1 === b &&& (!!0 === x) &&& (!!0 === c)
+    ; !!0 === b &&& (!!1 === x) &&& (!!0 === c)
+    ]
+;; *)
+
 (** Satisfies [b] + [x] + [y] = [r] + 2 * [c]  *)
+
 let full_addero : _ -> _ -> _ -> _ -> _ -> OCanren.goal =
  fun b x y r c ->
   conde
@@ -165,7 +176,11 @@ let full_addero b x y r c st =
 ;; *)
 
 (** Adds a carry-in bit [d] to arbitrarily large numbers [n] and [m] to produce a number [r]. *)
-let rec addero d n m r =
+let rec addero
+  :  _ -> int ilogic Std.List.injected -> int ilogic Std.List.injected
+  -> int ilogic Std.List.injected -> OCanren.goal
+  =
+ fun d n m r ->
   conde
     [ !!0 === d &&& (nil () === m) &&& (n === r)
     ; !!0 === d &&& (nil () === n) &&& (m === r) &&& poso m
@@ -177,7 +192,11 @@ let rec addero d n m r =
     ; gt1o n &&& gen_addero d n m r
     ]
 
-and gen_addero d n m r =
+and gen_addero
+  :  _ -> int ilogic Std.List.injected -> int ilogic Std.List.injected
+  -> int ilogic Std.List.injected -> OCanren.goal
+  =
+ fun d n m r ->
   fresh
     (a b c e x y z)
     (a % x === n)
@@ -281,9 +300,9 @@ and gen_addero d n m r st =
 ;;
  *)
 
-(* let pluso n m k = addero !!0 n m k
-let minuso n m k = pluso m k n *)
-(*
+let pluso n m k = addero !!0 n m k
+let minuso n m k = pluso m k n
+
 let rec bound_multo q p n m =
   conde
     [ q === zero &&& poso p
@@ -452,7 +471,7 @@ and odd_multo x n m p st =
     bind (bind head (multo x m q)) (pluso (!0 % q) m p))
 ;; *)
 
-(*  *)
+(*  
 
 (** have the same length *)
 let rec eqlo n m =
