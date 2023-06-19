@@ -267,3 +267,4 @@ k: Term<LogicList<LogicInt>>) =
 fun minuso(n: Term<LogicList<LogicInt>>, m: Term<LogicList<LogicInt>>,
 k: Term<LogicList<LogicInt>>) =
   pluso(m,k,n)
+// Put epilogue here 

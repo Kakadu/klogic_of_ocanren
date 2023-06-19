@@ -26,6 +26,8 @@ let to_int : int Std.List.ground -> int =
 // Multilines are supported
 |}]
 
+[@@@klogic.epilogue {|// Put epilogue here |}]
+
 [@@@klogic.type.mangle
 [ "int OCanren.ilogic OCanren.Std.List.injected", "Term<LogicList<LogicInt>>"
 ; "int OCanren__.Logic.ilogic", "Term<LogicInt>"

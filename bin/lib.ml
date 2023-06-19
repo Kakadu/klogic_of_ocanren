@@ -109,9 +109,13 @@ module Inh_info = struct
     { type_mangle_hints : (string, string) Hashtbl.t
     ; mutable rvbs : Rvb.t list
     ; mutable preamble : string
+    ; mutable epilogue : string
     }
 
-  let create () = { type_mangle_hints = Hashtbl.create 13; rvbs = []; preamble = "" }
+  let create () =
+    { type_mangle_hints = Hashtbl.create 13; rvbs = []; preamble = ""; epilogue = "" }
+  ;;
+
   let add_rvb t rvb = t.rvbs <- rvb :: t.rvbs
   let lookup_typ_exn t typ = Hashtbl.find t.type_mangle_hints typ
 
@@ -124,7 +128,9 @@ module Inh_info = struct
 
   let iter_vbs { rvbs; _ } ~f = List.iter ~f (List.rev rvbs)
   let add_preamble t s = t.preamble <- t.preamble ^ s
+  let add_epilogue t s = t.epilogue <- t.epilogue ^ s
   let preamble { preamble; _ } = preamble
+  let epilogue { epilogue; _ } = epilogue
 end
 
 let pp_typ_as_kotlin inh_info ppf typ =
@@ -430,7 +436,7 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
         | Tstr_value (_, []) ->
           Printf.ksprintf failwith "Should not happen (%s %d)" __FILE__ __LINE__
         | Tstr_attribute
-            { attr_name = { txt = "klogic.preamble"; _ }
+            { attr_name = { txt = "klogic.preamble" | "klogic.prologue"; _ }
             ; attr_payload =
                 Parsetree.PStr
                   [ { pstr_desc =
@@ -446,6 +452,24 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
             ; _
             } ->
           Inh_info.add_preamble inh s;
+          (), si
+        | Tstr_attribute
+            { attr_name = { txt = "klogic.epilogue"; _ }
+            ; attr_payload =
+                Parsetree.PStr
+                  [ { pstr_desc =
+                        Pstr_eval
+                          ( { pexp_desc =
+                                Pexp_constant (Pconst_string (s, _, (None | Some "")))
+                            ; _
+                            }
+                          , _ )
+                    ; _
+                    }
+                  ]
+            ; _
+            } ->
+          Inh_info.add_epilogue inh s;
           (), si
         | Tstr_attribute
             { attr_name = { txt = "klogic.type.mangle"; _ }; attr_payload; _ } ->
@@ -475,7 +499,10 @@ let analyze_cmt _source_file stru =
       Printf.fprintf ch "%s\n" (Inh_info.preamble info);
       Printf.fprintf ch "// There are %d relations\n" (List.length info.Inh_info.rvbs);
       let ppf = Format.formatter_of_out_channel ch in
-      Inh_info.iter_vbs ~f:(pp_rvb_as_kotlin info ppf) info
+      Inh_info.iter_vbs ~f:(pp_rvb_as_kotlin info ppf) info;
+      Printf.fprintf ch "%s\n" (Inh_info.epilogue info);
+      Format.pp_print_flush ppf ();
+      flush ch
     | Error _ -> assert false)
 ;;
 
