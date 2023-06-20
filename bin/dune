@@ -8,7 +8,7 @@
 
 (library
  (name klogic_of_ocanren_lib)
- (modules lib)
+ (modules Trans_config AST lib)
  (flags
   (:standard -rectypes))
  (libraries str Tast_pattern ppxlib.stdppx compiler-libs.common))

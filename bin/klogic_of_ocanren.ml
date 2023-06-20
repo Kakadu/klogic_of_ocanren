@@ -1,14 +1,12 @@
-type config =
-  { mutable out_file : string
-  ; mutable input_file : string
-  }
-
-let config = { out_file = "asdf.kt"; input_file = "" }
+open Klogic_of_ocanren_lib
+open Trans_config
 
 let () =
   Arg.parse
-    [ "-o", Arg.String (fun s -> config.out_file <- s), "" ]
+    [ "-o", Arg.String (fun s -> config.out_file <- s), ""
+    ; "-pretty", Arg.Unit (fun () -> config.pretty <- true), ""
+    ]
     (fun s -> config.input_file <- s)
     "";
-  Klogic_of_ocanren_lib.Lib.run config.input_file config.out_file
+  Lib.run config.input_file config.out_file
 ;;

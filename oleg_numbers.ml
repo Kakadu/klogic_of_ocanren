@@ -98,7 +98,7 @@ let rec appendo
     ]
 ;;
 
-(*  *)
+(*  
 
 (* let rec appendo l s out st =
   pause
@@ -742,3 +742,4 @@ let show_num = GT.(show List.ground @@ show int)
 
 (* let num_reifier h = List.reify OCanren.reify h *)
 (* let runL n = run_r num_reifier show_num_logic n *)
+ *)
