@@ -1,16 +1,40 @@
-(rule
- ;(alias)
- (deps
-  %{project_root}/bin/klogic_of_ocanren.exe
-  ../.oleg_numbers.objs/byte/oleg_numbers.cmo
-  ;../.oleg_numbers.objs/byte/oleg_numbers.cmx
-  )
- (targets asdf.kt)
- (mode promote)
- (action
-  (run
-   %{project_root}/bin/klogic_of_ocanren.exe
-   ../.oleg_numbers.objs/byte/oleg_numbers.cmt)))
+; (rule
+;  ;(alias)
+;  (deps
+;   %{project_root}/bin/klogic_of_ocanren.exe
+;   ../.oleg_numbers.objs/byte/oleg_numbers.cmo
+;   ;../.oleg_numbers.objs/byte/oleg_numbers.cmx
+;   )
+;  (targets asdf.kt)
+;  (mode promote)
+;  (action
+;   (run
+;    %{project_root}/bin/klogic_of_ocanren.exe
+;    ../.oleg_numbers.objs/byte/oleg_numbers.cmt)))
 
 (cram
- (deps asdf.kt))
+ (deps src/test/kotlin/utils/asdf.kt))
+
+(rule
+ (targets klogic.jar)
+ (deps
+  ./gradlew
+  ./gradle/wrapper/gradle-wrapper.jar
+  ./gradle/wrapper/gradle-wrapper.properties
+  ./dune
+  ;./README.md
+  ./build.gradle.kts
+  ./settings.gradle.kts
+  ./src/test/kotlin/TestRunner.kt
+  ./src/test/kotlin/ReversoTest.kt
+  ./src/test/kotlin/AppendoTest.kt
+  ./src/test/kotlin/OlegNumbersTest.kt
+  ./src/test/kotlin/utils/Utils.kt
+  ./src/test/kotlin/utils/asdf.kt
+  ./src/test/kotlin/utils/OlegLogicNumbers.kt
+  ;./gradlew.bat
+  ;
+  )
+ ; dune doesn't allow to build files out of current directory, so we need extra copying
+ (action
+  (run sh -c "sh ./gradlew shadowJar && cp build/libs/klogic.jar .. ")))

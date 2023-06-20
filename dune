@@ -22,3 +22,6 @@
  (inline_tests)
  (preprocess
   (pps ppx_hack ppx_expect ppx_inline_test)))
+
+(cram
+ (deps klogic.jar))
