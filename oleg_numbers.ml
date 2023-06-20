@@ -43,6 +43,7 @@ typealias OlegLogicNumber = LogicList<Digit>
 
 val zero: OlegLogicNumber = logicListOf()
 val one: OlegLogicNumber = logicListOf( 1.toLogic() )
+val three: OlegLogicNumber = logicListOf( 1.toLogic(), 1.toLogic() )
 
 fun UInt.toOlegLogicNumber(): OlegLogicNumber = toLogicList()
 fun UInt.toLogicList(): LogicList<Digit> =
@@ -397,8 +398,6 @@ and odd_multo
  fun x n m p -> fresh q (bound_multo q p n m) (multo x m q) (pluso (!!0 % q) m p)
 ;;
 
-let _ = 1
-(*
 (*
 let rec bound_multo q p n m st =
   (* Printf.printf "bound_multo %s %s %s %s\n" (traceP q) (traceP p) (traceP n) (traceP m); *)
@@ -540,10 +539,11 @@ and odd_multo x n m p st =
     bind (bind head (multo x m q)) (pluso (!0 % q) m p))
 ;; *)
 
-(*  
-
 (** have the same length *)
-let rec eqlo n m =
+let rec eqlo
+  : int ilogic Std.List.injected -> int ilogic Std.List.injected -> OCanren.goal
+  =
+ fun n m ->
   conde
     [ n === zero &&& (m === zero)
     ; n === one &&& (m === one)
@@ -552,7 +552,10 @@ let rec eqlo n m =
 ;;
 
 (** [n] has smaller length than [m] *)
-let rec ltlo n m =
+let rec ltlo
+  : int ilogic Std.List.injected -> int ilogic Std.List.injected -> OCanren.goal
+  =
+ fun n m ->
   conde
     [ n === zero &&& poso m
     ; n === one &&& gt1o m
@@ -560,75 +563,95 @@ let rec ltlo n m =
     ]
 ;;
 
-let lelo n m = conde [ eqlo n m; ltlo n m ]
-let lto n m = conde [ ltlo n m; eqlo n m &&& fresh x (poso x) (pluso n x m) ]
-let leo n m = conde [ n === m; lto n m ]
+let lelo : int ilogic Std.List.injected -> int ilogic Std.List.injected -> OCanren.goal =
+ fun n m -> conde [ eqlo n m; ltlo n m ]
+;;
+
+let lto : int ilogic Std.List.injected -> int ilogic Std.List.injected -> OCanren.goal =
+ fun n m -> conde [ ltlo n m; eqlo n m &&& fresh x (poso x) (pluso n x m) ]
+;;
+
+let leo : int ilogic Std.List.injected -> int ilogic Std.List.injected -> OCanren.goal =
+ fun n m -> conde [ n === m; lto n m ]
+;;
 
 (**  Splits a binary numeral at a given length:
   * (split o n r l h) holds if n = 2^{s+1} · l + h where s = ∥r∥ and h < 2^{s+1}.
   *)
-let rec splito n r l h =
+let rec splito
+  :  int ilogic Std.List.injected -> int ilogic Std.List.injected
+  -> int ilogic Std.List.injected -> int ilogic Std.List.injected -> OCanren.goal
+  =
+ fun n r l h ->
   conde
     [ n === zero &&& (h === zero) &&& (l === zero)
-    ; fresh (b n') (n === !!0 % (b % n')) (r === zero) (h === b % n') (l === zero)
-    ; fresh n' (n === !!1 % n') (r === zero) (n' === h) (l === one)
+    ; fresh (b n_) (n === !!0 % (b % n_)) (r === zero) (h === b % n_) (l === zero)
+    ; fresh n_ (n === !!1 % n_) (r === zero) (n_ === h) (l === one)
     ; fresh
-        (b n' a r')
-        (n === !!0 % (b % n'))
-        (a % r' === r)
+        (b n_ a r_)
+        (n === !!0 % (b % n_))
+        (a % r_ === r)
         (l === zero)
-        (splito (b % n') r' zero h)
-    ; fresh (n' a r') (n === !!1 % n') (r === a % r') (l === one) (splito n' r' zero h)
+        (splito (b % n_) r_ zero h)
+    ; fresh (n_ a r_) (n === !!1 % n_) (r === a % r_) (l === one) (splito n_ r_ zero h)
     ; fresh
-        (b n' a r' l')
-        (n === b % n')
-        (r === a % r')
-        (l === b % l')
-        (poso l')
-        (splito n' r' l' h)
+        (b n_ a r_ l_)
+        (n === b % n_)
+        (r === a % r_)
+        (l === b % l_)
+        (poso l_)
+        (splito n_ r_ l_ h)
     ]
 ;;
 
 (** Satisfies n = m * q + r, with 0 <= r < m. *)
-let rec divo n m q r =
+let rec divo
+  :  int ilogic Std.List.injected -> int ilogic Std.List.injected
+  -> int ilogic Std.List.injected -> int ilogic Std.List.injected -> OCanren.goal
+  =
+ fun n m q r ->
   conde
     [ r === n &&& (q === zero) &&& lto n m
     ; q === one &&& eqlo n m &&& pluso r m n &&& lto r m
-    ; ?&[ ltlo m n
-        ; lto r m
-        ; poso q
-        ; fresh
+    ; ltlo m n
+      &&& lto r m
+      &&& poso q
+      &&& fresh
             (nh nl qh ql qlm qlmr rr rh)
             (splito n r nl nh)
             (splito q r ql qh)
             (conde
                [ nh === zero &&& (qh === zero) &&& minuso nl r qlm &&& multo ql m qlm
-               ; ?&[ poso nh
-                   ; multo ql m qlm
-                   ; pluso qlm r qlmr
-                   ; minuso qlmr nl rr
-                   ; splito rr r zero rh
-                   ; divo nh m qh rh
-                   ]
+               ; poso nh
+                 &&& multo ql m qlm
+                 &&& pluso qlm r qlmr
+                 &&& minuso qlmr nl rr
+                 &&& splito rr r zero rh
+                 &&& divo nh m qh rh
                ])
-        ]
     ]
 ;;
 
-let rec repeated_mul n q nq =
+let rec repeated_mul
+  :  int ilogic Std.List.injected -> int ilogic Std.List.injected
+  -> int ilogic Std.List.injected -> OCanren.goal
+  =
+ fun n q nq ->
   conde
     [ poso n &&& (q === zero) &&& (nq === one)
     ; q === one &&& (n === nq)
-    ; ?&[ gt1o q
-        ; fresh (q1 nq1) (pluso q1 one q) (repeated_mul n q1 nq1) (multo nq1 n nq)
-        ]
+    ; gt1o q &&& fresh (q1 nq1) (pluso q1 one q) (repeated_mul n q1 nq1) (multo nq1 n nq)
     ]
 ;;
 
-let rec exp2 n b q =
+let rec exp2
+  :  int ilogic Std.List.injected -> int ilogic Std.List.injected
+  -> int ilogic Std.List.injected -> OCanren.goal
+  =
+ fun n b q ->
   conde
     [ n === one &&& (q === zero)
-    ; ?&[ gt1o n; q === one; fresh s (splito n b s one) ]
+    ; gt1o n &&& (q === one) &&& fresh s (splito n b s one)
     ; fresh
         (q1 b2)
         (q === !!0 % q1)
@@ -648,24 +671,28 @@ let rec exp2 n b q =
 ;;
 
 (** Satisfies n = b ^ q + r, where 0 <= r <= n and q is the largest. *)
-let logo n b q r =
+let logo
+  :  int ilogic Std.List.injected -> int ilogic Std.List.injected
+  -> int ilogic Std.List.injected -> int ilogic Std.List.injected -> OCanren.goal
+  =
+ fun n b q r ->
   conde
     [ n === one &&& poso b &&& (q === zero) &&& (r === zero)
     ; q === zero &&& lto n b &&& pluso r one n
     ; q === one &&& gt1o b &&& eqlo n b &&& pluso r b n
     ; b === one &&& poso q &&& pluso r one n
     ; b === zero &&& poso q &&& (r === n)
-    ; ?&[ !!0 %< !!1 === b
-        ; fresh
+    ; !!0 % (!!1 % Std.nil ())
+      === b
+      &&& fresh
             (a ad dd)
             (poso dd)
             (n === a % (ad % dd))
             (exp2 n (nil ()) q)
             (fresh s (splito n dd r s))
-        ]
-    ; ?&[ fresh (a ad add ddd) (conde [ b === three; b === a % (ad % (add % ddd)) ])
-        ; ltlo b n
-        ; fresh
+    ; fresh (a ad add ddd) (conde [ b === three; b === a % (ad % (add % ddd)) ])
+      &&& ltlo b n
+      &&& fresh
             (bw1 bw nw nw1 ql1 ql s)
             (exp2 b zero bw1)
             (pluso bw1 one bw)
@@ -677,9 +704,9 @@ let logo n b q r =
             (pluso ql one ql1)
             (lelo ql q)
             (fresh
-               (bql qh s qdh qd)
+               (bql qh s2 qdh qd)
                (repeated_mul b ql bql)
-               (divo nw bw1 qh s)
+               (divo nw bw1 qh s2)
                (pluso ql qdh qh)
                (pluso ql qd q)
                (leo qd qdh)
@@ -690,11 +717,15 @@ let logo n b q r =
                   (multo b bq bq1)
                   (pluso bq r n)
                   (lto n bq1)))
-        ]
     ]
 ;;
 
-let expo b q n = logo n b q zero
+let expo
+  :  int ilogic Std.List.injected -> int ilogic Std.List.injected
+  -> int ilogic Std.List.injected -> OCanren.goal
+  =
+ fun b q n -> logo n b q zero
+;;
 
 (* let test17 n m = lelo n m &&& multo n (build_num 2) m
 let test27 b q r = logo (build_num 68) b q r &&& gt1o q
@@ -711,6 +742,3 @@ let show_num = GT.(show List.ground @@ show int)
 
 (* let num_reifier h = List.reify OCanren.reify h *)
 (* let runL n = run_r num_reifier show_num_logic n *)
-
- *)
- *)

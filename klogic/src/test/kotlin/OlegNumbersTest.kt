@@ -89,17 +89,20 @@ class OlegNumbersTest {
             }
         UnificationsController.onFinish()
     }
-    /*
+
     @Test
     fun testMul3x3() {
         val a = 3u.toOlegLogicNumber()
         val b = 3u.toOlegLogicNumber()
 
         println("$a * $b")
-        run(1, { r: Term<OlegLogicNumber> -> mulᴼ(a, b, r) })
+        run(1, { r: Term<OlegLogicNumber> -> multo(a, b, r) })
+            .forEachIndexed { i, x ->
+                println("$i: $x")
+            }
         UnificationsController.onFinish()
     }
-
+    /*
     @Test
     fun testMul5x5() {
         val a = 5u.toOlegLogicNumber()
@@ -167,17 +170,20 @@ class OlegNumbersTest {
         run(1, { r: Term<OlegLogicNumber> -> expᴼ(base, power, r) })
         UnificationsController.onFinish()
     }
-
+*/
     @Test
     fun testExpo2x3() {
         val base = 2u.toOlegLogicNumber()
         val power = 3u.toOlegLogicNumber()
 
         println("$base^$power")
-        run(1, { r: Term<OlegLogicNumber> -> expᴼ(base, power, r) })
+        run(1, { r: Term<OlegLogicNumber> -> expo(base, power, r) })
+            .forEachIndexed { i, x ->
+                println("$i: $x")
+            }
         UnificationsController.onFinish()
     }
-
+/*
     @Test
     fun testExpo2x5() {
         val base = 2u.toOlegLogicNumber()

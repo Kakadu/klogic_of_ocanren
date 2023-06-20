@@ -18,6 +18,7 @@ typealias OlegLogicNumber = LogicList<Digit>
 
 val zero: OlegLogicNumber = logicListOf()
 val one: OlegLogicNumber = logicListOf( 1.toLogic() )
+val three: OlegLogicNumber = logicListOf( 1.toLogic(), 1.toLogic() )
 
 fun UInt.toOlegLogicNumber(): OlegLogicNumber = toLogicList()
 fun UInt.toLogicList(): LogicList<Digit> =
@@ -30,7 +31,7 @@ fun UInt.toLogicList(): LogicList<Digit> =
 fun <T> pause(f: () -> RecursiveStream<T>): RecursiveStream<T> = ThunkStream(f)
 
 
-// There are 12 relations
+// There are 23 relations
 fun poso(n: Term<LogicList<LogicInt>>): Goal =
   { st: State ->
   pause { val h : Term<LogicInt> = freshTypedVar();
@@ -436,4 +437,559 @@ m: Term<LogicList<LogicInt>>, p: Term<LogicList<LogicInt>>): Goal =
             bind
             (pluso((0.toLogic() + q),m,p)))
   } }
+fun eqlo(n: Term<LogicList<LogicInt>>, m: Term<LogicList<LogicInt>>): Goal =
+  { st: State ->
+  pause { (((((n `===` zero)(st))
+              bind
+              ((m `===` zero))))
+            mplus
+            
+            (pause { (((((n `===` one)(st))
+                         bind
+                         ((m `===` one))))
+                       mplus
+                       
+                       (pause { { st: State ->
+                                pause { val a : Term<LogicInt> = freshTypedVar();
+                                        val x : Term<LogicList<LogicInt>> = freshTypedVar();
+                                        val b : Term<LogicInt> = freshTypedVar();
+                                        val y : Term<LogicList<LogicInt>> = freshTypedVar();
+                                        ((((((((((a + x) `===` n)(st))
+                                                bind
+                                                (poso(x))))
+                                              bind
+                                              (((b + y) `===` m))))
+                                            bind
+                                            (poso(y))))
+                                          bind
+                                          (eqlo(x,y)))
+                                } }(st)
+                                  }))
+                       }))
+            }
+  }
+fun ltlo(n: Term<LogicList<LogicInt>>, m: Term<LogicList<LogicInt>>): Goal =
+  { st: State ->
+  pause { (((((n `===` zero)(st))
+              bind
+              (poso(m))))
+            mplus
+            
+            (pause { (((((n `===` one)(st))
+                         bind
+                         (gt1o(m))))
+                       mplus
+                       
+                       (pause { { st: State ->
+                                pause { val a : Term<LogicInt> = freshTypedVar();
+                                        val x : Term<LogicList<LogicInt>> = freshTypedVar();
+                                        val b : Term<LogicInt> = freshTypedVar();
+                                        val y : Term<LogicList<LogicInt>> = freshTypedVar();
+                                        ((((((((((a + x) `===` n)(st))
+                                                bind
+                                                (poso(x))))
+                                              bind
+                                              (((b + y) `===` m))))
+                                            bind
+                                            (poso(y))))
+                                          bind
+                                          (ltlo(x,y)))
+                                } }(st)
+                                  }))
+                       }))
+            }
+  }
+fun lelo(n: Term<LogicList<LogicInt>>, m: Term<LogicList<LogicInt>>): Goal =
+  { st: State -> pause { ((eqlo(n,m)(st))
+                           mplus
+                           
+                           (pause { ltlo(n,m)(st) })) } }
+fun lto(n: Term<LogicList<LogicInt>>, m: Term<LogicList<LogicInt>>): Goal =
+  { st: State ->
+  pause { ((ltlo(n,m)(st))
+            mplus
+            
+            (pause { ((eqlo(n,m)(st))
+                       bind
+                       ({ st: State ->
+                        pause { val x : Term<LogicList<LogicInt>> = freshTypedVar();
+                                ((poso(x)(st))
+                                  bind
+                                  (pluso(n,x,m)))
+                        } }))
+                       }))
+            }
+  }
+fun leo(n: Term<LogicList<LogicInt>>, m: Term<LogicList<LogicInt>>): Goal =
+  { st: State -> pause { (((n `===` m)(st))
+                           mplus
+                           
+                           (pause { lto(n,m)(st) })) } }
+fun splito(n: Term<LogicList<LogicInt>>, r: Term<LogicList<LogicInt>>,
+l: Term<LogicList<LogicInt>>, h: Term<LogicList<LogicInt>>): Goal =
+  { st: State ->
+  pause { (((((((n `===` zero)(st))
+                bind
+                ((h `===` zero))))
+              bind
+              ((l `===` zero))))
+            mplus
+            
+            (pause { (({ st: State ->
+                       pause { val b : Term<LogicInt> = freshTypedVar();
+                               val n_ : Term<LogicList<LogicInt>> = freshTypedVar();
+                               (((((((n `===` (0.toLogic() + (b + n_)))(st))
+                                     bind
+                                     ((r `===` zero))))
+                                   bind
+                                   ((h `===` (b + n_)))))
+                                 bind
+                                 ((l `===` zero)))
+                       } }(st))
+                      mplus
+                      (pause { (({ st: State ->
+                                 pause { val n_ : Term<LogicList<LogicInt>> = freshTypedVar();
+                                         (((((((n `===` (1.toLogic() + n_))(st))
+                                               bind
+                                               ((r `===` zero))))
+                                             bind
+                                             ((n_ `===` h))))
+                                           bind
+                                           ((l `===` one)))
+                                 } }(st))
+                                mplus
+                                (pause { (({ st: State ->
+                                           pause { val b : Term<LogicInt> = freshTypedVar();
+                                                   val n_ : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                   val a : Term<LogicInt> = freshTypedVar();
+                                                   val r_ : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                   (((((((n `===` (0.toLogic() + 
+                                                                  (b + n_)))(st))
+                                                         bind
+                                                         (((a + r_) `===` r))))
+                                                       bind
+                                                       ((l `===` zero))))
+                                                     bind
+                                                     (splito((b + n_),r_,zero,h)))
+                                           } }(st))
+                                          mplus
+                                          (pause { (({ st: State ->
+                                                     pause { val n_ : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                             val a : Term<LogicInt> = freshTypedVar();
+                                                             val r_ : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                             (((((((n `===` 
+                                                                  (1.toLogic() + n_))(st))
+                                                                   bind
+                                                                   ((r `===` 
+                                                                   (a + r_)))))
+                                                                 bind
+                                                                 ((l `===` one))))
+                                                               bind
+                                                               (splito(n_,r_,zero,h)))
+                                                     } }(st))
+                                                    mplus
+                                                    (pause { { st: State ->
+                                                             pause { 
+                                                             val b : Term<LogicInt> = freshTypedVar();
+                                                             val n_ : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                             val a : Term<LogicInt> = freshTypedVar();
+                                                             val r_ : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                             val l_ : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                             (((((((((n `===` 
+                                                                    (b + n_))(st))
+                                                                    bind
+                                                                    ((r `===` 
+                                                                    (a + r_)))))
+                                                                   bind
+                                                                   ((l `===` 
+                                                                   (b + l_)))))
+                                                                 bind
+                                                                 (poso(l_))))
+                                                               bind
+                                                               (splito(n_,r_,l_,h)))
+                                                             } }(st)
+                                                               }))
+                                                    }))
+                                          }))
+                                 }))
+                                 }))
+                      }
+                       }
+fun divo(n: Term<LogicList<LogicInt>>, m: Term<LogicList<LogicInt>>,
+q: Term<LogicList<LogicInt>>, r: Term<LogicList<LogicInt>>): Goal =
+  { st: State ->
+  pause { (((((((r `===` n)(st))
+                bind
+                ((q `===` zero))))
+              bind
+              (lto(n,m))))
+            mplus
+            
+            (pause { (((((((((q `===` one)(st))
+                             bind
+                             (eqlo(n,m))))
+                           bind
+                           (pluso(r,m,n))))
+                         bind
+                         (lto(r,m))))
+                       mplus
+                       
+                       (pause { ((((((ltlo(m,n)(st))
+                                      bind
+                                      (lto(r,m))))
+                                    bind
+                                    (poso(q))))
+                                  bind
+                                  ({ st: State ->
+                                   pause { val nh : Term<LogicList<LogicInt>> = freshTypedVar();
+                                           val nl : Term<LogicList<LogicInt>> = freshTypedVar();
+                                           val qh : Term<LogicList<LogicInt>> = freshTypedVar();
+                                           val ql : Term<LogicList<LogicInt>> = freshTypedVar();
+                                           val qlm : Term<LogicList<LogicInt>> = freshTypedVar();
+                                           val qlmr : Term<LogicList<LogicInt>> = freshTypedVar();
+                                           val rr : Term<LogicList<LogicInt>> = freshTypedVar();
+                                           val rh : Term<LogicList<LogicInt>> = freshTypedVar();
+                                           ((((splito(n,r,nl,nh)(st))
+                                               bind
+                                               (splito(q,r,ql,qh))))
+                                             bind
+                                             ({ st: State ->
+                                              pause { (((((((((nh `===` zero)(st))
+                                                              bind
+                                                              ((qh `===` zero))))
+                                                            bind
+                                                            (minuso(nl,r,qlm))))
+                                                          bind
+                                                          (multo(ql,m,qlm))))
+                                                        mplus
+                                                        
+                                                        (pause { ((((
+                                                                    ((
+                                                                    ((
+                                                                    ((
+                                                                    poso(nh)(st))
+                                                                    bind
+                                                                    (
+                                                                    multo(ql,m,qlm))))
+                                                                    bind
+                                                                    (
+                                                                    pluso(qlm,r,qlmr))))
+                                                                    bind
+                                                                    (
+                                                                    minuso(qlmr,nl,rr))))
+                                                                    bind
+                                                                    (
+                                                                    splito(rr,r,zero,rh))))
+                                                                   bind
+                                                                   (divo(nh,m,qh,rh)))
+                                                         }))
+                                              } }))
+                                           }
+                                   }))
+                                  }))
+                       }))
+            }
+            }
+fun repeated_mul(n: Term<LogicList<LogicInt>>, q: Term<LogicList<LogicInt>>,
+nq: Term<LogicList<LogicInt>>): Goal =
+  { st: State ->
+  pause { ((((((poso(n)(st))
+                bind
+                ((q `===` zero))))
+              bind
+              ((nq `===` one))))
+            mplus
+            
+            (pause { (((((q `===` one)(st))
+                         bind
+                         ((n `===` nq))))
+                       mplus
+                       
+                       (pause { ((gt1o(q)(st))
+                                  bind
+                                  ({ st: State ->
+                                   pause { val q1 : Term<LogicList<LogicInt>> = freshTypedVar();
+                                           val nq1 : Term<LogicList<LogicInt>> = freshTypedVar();
+                                           ((((pluso(q1,one,q)(st))
+                                               bind
+                                               (repeated_mul(n,q1,nq1))))
+                                             bind
+                                             (multo(nq1,n,nq)))
+                                   } }))
+                                  }))
+                       }))
+            }
+  }
+fun exp2(n: Term<LogicList<LogicInt>>, b: Term<LogicList<LogicInt>>,
+q: Term<LogicList<LogicInt>>): Goal =
+  { st: State ->
+  pause { (((((n `===` one)(st))
+              bind
+              ((q `===` zero))))
+            mplus
+            
+            (pause { ((((((gt1o(n)(st))
+                           bind
+                           ((q `===` one))))
+                         bind
+                         ({ st: State ->
+                          pause { val s : Term<LogicList<LogicInt>> = freshTypedVar();
+                                  splito(n,b,s,one)(st)
+                          } })))
+                      mplus
+                      (pause { (({ st: State ->
+                                 pause { val q1 : Term<LogicList<LogicInt>> = freshTypedVar();
+                                         val b2 : Term<LogicList<LogicInt>> = freshTypedVar();
+                                         (((((((((q `===` (0.toLogic() + q1))(st))
+                                                 bind
+                                                 (poso(q1))))
+                                               bind
+                                               (ltlo(b,n))))
+                                             bind
+                                             (appendo(b,(1.toLogic() + b),b2))))
+                                           bind
+                                           (exp2(n,b2,q1)))
+                                 } }(st))
+                                mplus
+                                (pause { { st: State ->
+                                         pause { val q1 : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                 val nh : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                 val b2 : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                 val s : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                 (((((((((((q `===` (1.toLogic() + q1))(st))
+                                                           bind
+                                                           (poso(q1))))
+                                                         bind
+                                                         (poso(nh))))
+                                                       bind
+                                                       (splito(n,b,s,nh))))
+                                                     bind
+                                                     (appendo(b,(1.toLogic() + b),b2))))
+                                                   bind
+                                                   (exp2(nh,b2,q1)))
+                                         } }(st)
+                                           }))
+                                }))
+                      }))
+             }
+            }
+fun logo(n: Term<LogicList<LogicInt>>, b: Term<LogicList<LogicInt>>,
+q: Term<LogicList<LogicInt>>, r: Term<LogicList<LogicInt>>): Goal =
+  { st: State ->
+  pause { (((((((((n `===` one)(st))
+                  bind
+                  (poso(b))))
+                bind
+                ((q `===` zero))))
+              bind
+              ((r `===` zero))))
+            mplus
+            
+            (pause { (((((((q `===` zero)(st))
+                           bind
+                           (lto(n,b))))
+                         bind
+                         (pluso(r,one,n))))
+                       mplus
+                       
+                       (pause { (((((((((q `===` one)(st))
+                                        bind
+                                        (gt1o(b))))
+                                      bind
+                                      (eqlo(n,b))))
+                                    bind
+                                    (pluso(r,b,n))))
+                                  mplus
+                                  
+                                  (pause { (((((((b `===` one)(st))
+                                                 bind
+                                                 (poso(q))))
+                                               bind
+                                               (pluso(r,one,n))))
+                                             mplus
+                                             
+                                             (pause { (((((((b `===` zero)(st))
+                                                            bind
+                                                            (poso(q))))
+                                                          bind
+                                                          ((r `===` n))))
+                                                        mplus
+                                                        
+                                                        (pause { (((((
+                                                                    (0.toLogic() + 
+                                                                    (1.toLogic() + nilLogicList())) `===` b)(st))
+                                                                    bind
+                                                                    (
+                                                                    { st: State ->
+                                                                    pause { 
+                                                                    val a : Term<LogicInt> = freshTypedVar();
+                                                                    val ad : Term<LogicInt> = freshTypedVar();
+                                                                    val dd : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                                    ((
+                                                                    ((
+                                                                    ((
+                                                                    poso(dd)(st))
+                                                                    bind
+                                                                    ((n `===` 
+                                                                    (a + 
+                                                                    (ad + dd))))))
+                                                                    bind
+                                                                    (
+                                                                    exp2(n,nilLogicList(),q))))
+                                                                    bind
+                                                                    (
+                                                                    { st: State ->
+                                                                    pause { 
+                                                                    val s : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                                    splito(n,dd,r,s)(st)
+                                                                    } }))
+                                                                    } })))
+                                                                    mplus
+                                                                    
+                                                                    (
+                                                                    pause { 
+                                                                    ((
+                                                                    ((
+                                                                    { st: State ->
+                                                                    pause { 
+                                                                    val a : Term<LogicInt> = freshTypedVar();
+                                                                    val ad : Term<LogicInt> = freshTypedVar();
+                                                                    val add : Term<LogicInt> = freshTypedVar();
+                                                                    val ddd : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                                    { st: State ->
+                                                                    pause { 
+                                                                    (((b `===` three)(st))
+                                                                    mplus
+                                                                    
+                                                                    (
+                                                                    pause { (b `===` 
+                                                                    (a + 
+                                                                    (ad + 
+                                                                    (add + ddd))))(st)
+                                                                    })) } }(st)
+                                                                    } }(st))
+                                                                    bind
+                                                                    (
+                                                                    ltlo(b,n))))
+                                                                    bind
+                                                                    (
+                                                                    { st: State ->
+                                                                    pause { 
+                                                                    val bw1 : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                                    val bw : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                                    val nw : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                                    val nw1 : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                                    val ql1 : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                                    val ql : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                                    val s : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                                    ((
+                                                                    ((
+                                                                    ((
+                                                                    ((
+                                                                    ((
+                                                                    ((
+                                                                    ((
+                                                                    ((
+                                                                    ((
+                                                                    exp2(b,zero,bw1)(st))
+                                                                    bind
+                                                                    (
+                                                                    pluso(bw1,one,bw))))
+                                                                    bind
+                                                                    (
+                                                                    ltlo(q,n))))
+                                                                    bind
+                                                                    (
+                                                                    { st: State ->
+                                                                    pause { 
+                                                                    val q1 : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                                    val bwq1 : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                                    ((
+                                                                    ((
+                                                                    pluso(q,one,q1)(st))
+                                                                    bind
+                                                                    (
+                                                                    multo(bw,q1,bwq1))))
+                                                                    bind
+                                                                    (
+                                                                    lto(nw1,bwq1)))
+                                                                    } })))
+                                                                    bind
+                                                                    (
+                                                                    exp2(n,zero,nw1))))
+                                                                    bind
+                                                                    (
+                                                                    pluso(nw1,one,nw))))
+                                                                    bind
+                                                                    (
+                                                                    divo(nw,bw,ql1,s))))
+                                                                    bind
+                                                                    (
+                                                                    pluso(ql,one,ql1))))
+                                                                    bind
+                                                                    (
+                                                                    lelo(ql,q))))
+                                                                    bind
+                                                                    (
+                                                                    { st: State ->
+                                                                    pause { 
+                                                                    val bql : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                                    val qh : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                                    val s2 : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                                    val qdh : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                                    val qd : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                                    ((
+                                                                    ((
+                                                                    ((
+                                                                    ((
+                                                                    ((
+                                                                    repeated_mul(b,ql,bql)(st))
+                                                                    bind
+                                                                    (
+                                                                    divo(nw,bw1,qh,s2))))
+                                                                    bind
+                                                                    (
+                                                                    pluso(ql,qdh,qh))))
+                                                                    bind
+                                                                    (
+                                                                    pluso(ql,qd,q))))
+                                                                    bind
+                                                                    (
+                                                                    leo(qd,qdh))))
+                                                                    bind
+                                                                    (
+                                                                    { st: State ->
+                                                                    pause { 
+                                                                    val bqd : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                                    val bq1 : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                                    val bq : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                                    ((
+                                                                    ((
+                                                                    ((
+                                                                    ((
+                                                                    repeated_mul(b,qd,bqd)(st))
+                                                                    bind
+                                                                    (
+                                                                    multo(bql,bqd,bq))))
+                                                                    bind
+                                                                    (
+                                                                    multo(b,bq,bq1))))
+                                                                    bind
+                                                                    (
+                                                                    pluso(bq,r,n))))
+                                                                    bind
+                                                                    (
+                                                                    lto(n,bq1)))
+                                                                    } }))
+                                                                    } }))
+                                                                    } })) }))
+                                                                    })) }))
+                                                                  }))
+                                                        }))
+                                             }))
+                                  }
+                                  }
+fun expo(b: Term<LogicList<LogicInt>>, q: Term<LogicList<LogicInt>>,
+n: Term<LogicList<LogicInt>>): Goal =
+  logo(n,b,q,zero)
 // Put epilogue here 
