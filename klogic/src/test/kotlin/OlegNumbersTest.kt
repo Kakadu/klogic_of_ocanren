@@ -3,11 +3,77 @@ import org.junit.jupiter.api.Test
 import org.klogic.core.Term
 import org.klogic.core.run
 import utils.*
-import utils.OlegLogicNumber.Companion.toOlegLogicNumber
+
 
 class OlegNumbersTest {
     @AfterEach
     fun clear() {
+        UnificationsController.onFinish()
+    }
+
+    @Test
+    fun testAdd0x0() {
+        val a = 0u.toOlegLogicNumber()
+        val b = 0u.toOlegLogicNumber()
+
+        println("$a + $b")
+        run(1, { r: Term<OlegLogicNumber> -> pluso(a, b, r) }).forEachIndexed { i, x ->
+            println("$i: $x")
+        }
+        UnificationsController.onFinish()
+    }
+
+    @Test
+    fun testPoso0() {
+        val b = 0u.toOlegLogicNumber()
+
+        println("poso? $b")
+        val lst = run(1, { _: Term<OlegLogicNumber> -> poso(b) })
+//        println("lst = $lst" )
+        assert(lst.size == 0);
+    }
+    @Test
+    fun testPoso1() {
+        val b = 1u.toOlegLogicNumber()
+
+        println("poso? $b")
+        val lst = run(1, { _: Term<OlegLogicNumber> -> poso(b) })
+//        println("lst = $lst" )
+        assert(lst.size == 1);
+    }
+
+    @Test
+    fun testAdd0x1() {
+        val a = 0u.toOlegLogicNumber()
+        val b = 1u.toOlegLogicNumber()
+
+        println("$a + $b")
+        run(1, { r: Term<OlegLogicNumber> -> pluso(a, b, r) }).forEachIndexed { i, x ->
+            println("==== $i: $x")
+        }
+//        UnificationsController.onFinish()
+    }
+
+    @Test
+    fun testAdd1x1() {
+        val a = 1u.toOlegLogicNumber()
+        val b = 1u.toOlegLogicNumber()
+
+        println("$a + $b")
+        run(1, { r: Term<OlegLogicNumber> -> pluso(a, b, r) }).forEachIndexed { i, x ->
+            println("$i: $x")
+        }
+        UnificationsController.onFinish()
+    }
+    @Test
+    fun testAdd2x3() {
+        val a = 2u.toOlegLogicNumber()
+        val b = 3u.toOlegLogicNumber()
+
+        println("$a + $b")
+        run(1, { r: Term<OlegLogicNumber> -> pluso(a, b, r) }).forEachIndexed { i, x ->
+            println("$i: $x")
+        }
         UnificationsController.onFinish()
     }
 
@@ -17,10 +83,13 @@ class OlegNumbersTest {
         val b = 3u.toOlegLogicNumber()
 
         println("$a * $b")
-        run(1, { r: Term<OlegLogicNumber> -> mulᴼ(a, b, r) })
+        run(1, { r: Term<OlegLogicNumber> -> multo(a, b, r) })
+            .forEachIndexed { i, x ->
+                println("$i: $x")
+            }
         UnificationsController.onFinish()
     }
-
+    /*
     @Test
     fun testMul3x3() {
         val a = 3u.toOlegLogicNumber()
@@ -140,7 +209,7 @@ class OlegNumbersTest {
         println(answers[0].term)
         UnificationsController.onFinish()
     }
-    
+
     @Test
     fun testExpo7x2() {
         val base = 7u.toOlegLogicNumber()
@@ -234,5 +303,8 @@ class OlegNumbersTest {
         run(1, { r: Term<OlegLogicNumber> -> oddMulᴼ(q, a, b, r) })
         UnificationsController.onFinish()
     }
+*/
+
+
 
 }

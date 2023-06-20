@@ -5,275 +5,436 @@
   package utils
   
   import org.klogic.core.*
-  import org.klogic.utils.terms.*
+  import org.klogic.utils.terms.LogicList
   import org.klogic.utils.terms.LogicList.Companion.logicListOf
   import org.klogic.utils.terms.Nil.nilLogicList
-  import org.klogic.utils.terms.Symbol.Companion.toSymbol
+  import org.klogic.utils.terms.plus
+  import utils.LogicInt.Companion.toLogic
   
-  // There are 8 relations
-  fun poso(n: Term<LogicList<LogicInt>>) =
-    { st -> pause { fresh { h, t ->
-                      (n `===` (h + t))(st)} } }
-  fun zeroo(n: Term<LogicList<LogicInt>>) =
-    (logicListOf() `===` n)
+  val digitZero: Digit = 0.toLogic()
+  val digitOne: Digit = 1.toLogic()
+  
+  typealias Digit = LogicInt
+  typealias OlegLogicNumber = LogicList<Digit>
+  
+  val zero: OlegLogicNumber = logicListOf()
+  val one: OlegLogicNumber = logicListOf( 1.toLogic() )
+  
+  fun UInt.toOlegLogicNumber(): OlegLogicNumber = toLogicList()
+  fun UInt.toLogicList(): LogicList<Digit> =
+      when {
+          this == 0u -> nilLogicList()
+          this % 2u == 0u -> digitZero + (this / 2u).toLogicList()
+          else -> digitOne + (this / 2u).toLogicList()
+      }
+  
+  fun <T> pause(f: () -> RecursiveStream<T>): RecursiveStream<T> = ThunkStream(f)
+  
+  
+  // There are 12 relations
+  fun poso(n: Term<LogicList<LogicInt>>): Goal =
+    { st: State ->
+    pause { val h : Term<LogicInt> = freshTypedVar();
+            val t : Term<LogicList<LogicInt>> = freshTypedVar();
+            (n `===` (h + t))(st)
+    } }
+  fun zeroo(n: Term<LogicList<LogicInt>>): Goal =
+    (n `===` nilLogicList())
   fun appendo(l: Term<LogicList<LogicInt>>, s: Term<LogicList<LogicInt>>,
-  out: Term<LogicList<LogicInt>>) =
-    { st ->
-    pause { mplus(
-              bind(
-                (l `===` logicListOf())(st),
-                (s `===` out)
-                ),
-              pause { { st ->
-                      pause { fresh { a, d, res ->
-                                bind(
-                                  bind(
-                                    ((a + d) `===` l)(st),
-                                    ((a + res) `===` out)
-                                    ),
-                                  appendo(d,s,res)
-                                  )}
-                      } }(st)
-                        })
+  out: Term<LogicList<LogicInt>>): Goal =
+    { st: State ->
+    pause { (((((l `===` nilLogicList())(st))
+                bind
+                ((s `===` out))))
+              mplus
+              
+              (pause { { st: State ->
+                       pause { val a : Term<LogicInt> = freshTypedVar();
+                               val d : Term<LogicList<LogicInt>> = freshTypedVar();
+                               val res : Term<LogicList<LogicInt>> = freshTypedVar();
+                               ((((((a + d) `===` l)(st))
+                                   bind
+                                   (((a + res) `===` out))))
+                                 bind
+                                 (appendo(d,s,res)))
+                       } }(st)
+                         }))
               }
     }
+  fun gt1o(n: Term<LogicList<LogicInt>>): Goal =
+    { st: State ->
+    pause { val a : Term<LogicInt> = freshTypedVar();
+            val ad : Term<LogicInt> = freshTypedVar();
+            val dd : Term<LogicList<LogicInt>> = freshTypedVar();
+            (n `===` (a + (ad + dd)))(st)
+    } }
   fun full_addero(b: Term<LogicInt>, x: Term<LogicInt>, y: Term<LogicInt>,
-  r: Term<LogicInt>, c: Term<LogicInt>) =
-    { st ->
-    pause { mplus(
-              bind(
-                bind(
-                  bind(
-                    bind(
-                      (0 `===` b)(st),
-                      (0 `===` x)
-                      ),
-                    (0 `===` y)
-                    ),
-                  (0 `===` r)
-                  ),
-                (0 `===` c)
-                ),
-              pause { mplus(
-                        bind(
-                          bind(
-                            bind(
-                              bind(
-                                (1 `===` b)(st),
-                                (0 `===` x)
-                                ),
-                              (0 `===` y)
-                              ),
-                            (1 `===` r)
-                            ),
-                          (0 `===` c)
-                          ),
-                        pause { mplus(
-                                  bind(
-                                    bind(
-                                      bind(
-                                        bind(
-                                          (0 `===` b)(st),
-                                          (1 `===` x)
-                                          ),
-                                        (0 `===` y)
-                                        ),
-                                      (1 `===` r)
-                                      ),
-                                    (0 `===` c)
-                                    ),
-                                  pause { mplus(
-                                            bind(
-                                              bind(
-                                                bind(
-                                                  bind(
-                                                    (1 `===` b)(st),
-                                                    (1 `===` x)
-                                                    ),
-                                                  (0 `===` y)
-                                                  ),
-                                                (0 `===` r)
-                                                ),
-                                              (1 `===` c)
-                                              ),
-                                            pause { mplus(
-                                                      bind(
-                                                        bind(
-                                                          bind(
-                                                            bind(
-                                                              (0 `===` b)(st),
-                                                              (0 `===` x)
-                                                              ),
-                                                            (1 `===` y)
-                                                            ),
-                                                          (1 `===` r)
-                                                          ),
-                                                        (0 `===` c)
-                                                        ),
-                                                      pause { mplus(
-                                                                bind(
-                                                                  bind(
-                                                                    bind(
-                                                                      bind(
-                                                                      (1 `===` b)(st),
-                                                                      (0 `===` x)
-                                                                      ),
-                                                                      (1 `===` y)
-                                                                      ),
-                                                                    (0 `===` r)
-                                                                    ),
-                                                                  (1 `===` c)
-                                                                  ),
-                                                                pause { 
-                                                                mplus(
-                                                                  bind(
-                                                                    bind(
-                                                                      bind(
-                                                                      bind(
-                                                                      (0 `===` b)(st),
-                                                                      (1 `===` x)
-                                                                      ),
-                                                                      (1 `===` y)
-                                                                      ),
-                                                                      (0 `===` r)
-                                                                      ),
-                                                                    (1 `===` c)
-                                                                    ),
-                                                                  pause { 
-                                                                  bind(
-                                                                    bind(
-                                                                      bind(
-                                                                      bind(
-                                                                      (1 `===` b)(st),
-                                                                      (1 `===` x)
-                                                                      ),
-                                                                      (1 `===` y)
-                                                                      ),
-                                                                      (1 `===` r)
-                                                                      ),
-                                                                    (1 `===` c)
-                                                                    )
-                                                                  })
-                                                                })
-                                                      })
-                                            })
-                                  })
-                        })
-              })
+  r: Term<LogicInt>, c: Term<LogicInt>): Goal =
+    { st: State ->
+    pause { (((((((((((0.toLogic() `===` b)(st))
+                      bind
+                      ((0.toLogic() `===` x))))
+                    bind
+                    ((0.toLogic() `===` y))))
+                  bind
+                  ((0.toLogic() `===` r))))
+                bind
+                ((0.toLogic() `===` c))))
+              mplus
+              
+              (pause { (((((((((((1.toLogic() `===` b)(st))
+                                 bind
+                                 ((0.toLogic() `===` x))))
+                               bind
+                               ((0.toLogic() `===` y))))
+                             bind
+                             ((1.toLogic() `===` r))))
+                           bind
+                           ((0.toLogic() `===` c))))
+                         mplus
+                         
+                         (pause { (((((((((((0.toLogic() `===` b)(st))
+                                            bind
+                                            ((1.toLogic() `===` x))))
+                                          bind
+                                          ((0.toLogic() `===` y))))
+                                        bind
+                                        ((1.toLogic() `===` r))))
+                                      bind
+                                      ((0.toLogic() `===` c))))
+                                    mplus
+                                    
+                                    (pause { (((((((((((1.toLogic() `===` b)(st))
+                                                       bind
+                                                       ((1.toLogic() `===` x))))
+                                                     bind
+                                                     ((0.toLogic() `===` y))))
+                                                   bind
+                                                   ((0.toLogic() `===` r))))
+                                                 bind
+                                                 ((1.toLogic() `===` c))))
+                                               mplus
+                                               
+                                               (pause { (((((((((((0.toLogic() `===` b)(st))
+                                                                  bind
+                                                                  ((0.toLogic() `===` x))))
+                                                                bind
+                                                                ((1.toLogic() `===` y))))
+                                                              bind
+                                                              ((1.toLogic() `===` r))))
+                                                            bind
+                                                            ((0.toLogic() `===` c))))
+                                                          mplus
+                                                          
+                                                          (pause { ((((
+                                                                      ((
+                                                                      ((
+                                                                      (((1.toLogic() `===` b)(st))
+                                                                      bind
+                                                                      ((0.toLogic() `===` x))))
+                                                                      bind
+                                                                      ((1.toLogic() `===` y))))
+                                                                      bind
+                                                                      ((0.toLogic() `===` r))))
+                                                                      bind
+                                                                      ((1.toLogic() `===` c))))
+                                                                     mplus
+                                                                     
+                                                                     (pause { 
+                                                                      ((
+                                                                      ((
+                                                                      ((
+                                                                      ((
+                                                                      (((0.toLogic() `===` b)(st))
+                                                                      bind
+                                                                      ((1.toLogic() `===` x))))
+                                                                      bind
+                                                                      ((1.toLogic() `===` y))))
+                                                                      bind
+                                                                      ((0.toLogic() `===` r))))
+                                                                      bind
+                                                                      ((1.toLogic() `===` c))))
+                                                                      mplus
+                                                                      
+                                                                      (
+                                                                      pause { 
+                                                                      ((
+                                                                      ((
+                                                                      ((
+                                                                      (((1.toLogic() `===` b)(st))
+                                                                      bind
+                                                                      ((1.toLogic() `===` x))))
+                                                                      bind
+                                                                      ((1.toLogic() `===` y))))
+                                                                      bind
+                                                                      ((1.toLogic() `===` r))))
+                                                                      bind
+                                                                      ((1.toLogic() `===` c)))
+                                                                      })) }))
+                                                           }))
+                                                }))
+                                     }))
+                          }))
+               }))
     } }
   fun addero(d: Term<LogicInt>, n: Term<LogicList<LogicInt>>,
-  m: Term<LogicList<LogicInt>>, r: Term<LogicList<LogicInt>>) =
-    { st ->
-    pause { mplus(
-              bind(
-                bind(
-                  (0 `===` d)(st),
-                  (logicListOf() `===` m)
-                  ),
-                (n `===` r)
-                ),
-              pause { mplus(
-                        bind(
-                          bind(
-                            bind(
-                              (0 `===` d)(st),
-                              (logicListOf() `===` n)
-                              ),
-                            (m `===` r)
-                            ),
-                          poso(m)
-                          ),
-                        pause { mplus(
-                                  bind(
-                                    bind(
-                                      (1 `===` d)(st),
-                                      (logicListOf() `===` m)
-                                      ),
-                                    addero(0,n,one,r)
-                                    ),
-                                  pause { mplus(
-                                            bind(
-                                              bind(
-                                                bind(
-                                                  (1 `===` d)(st),
-                                                  (logicListOf() `===` n)
-                                                  ),
-                                                poso(m)
-                                                ),
-                                              addero(0,m,one,r)
-                                              ),
-                                            pause { mplus(
-                                                      bind(
-                                                        bind(
-                                                          (n `===` one)(st),
-                                                          (m `===` one)
-                                                          ),
-                                                        { st ->
-                                                        pause { fresh { a, c ->
-                                                                  bind(
-                                                                    (OCanren.Std.%<(a,c) `===` r)(st),
-                                                                    full_addero(d,1,1,a,c)
-                                                                    )}
-                                                        } } ),
-                                                      pause { mplus(
-                                                                bind(
-                                                                  (n `===` one)(st),
-                                                                  gen_addero(d,n,m,r)
-                                                                  ),
-                                                                pause { 
-                                                                mplus(
-                                                                  bind(
-                                                                    bind(
-                                                                      bind(
-                                                                      (m `===` one)(st),
-                                                                      gt1o(n)
-                                                                      ),
-                                                                      gt1o(r)
-                                                                      ),
-                                                                    addero(d,one,n,r)
-                                                                    ),
-                                                                  pause { 
-                                                                  bind(
-                                                                    gt1o(n)(st),
-                                                                    gen_addero(d,n,m,r)
-                                                                    )
-                                                                  })
-                                                                })
-                                                      })
-                                                      })
-                                            })
-                                  })
-                        })
+  m: Term<LogicList<LogicInt>>, r: Term<LogicList<LogicInt>>): Goal =
+    { st: State ->
+    pause { (((((((0.toLogic() `===` d)(st))
+                  bind
+                  ((m `===` nilLogicList()))))
+                bind
+                ((n `===` r))))
+              mplus
+              
+              (pause { (((((((((0.toLogic() `===` d)(st))
+                               bind
+                               ((n `===` nilLogicList()))))
+                             bind
+                             ((m `===` r))))
+                           bind
+                           (poso(m))))
+                         mplus
+                         
+                         (pause { (((((((1.toLogic() `===` d)(st))
+                                        bind
+                                        ((m `===` nilLogicList()))))
+                                      bind
+                                      (addero(0.toLogic(),n,one,r))))
+                                    mplus
+                                    
+                                    (pause { (((((((((1.toLogic() `===` d)(st))
+                                                     bind
+                                                     ((n `===` nilLogicList()))))
+                                                   bind
+                                                   (poso(m))))
+                                                 bind
+                                                 (addero(0.toLogic(),m,one,r))))
+                                               mplus
+                                               
+                                               (pause { (((((((n `===` one)(st))
+                                                              bind
+                                                              ((m `===` one))))
+                                                            bind
+                                                            ({ st: State ->
+                                                             pause { val a : Term<LogicInt> = freshTypedVar();
+                                                                     val c : Term<LogicInt> = freshTypedVar();
+                                                                     (((
+                                                                      (a + 
+                                                                      (c + nilLogicList())) `===` r)(st))
+                                                                      bind
+                                                                      (
+                                                                      full_addero(d,1.toLogic(),1.toLogic(),a,c)))
+                                                             } })))
+                                                         mplus
+                                                         (pause { (((((n `===` one)(st))
+                                                                      bind
+                                                                      (
+                                                                      gen_addero(d,n,m,r))))
+                                                                    mplus
+                                                                    
+                                                                    (pause { 
+                                                                     ((
+                                                                      ((
+                                                                      ((
+                                                                      (((m `===` one)(st))
+                                                                      bind
+                                                                      (gt1o(n))))
+                                                                      bind
+                                                                      (gt1o(r))))
+                                                                      bind
+                                                                      (
+                                                                      addero(d,one,n,r))))
+                                                                      mplus
+                                                                      
+                                                                      (
+                                                                      pause { 
+                                                                      ((
+                                                                      gt1o(n)(st))
+                                                                      bind
+                                                                      (
+                                                                      gen_addero(d,n,m,r)))
+                                                                      }))
+                                                                     }))
+                                                          }))
+                                                          }))
+                                               }))
+                                    }))
+                         }))
               }
     }
   fun gen_addero(d: Term<LogicInt>, n: Term<LogicList<LogicInt>>,
-  m: Term<LogicList<LogicInt>>, r: Term<LogicList<LogicInt>>) =
-    { st ->
-    pause { fresh { a, b, c, e, x, y, z ->
-              bind(
-                bind(
-                  bind(
-                    bind(
-                      bind(
-                        bind(
-                          ((a + x) `===` n)(st),
-                          ((b + y) `===` m)
-                          ),
-                        poso(y)
-                        ),
-                      ((c + z) `===` r)
-                      ),
-                    poso(z)
-                    ),
-                  full_addero(d,a,b,c,e)
-                  ),
-                addero(e,x,y,z)
-                )}
+  m: Term<LogicList<LogicInt>>, r: Term<LogicList<LogicInt>>): Goal =
+    { st: State ->
+    pause { val a : Term<LogicInt> = freshTypedVar();
+            val b : Term<LogicInt> = freshTypedVar();
+            val c : Term<LogicInt> = freshTypedVar();
+            val e : Term<LogicInt> = freshTypedVar();
+            val x : Term<LogicList<LogicInt>> = freshTypedVar();
+            val y : Term<LogicList<LogicInt>> = freshTypedVar();
+            val z : Term<LogicList<LogicInt>> = freshTypedVar();
+            ((((((((((((((a + x) `===` n)(st))
+                        bind
+                        (((b + y) `===` m))))
+                      bind
+                      (poso(y))))
+                    bind
+                    (((c + z) `===` r))))
+                  bind
+                  (poso(z))))
+                bind
+                (full_addero(d,a,b,c,e))))
+              bind
+              (addero(e,x,y,z)))
     } }
   fun pluso(n: Term<LogicList<LogicInt>>, m: Term<LogicList<LogicInt>>,
-  k: Term<LogicList<LogicInt>>) =
-    addero(0,n,m,k)
+  k: Term<LogicList<LogicInt>>): Goal =
+    addero(0.toLogic(),n,m,k)
   fun minuso(n: Term<LogicList<LogicInt>>, m: Term<LogicList<LogicInt>>,
-  k: Term<LogicList<LogicInt>>) =
+  k: Term<LogicList<LogicInt>>): Goal =
     pluso(m,k,n)
+  fun bound_multo(q: Term<LogicList<LogicInt>>, p: Term<LogicList<LogicInt>>,
+  n: Term<LogicList<LogicInt>>, m: Term<LogicList<LogicInt>>): Goal =
+    { st: State ->
+    pause { (((((q `===` zero)(st))
+                bind
+                (poso(p))))
+              mplus
+              
+              (pause { { st: State ->
+                       pause { val a0 : Term<LogicInt> = freshTypedVar();
+                               val a1 : Term<LogicInt> = freshTypedVar();
+                               val a2 : Term<LogicInt> = freshTypedVar();
+                               val a3 : Term<LogicInt> = freshTypedVar();
+                               val x : Term<LogicList<LogicInt>> = freshTypedVar();
+                               val y : Term<LogicList<LogicInt>> = freshTypedVar();
+                               val z : Term<LogicList<LogicInt>> = freshTypedVar();
+                               (((((q `===` (a0 + x))(st))
+                                   bind
+                                   ((p `===` (a1 + y)))))
+                                 bind
+                                 ({ st: State ->
+                                  pause { (((((((n `===` zero)(st))
+                                                bind
+                                                ((m `===` (a2 + z)))))
+                                              bind
+                                              (bound_multo(x,y,z,zero))))
+                                            mplus
+                                            
+                                            (pause { (((n `===` (a3 + z))(st))
+                                                       bind
+                                                       (bound_multo(x,y,z,m)))
+                                             }))
+                                  } }))
+                               }
+                       }(st) }))
+              }
+              }
+  fun multo(n: Term<LogicList<LogicInt>>, m: Term<LogicList<LogicInt>>,
+  p: Term<LogicList<LogicInt>>): Goal =
+    { st: State ->
+    pause { (((((n `===` zero)(st))
+                bind
+                ((p `===` zero))))
+              mplus
+              
+              (pause { ((((((poso(n)(st))
+                             bind
+                             ((m `===` zero))))
+                           bind
+                           ((p `===` zero))))
+                         mplus
+                         
+                         (pause { (((((((n `===` one)(st))
+                                        bind
+                                        (poso(m))))
+                                      bind
+                                      ((m `===` p))))
+                                    mplus
+                                    
+                                    (pause { ((((((gt1o(n)(st))
+                                                   bind
+                                                   ((m `===` one))))
+                                                 bind
+                                                 ((n `===` p))))
+                                               mplus
+                                               
+                                               (pause { (({ st: State ->
+                                                          pause { val x : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                                  val z : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                                  ((((((
+                                                                      ((
+                                                                      (((n `===` 
+                                                                      (0.toLogic() + x))(st))
+                                                                      bind
+                                                                      (poso(x))))
+                                                                      bind
+                                                                      ((p `===` 
+                                                                      (0.toLogic() + z)))))
+                                                                      bind
+                                                                      (poso(z))))
+                                                                      bind
+                                                                      (gt1o(m))))
+                                                                    bind
+                                                                    (multo(x,m,z)))
+                                                          } }(st))
+                                                         mplus
+                                                         (pause { (({ st: State ->
+                                                                    pause { 
+                                                                    val x : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                                    val y : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                                    ((((
+                                                                      ((
+                                                                      (((n `===` 
+                                                                      (1.toLogic() + x))(st))
+                                                                      bind
+                                                                      (poso(x))))
+                                                                      bind
+                                                                      ((m `===` 
+                                                                      (0.toLogic() + y)))))
+                                                                      bind
+                                                                      (poso(y))))
+                                                                      bind
+                                                                      (
+                                                                      multo(m,n,p)))
+                                                                    } }(st))
+                                                                   mplus
+                                                                   (pause { 
+                                                                    { st: State ->
+                                                                    pause { 
+                                                                    val x : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                                    val y : Term<LogicList<LogicInt>> = freshTypedVar();
+                                                                    ((((
+                                                                      ((
+                                                                      (((n `===` 
+                                                                      (1.toLogic() + x))(st))
+                                                                      bind
+                                                                      (poso(x))))
+                                                                      bind
+                                                                      ((m `===` 
+                                                                      (1.toLogic() + y)))))
+                                                                      bind
+                                                                      (poso(y))))
+                                                                      bind
+                                                                      (
+                                                                      odd_multo(x,n,m,p)))
+                                                                    } }(st)
+                                                                      }))
+                                                                   }))
+                                                         }))
+                                                }))
+                                     }))
+                          }))
+               }
+              }
+  fun odd_multo(x: Term<LogicList<LogicInt>>, n: Term<LogicList<LogicInt>>,
+  m: Term<LogicList<LogicInt>>, p: Term<LogicList<LogicInt>>): Goal =
+    { st: State ->
+    pause { val q : Term<LogicList<LogicInt>> = freshTypedVar();
+            ((((bound_multo(q,p,n,m)(st))
+                bind
+                (multo(x,m,q))))
+              bind
+              (pluso((0.toLogic() + q),m,p)))
+    } }
   // Put epilogue here 

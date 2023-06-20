@@ -29,10 +29,31 @@ let to_int : int Std.List.ground -> int =
 package utils
 
 import org.klogic.core.*
-import org.klogic.utils.terms.*
+import org.klogic.utils.terms.LogicList
 import org.klogic.utils.terms.LogicList.Companion.logicListOf
 import org.klogic.utils.terms.Nil.nilLogicList
-import org.klogic.utils.terms.Symbol.Companion.toSymbol
+import org.klogic.utils.terms.plus
+import utils.LogicInt.Companion.toLogic
+
+val digitZero: Digit = 0.toLogic()
+val digitOne: Digit = 1.toLogic()
+
+typealias Digit = LogicInt
+typealias OlegLogicNumber = LogicList<Digit>
+
+val zero: OlegLogicNumber = logicListOf()
+val one: OlegLogicNumber = logicListOf( 1.toLogic() )
+
+fun UInt.toOlegLogicNumber(): OlegLogicNumber = toLogicList()
+fun UInt.toLogicList(): LogicList<Digit> =
+    when {
+        this == 0u -> nilLogicList()
+        this % 2u == 0u -> digitZero + (this / 2u).toLogicList()
+        else -> digitOne + (this / 2u).toLogicList()
+    }
+
+fun <T> pause(f: () -> RecursiveStream<T>): RecursiveStream<T> = ThunkStream(f)
+
 |}]
 
 [@@@klogic.epilogue {|// Put epilogue here |}]
@@ -40,13 +61,29 @@ import org.klogic.utils.terms.Symbol.Companion.toSymbol
 [@@@klogic.type.mangle
 [ "int OCanren.ilogic OCanren.Std.List.injected", "Term<LogicList<LogicInt>>"
 ; "int OCanren__.Logic.ilogic", "Term<LogicInt>"
+; ( "(int OCanren__.Logic.ilogic, int OCanren__.Logic.ilogic \
+     OCanren.Std.List.injected)OCanren.Std.List.t OCanren__.Logic.ilogic"
+  , "Term<LogicList<LogicInt>>" )
+; ( "(int OCanren.ilogic, int OCanren.ilogic \
+     OCanren.Std.List.injected)OCanren.Std.List.t OCanren__.Logic.ilogic"
+  , "Term<LogicList<LogicInt>>" )
 ]]
 
+(*  *)
 let poso : int ilogic Std.List.injected -> OCanren.goal =
  fun n -> fresh (h t) (n === h % t)
 ;;
 
-let zeroo : int ilogic Std.List.injected -> goal = fun n -> OCanren.Std.nil () === n
+(* 
+let poso : int ilogic Std.List.injected -> OCanren.goal =
+ fun n st ->
+  pause (fun () ->
+    let h = State.fresh st in
+    let t = State.fresh st in
+    (n === h % t) st)
+;; *)
+
+let zeroo : int ilogic Std.List.injected -> goal = fun n -> n === OCanren.Std.nil ()
 
 (* Appendo is used in multiplication *)
 let rec appendo
@@ -81,7 +118,10 @@ let rec appendo
 let zero : injected = Std.nil ()
 let one : injected = !<(!!1)
 let three : injected = !!1 % !<(!!1)
-let gt1o n = fresh (a ad dd) (n === a % (ad % dd))
+
+let gt1o : int ilogic Std.List.injected -> goal =
+ fun n -> fresh (a ad dd) (n === a % (ad % dd))
+;;
 
 (* let check1 : _ -> _ -> _ -> OCanren.goal =
  fun b x c ->
@@ -193,11 +233,14 @@ let rec addero
   =
  fun d n m r ->
   conde
-    [ !!0 === d &&& (nil () === m) &&& (n === r)
-    ; !!0 === d &&& (nil () === n) &&& (m === r) &&& poso m
-    ; !!1 === d &&& (nil () === m) &&& addero !!0 n one r
-    ; !!1 === d &&& (nil () === n) &&& poso m &&& addero !!0 m one r
-    ; n === one &&& (m === one) &&& fresh (a c) (a %< c === r) (full_addero d !!1 !!1 a c)
+    [ !!0 === d &&& (m === nil ()) &&& (n === r)
+    ; !!0 === d &&& (n === nil ()) &&& (m === r) &&& poso m
+    ; !!1 === d &&& (m === nil ()) &&& addero !!0 n one r
+    ; !!1 === d &&& (n === nil ()) &&& poso m &&& addero !!0 m one r
+    ; n
+      === one
+      &&& (m === one)
+      &&& fresh (a c) (a % (c % Std.nil ()) === r) (full_addero d !!1 !!1 a c)
     ; n === one &&& gen_addero d n m r
     ; m === one &&& gt1o n &&& gt1o r &&& addero d one n r
     ; gt1o n &&& gen_addero d n m r
@@ -314,7 +357,11 @@ and gen_addero d n m r st =
 let pluso n m k = addero !!0 n m k
 let minuso n m k = pluso m k n
 
-let rec bound_multo q p n m =
+let rec bound_multo
+  :  int ilogic Std.List.injected -> int ilogic Std.List.injected
+  -> int ilogic Std.List.injected -> int ilogic Std.List.injected -> OCanren.goal
+  =
+ fun q p n m ->
   conde
     [ q === zero &&& poso p
     ; fresh
@@ -328,7 +375,11 @@ let rec bound_multo q p n m =
     ]
 ;;
 
-let rec multo n m p =
+let rec multo
+  :  int ilogic Std.List.injected -> int ilogic Std.List.injected
+  -> int ilogic Std.List.injected -> OCanren.goal
+  =
+ fun n m p ->
   conde
     [ n === zero &&& (p === zero)
     ; poso n &&& (m === zero) &&& (p === zero)
@@ -339,8 +390,15 @@ let rec multo n m p =
     ; fresh (x y) (n === !!1 % x) (poso x) (m === !!1 % y) (poso y) (odd_multo x n m p)
     ]
 
-and odd_multo x n m p = fresh q (bound_multo q p n m) (multo x m q) (pluso (!!0 % q) m p)
+and odd_multo
+  :  int ilogic Std.List.injected -> int ilogic Std.List.injected
+  -> int ilogic Std.List.injected -> int ilogic Std.List.injected -> OCanren.goal
+  =
+ fun x n m p -> fresh q (bound_multo q p n m) (multo x m q) (pluso (!!0 % q) m p)
+;;
 
+let _ = 1
+(*
 (*
 let rec bound_multo q p n m st =
   (* Printf.printf "bound_multo %s %s %s %s\n" (traceP q) (traceP p) (traceP n) (traceP m); *)
@@ -654,4 +712,5 @@ let show_num = GT.(show List.ground @@ show int)
 (* let num_reifier h = List.reify OCanren.reify h *)
 (* let runL n = run_r num_reifier show_num_logic n *)
 
+ *)
  *)

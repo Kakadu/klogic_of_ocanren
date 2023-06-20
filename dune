@@ -9,7 +9,7 @@
  (libraries OCanren)
  (wrapped false)
  (flags
-  (:standard -rectypes -dsource -dtypedtree))
+  (:standard -rectypes -dsource))
  (preprocess
   (pps ppx_hack GT.ppx_all)))
 

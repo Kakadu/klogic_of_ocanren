@@ -26,15 +26,23 @@ object UnificationsController {
 
 infix fun <T : Term<T>> Term<T>.debugUnify(other: Term<T>): Goal = { state: State ->
     if (System.getenv("SILENT_UNIFICATIONS") == null)
-        System.out.printf("%s %s\n", this, other)
+        System.out.printf("%s %s ", this, other)
     UnificationsController.onUnification()
 
-    (this unify other)(state)
+    val rez = (this unify other)(state)
+    if  (rez.msplit() != null)
+        System.out.printf("\n")
+    else System.out.printf(" _|_\n")
+    rez
+
 }
 
 typealias ListTerm<T> = Term<LogicList<T>>
 
-private var variableIndex: Int = 0
+private var variableIndex: Int = 10
+// This variable index clashes regularly wiht indexes introduced by `run`.
+// So I changed 0 -> 10
+// Kakadu
 
 fun <T : Term<T>> freshTypedVar(): Var<T> = (variableIndex++).createTypedVar()
 

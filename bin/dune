@@ -11,4 +11,4 @@
  (modules lib)
  (flags
   (:standard -rectypes))
- (libraries Tast_pattern ppxlib.stdppx compiler-libs.common))
+ (libraries str Tast_pattern ppxlib.stdppx compiler-libs.common))

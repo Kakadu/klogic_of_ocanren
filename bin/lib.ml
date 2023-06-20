@@ -22,7 +22,7 @@ type 'a ast =
   | Mplus of 'a * 'a
   | New_scope of 'a
   | Bind of 'a * 'a
-  | Fresh of string list * 'a
+  | Fresh of (string * Types.type_expr) list * 'a
   | Unify of ('t term as 't) * 't
   | Call_rel of Path.t * ('t term as 't) list
   | Other of Typedtree.expression
@@ -48,10 +48,10 @@ let pp_comma_list ppf =
 let pp_term_as_kotlin =
   let open Format in
   let rec helper ppf = function
-    | T_int n -> fprintf ppf "%d" n
+    | T_int n -> fprintf ppf "%d.toLogic()" n
     | T_list_init ls ->
       fprintf ppf "@[%a@]" (pp_print_list ~pp_sep:pp_print_space helper) ls
-    | T_list_nil -> fprintf ppf "logicListOf()"
+    | T_list_nil -> fprintf ppf "nilLogicList()"
     | T_list_cons (h, tl) -> fprintf ppf "@[(%a + %a)@]" helper h helper tl
     (* | Tident p -> fprintf ppf "%a" Printtyp.path p *)
     (* TODO: Printtyp.path sometimes fives /n in the end. *)
@@ -72,36 +72,6 @@ let map_ast f = function
   | Mplus (a, b) -> Mplus (f a, f b)
   | Bind (a, b) -> Bind (f a, f b)
   | (Call_rel _ | Unify _ | Other _ | Error) as other -> other
-;;
-
-let pp_ast_as_kotlin =
-  let open Format in
-  let rec helper ppf = function
-    | Pause e -> fprintf ppf "@[pause { %a@ }@]" helper e
-    | St_abstr l -> fprintf ppf "@[<v 2>@[{ st ->@ %a@ }@]" helper l
-    | St_app l -> fprintf ppf "%a(st)" helper l
-    | New_scope x -> helper ppf x
-    | Mplus (l, r) ->
-      fprintf ppf "@[<v 2>@[mplus(@]@,@[%a,@]@,@[%a@]@[)@]@]" helper l helper r
-    | Bind (l, r) ->
-      fprintf ppf "@[<v 2>@[bind(@]@,@[%a,@]@,@[%a@]@ @[)@]@]" helper l helper r
-    | Fresh (xs, e) ->
-      fprintf
-        ppf
-        "@[<v 2>@[fresh { %a ->@]@,@[%a@]@[}@]@]"
-        (pp_print_list ~pp_sep:(fun ppf () -> fprintf ppf ", ") pp_print_string)
-        xs
-        helper
-        e
-    | Unify (l, r) ->
-      (* fprintf ppf "@[(@[%a@]@ `===`@ @[%a@])@]" pp_term_as_kotlin l pp_term_as_kotlin r *)
-      fprintf ppf "(%a `===` %a)" pp_term_as_kotlin l pp_term_as_kotlin r
-    | Call_rel (p, args) ->
-      fprintf ppf "@[%a(%a)@]" Printtyp.path p (pp_comma_list pp_term_as_kotlin) args
-    | Other e -> fprintf ppf "@[{| Other %a |}@]" Pprintast.expression (MyUntype.expr e)
-    | Error -> fprintf ppf "ERROR "
-  in
-  helper
 ;;
 
 module Inh_info = struct
@@ -134,10 +104,53 @@ module Inh_info = struct
 end
 
 let pp_typ_as_kotlin inh_info ppf typ =
-  let caml_repr = Format.asprintf "%a" Printtyp.type_expr typ in
+  let caml_repr =
+    Format.asprintf "%a" Printtyp.type_expr typ |> Str.global_replace (Str.regexp "\n") ""
+  in
+  (* log "caml_repr = '%s'" caml_repr; *)
   match Inh_info.lookup_typ_exn inh_info caml_repr with
   | s -> Format.fprintf ppf "%s" s
   | exception Not_found -> Format.fprintf ppf "%s" caml_repr
+;;
+
+let pp_ast_as_kotlin inh_info =
+  let open Format in
+  let rec helper ppf = function
+    | Pause e -> fprintf ppf "@[pause { %a@ }@]" helper e
+    | St_abstr l -> fprintf ppf "@[<v 2>@[{ st: State ->@ %a@ }@]" helper l
+    | St_app l -> fprintf ppf "%a(st)" helper l
+    | New_scope x -> helper ppf x
+    | Mplus (l, r) ->
+      fprintf ppf "@[<v 2>(@[(%a)@]@,@[mplus@]@,@,@[(%a)@])@]" helper l helper r
+    | Bind (l, r) ->
+      fprintf ppf "@[<v 2>(@[(%a)@]@,@[bind@]@,@[(%a)@])@]" helper l helper r
+    | Fresh (xs, e) ->
+      fprintf ppf "@[<v>";
+      List.iter xs ~f:(fun (name, typ) ->
+        fprintf
+          ppf
+          "@[val %s : %a = freshTypedVar();@]@ "
+          name
+          (pp_typ_as_kotlin inh_info)
+          typ);
+      fprintf ppf "@[%a@]@]" helper e
+      (* fprintf
+        ppf
+        "@[<v 2>@[freshTypedVars { %a ->@]@,@[%a@]@[}@]@]"
+        (pp_print_list ~pp_sep:(fun ppf () -> fprintf ppf ", ") pp_print_string)
+        xs
+        helper
+        e *)
+    | Unify (l, r) ->
+      (* TODO: if left argument is an empty list, swap the arguments to make Kotlin typecheck this *)
+      fprintf ppf "(%a `===` %a)" pp_term_as_kotlin l pp_term_as_kotlin r
+      (* fprintf ppf "(%a debugUnify %a)" pp_term_as_kotlin l pp_term_as_kotlin r *)
+    | Call_rel (p, args) ->
+      fprintf ppf "@[%a(%a)@]" Printtyp.path p (pp_comma_list pp_term_as_kotlin) args
+    | Other e -> fprintf ppf "@[{| Other %a |}@]" Pprintast.expression (MyUntype.expr e)
+    | Error -> fprintf ppf "ERROR "
+  in
+  helper
 ;;
 
 let pp_rvb_as_kotlin inh_info ppf { Rvb.name; args; body } =
@@ -150,11 +163,11 @@ let pp_rvb_as_kotlin inh_info ppf { Rvb.name; args; body } =
   in
   Format.fprintf
     ppf
-    "@[<v 2>@[fun %s(%a) =@]@ @[%a@]@]\n%!"
+    "@[<v 2>@[fun %s(%a): Goal =@]@ @[%a@]@]\n%!"
     name
     pp_args
     args
-    pp_ast_as_kotlin
+    (pp_ast_as_kotlin inh_info)
     body
 ;;
 
@@ -261,12 +274,13 @@ let translate_expr fallback : (unit, _ ast) Tast_folder.t =
           (texp_let
              (value_binding
                 (tpat_var __)
-                (texp_apply1
-                   (texp_ident (path [ "OCanren"; "State"; "fresh" ]))
-                   (texp_ident (path [ "st" ])))
+                (as__
+                 @@ texp_apply1
+                      (texp_ident (path [ "OCanren"; "State"; "fresh" ]))
+                      (texp_ident (path [ "st" ])))
               ^:: nil)
              __
-           |> map2 ~f:(fun a b -> `Let (a, b))
+           |> map3 ~f:(fun a b c -> `Let (a, b, c))
            ||| (__ |> map1 ~f:(fun x -> `Other x)))
           e.Typedtree.exp_loc
           e
@@ -275,7 +289,7 @@ let translate_expr fallback : (unit, _ ast) Tast_folder.t =
             match rez, acc with
             | `Other _, [] -> fail e.exp_loc ""
             | `Other e, acc -> Fresh (List.rev acc, e)
-            | `Let (name, e), acc -> helper (name :: acc) e)
+            | `Let (name, rhs_expr, e), acc -> helper ((name, rhs_expr.exp_type) :: acc) e)
       in
       of_func (fun _ctx _loc e k -> k (helper [] e))
     ;;
@@ -424,6 +438,7 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
                    Format.printf "%a\n" (pp_rvb_as_kotlin inh) rvb
                in
                (), si)
+          | { Typedtree.vb_pat = { pat_desc = Tpat_any; _ }; _ } -> (), si
           | _ -> assert false
         in
         match si.str_desc with
