@@ -1,0 +1,16 @@
+(rule
+ ;(alias)
+ (deps
+  %{project_root}/bin/klogic_of_ocanren.exe
+  ../../../../../.oleg_numbers.objs/byte/oleg_numbers.cmo
+  ;../.oleg_numbers.objs/byte/oleg_numbers.cmx
+  )
+ (targets asdf.kt)
+ (mode promote)
+ (action
+  (run
+   %{project_root}/bin/klogic_of_ocanren.exe
+   ../../../../../.oleg_numbers.objs/byte/oleg_numbers.cmt)))
+
+(cram
+ (deps asdf.kt))
