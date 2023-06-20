@@ -13,7 +13,7 @@
 ;    ../.oleg_numbers.objs/byte/oleg_numbers.cmt)))
 
 (cram
- (deps src/test/kotlin/utils/asdf.kt))
+ (deps src/test/kotlin/utils/OlegNumbers.kt))
 
 (rule
  (targets klogic.jar)

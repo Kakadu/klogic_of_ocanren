@@ -507,8 +507,8 @@ let translate_implementation stru =
   Stdlib.Result.Ok inh
 ;;
 
-let analyze_cmt _source_file stru =
-  Out_channel.with_file "asdf.kt" ~f:(fun ch ->
+let analyze_cmt _source_file out_file stru =
+  Out_channel.with_file out_file ~f:(fun ch ->
     match translate_implementation stru with
     | Stdlib.Result.Ok info ->
       Printf.fprintf ch "%s\n" (Inh_info.preamble info);
@@ -521,11 +521,11 @@ let analyze_cmt _source_file stru =
     | Error _ -> assert false)
 ;;
 
-let run source_file =
+let run source_file out_file =
   let _cmi_info, cmt_info = Cmt_format.read source_file in
   Option.iter cmt_info ~f:(fun cmt ->
     match cmt.Cmt_format.cmt_annots with
-    | Cmt_format.Implementation stru -> analyze_cmt source_file stru
+    | Cmt_format.Implementation stru -> analyze_cmt source_file out_file stru
     | Cmt_format.Interface _
     | Cmt_format.Packed _
     | Cmt_format.Partial_implementation _

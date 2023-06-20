@@ -6,12 +6,14 @@
   ;../../../../../.oleg_numbers.native/byte/oleg_numbers.cmx
   ;
   )
- (targets asdf.kt)
+ (target OlegNumbers.kt)
  (mode promote)
  (action
   (run
    %{project_root}/bin/klogic_of_ocanren.exe
-   ../../../../../.oleg_numbers.objs/byte/oleg_numbers.cmt)))
+   ../../../../../.oleg_numbers.objs/byte/oleg_numbers.cmt
+   -o
+   %{target})))
 
 (cram
- (deps asdf.kt))
+ (deps OlegNumbers.kt))
