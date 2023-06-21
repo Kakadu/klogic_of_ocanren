@@ -57,7 +57,7 @@
                                    bind
                                    (((a + res) `===` out))))
                                  bind
-                                 (appendo(d,s,res)))
+                                 (appendo(d, s, res)))
                        } }(st)
                          }))
               }

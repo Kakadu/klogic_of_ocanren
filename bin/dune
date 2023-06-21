@@ -11,4 +11,7 @@
  (modules Trans_config AST lib)
  (flags
   (:standard -rectypes))
- (libraries str Tast_pattern ppxlib.stdppx compiler-libs.common))
+ (libraries str Tast_pattern ppxlib.stdppx compiler-libs.common ppx_deriving)
+ (inline_tests)
+ (preprocess
+  (pps ppx_expect ppx_deriving.map)))

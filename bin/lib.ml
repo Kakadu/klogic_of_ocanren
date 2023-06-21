@@ -205,13 +205,13 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
       e.Typedtree.exp_type; *)
     helper 0 e.Typedtree.exp_type
   in
-  Printf.printf "%s %d\n" __FILE__ __LINE__;
+  (* Printf.printf "%s %d\n" __FILE__ __LINE__; *)
   let on_type_mangle_spec inh_info payl =
     match payl with
     | Parsetree.PStr [ { pstr_desc = Pstr_eval (e, _); _ } ] ->
       let open Ppxlib.Ast_pattern in
       let rec helper acc e =
-        log "run helper on %a, acc.length = %d" Pprintast.expression e (List.length acc);
+        (* log "run helper on %a, acc.length = %d" Pprintast.expression e (List.length acc); *)
         parse
           (pexp_construct (lident (string "[]")) drop
            |> map0 ~f:None
@@ -271,7 +271,11 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
                  | rez ->
                    let rvb = Rvb.mk name args rez in
                    Inh_info.add_rvb inh rvb;
-                   Format.printf "%a\n" (pp_rvb_as_kotlin ~pretty:true inh) rvb
+                   Format.printf "%a\n" (pp_rvb_as_kotlin ~pretty:true inh) rvb;
+                   Format.printf
+                     "\027[31m@[<v 2>%a@]@ %!\027[m"
+                     (AST.Fold_syntax_macro.pp inh)
+                     AST.Fold_syntax_macro.(upper @@ transform rez)
                in
                (), si)
           | { Typedtree.vb_pat = { pat_desc = Tpat_any; _ }; _ } -> (), si
