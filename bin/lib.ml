@@ -271,7 +271,7 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
                  | rez ->
                    let rvb = Rvb.mk name args rez in
                    Inh_info.add_rvb inh rvb;
-                   Format.printf "%a\n" (pp_rvb_as_kotlin ~pretty:true inh) rvb;
+                   Format.printf "%a\n" (pp_rvb_as_kotlin ~pretty:false inh) rvb;
                    Format.printf
                      "\027[31m@[<v 2>%a@]@ %!\027[m"
                      (AST.Fold_syntax_macro.pp inh)

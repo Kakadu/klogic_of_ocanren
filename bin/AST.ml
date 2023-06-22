@@ -239,16 +239,16 @@ let pp_ast_as_kotlin ?(pretty = false) inh_info =
     let open Format in
     let rec helper ppf = function
       (* | St_abstr (Pause (Mplus )) *)
-      | Pause (Fresh (xs, Bind (Bind (St_app a, b), c))) when pretty ->
+      (* | Pause (Fresh (xs, Bind (Bind (St_app a, b), c))) when pretty ->
         fprintf ppf "freshTypedVars { ";
         List.iter xs ~f:(fun (name, typ) ->
           fprintf ppf "@[%s : %a,@]@ " name (pp_typ_as_kotlin inh_info) typ);
-        fprintf ppf " -> %a and %a and %a }@]" helper a helper b helper c
-      | Bind (Bind (a, b), c) when pretty ->
-        fprintf ppf "bind_star %a %a %a " helper a helper b helper c
-      | Mplus (e, Pause (Mplus (e2, Pause e3))) ->
-        fprintf ppf "conde [ %a; %a; %a ]" helper e helper e2 helper e3
-        (* Pretty is above
+        fprintf ppf " -> %a and %a and %a }@]" helper a helper b helper c *)
+      (* | Bind (Bind (a, b), c) when pretty ->
+        fprintf ppf "bind_star %a %a %a " helper a helper b helper c *)
+      (* | Mplus (e, Pause (Mplus (e2, Pause e3))) ->
+        fprintf ppf "conde [ %a; %a; %a ]" helper e helper e2 helper e3 *)
+      (* Pretty is above
          Default is below
        *)
       | Pause e -> fprintf ppf "@[pause { %a@ }@]" helper e

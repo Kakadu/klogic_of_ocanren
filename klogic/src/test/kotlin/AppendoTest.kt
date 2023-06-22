@@ -8,6 +8,7 @@ import utils.LogicInt
 import utils.UnificationsController
 import utils.appendo
 import utils.LogicInt.Companion.toLogic
+import utils.LogicInt.*
 
 class AppendoTest {
     @AfterEach

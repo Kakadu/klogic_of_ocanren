@@ -98,8 +98,6 @@ let rec appendo
     ]
 ;;
 
-(*  
-
 (* let rec appendo l s out st =
   pause
     (fun () ->
@@ -739,7 +737,3 @@ let show_num = GT.(show List.ground @@ show int)
   run_exn show_num (-1)   q  qh (REPR (fun q       -> logo (build_num 14) (build_num 2) (build_num 3) q));
   run_exn show_num (-1)   q  qh (REPR (fun q       -> expo (build_num 3) (build_num 5) q               ));
   () *)
-
-(* let num_reifier h = List.reify OCanren.reify h *)
-(* let runL n = run_r num_reifier show_num_logic n *)
- *)
