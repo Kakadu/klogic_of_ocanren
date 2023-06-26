@@ -1,7 +1,7 @@
 (env
  (dev
   (flags
-   (:standard -warn-error -26-27-32-33-69))))
+   (:standard -warn-error -9-26-27-32-33-69))))
 
 (library
  (name oleg_numbers)
@@ -25,6 +25,3 @@
  (inline_tests)
  (preprocess
   (pps ppx_hack ppx_expect ppx_inline_test)))
-
-(cram
- (deps klogic.jar))

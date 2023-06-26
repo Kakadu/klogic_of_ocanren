@@ -2,3 +2,7 @@
 	path = OCanren
 	url = git@github.com:Kakadu/OCanren.git
 	branch = miniKanren2023
+[submodule "noCanren"]
+	path = noCanren
+	url = https://github.com/PLTools/noCanren.git
+	branch = wildcard

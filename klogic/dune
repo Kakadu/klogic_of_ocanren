@@ -37,4 +37,7 @@
   )
  ; dune doesn't allow to build files out of current directory, so we need extra copying
  (action
-  (run sh -c "sh ./gradlew shadowJar && cp build/libs/klogic.jar .. ")))
+  (run sh -c "sh ./gradlew shadowJar && cp build/libs/klogic.jar . ")))
+
+(cram
+ (deps klogic.jar))
