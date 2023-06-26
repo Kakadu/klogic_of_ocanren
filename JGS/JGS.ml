@@ -187,7 +187,7 @@ struct
   ;;
 end
 
-[@@@ocaml.warning "+8"]
+[@@@ocaml.warning "+8-27"]
 
 open GT
 open OCanren
@@ -339,8 +339,16 @@ module HO = struct
       val serializable_t : jtype_injected -> OCanren.goal
       val new_var : (unit OCanren.ilogic -> OCanren.goal) -> int ilogic -> OCanren.goal
     end
+
+    (* val ( <-< )
+      :  (jtype_injected -> Option.HO.goal)
+      -> (jtype_injected -> Option.HO.goal)
+      -> bool ilogic
+      -> OCanren.goal *)
   end) =
   struct
+    open CT
+
     let rec ( <=< ) ( <-< ) ta tb q97 =
       if need_simpified
       then
@@ -505,10 +513,9 @@ module HO = struct
                         !!(Wildcard !!(Some (Std.pair !!Extends __))))
              ])
 
-    and class_int_sub ( <-< ) id_a targs_a id_b targs_b q235 =
+    and class_int_sub ( <-< ) (id_a as q232) targs_a id_b targs_b q235 =
       fresh
-        (q232 q233 q208)
-        (id_a q232)
+        (q233 q208)
         (id_b q233)
         (conde
            [ fresh () (q232 === q233) (q208 === !!true)
@@ -705,7 +712,7 @@ module HO = struct
                                    ])
                                 (class_int_sub
                                    ( <-< )
-                                   (( === ) id_a)
+                                   id_a
                                    (( === ) targs_a)
                                    (( === ) id_b)
                                    (( === ) targs_b)
@@ -747,7 +754,7 @@ module HO = struct
                                    ])
                                 (class_int_sub
                                    ( <-< )
-                                   (( === ) id_a)
+                                   id_a
                                    (( === ) targs_a)
                                    (( === ) id_b)
                                    (( === ) targs_b)
@@ -891,6 +898,12 @@ module FO = struct
       val serializable_t : jtype_injected -> OCanren.goal
       val new_var : (unit OCanren.ilogic -> OCanren.goal) -> int ilogic -> OCanren.goal
     end
+
+    (* val ( <-< )
+      :  (jtype_injected -> Option.HO.goal)
+      -> (jtype_injected -> Option.HO.goal)
+      -> bool ilogic
+      -> OCanren.goal *)
   end) =
   struct
     open Verifier (CT)

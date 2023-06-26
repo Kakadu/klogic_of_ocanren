@@ -30,11 +30,19 @@ let rec are_not_equal = function
 
 let () =
   let module SampleCT = SampleCT () in
-  let module V = FO.Verifier (SampleCT) in
+  (* let is_subtype_hack = ref (fun _ _ _ -> failure) in *)
+  let module V =
+    FO.Verifier (struct
+      include SampleCT
+
+      (* let ( <-< ) = !is_subtype_hack *)
+    end)
+  in
   let open Closure in
   let { is_correct_type; direct_subtyping = ( -<- ); closure = ( <-< ) } =
     make_closure_subtyping (module SampleCT) V.( -<- )
   in
+  (* is_subtype_hack := ( <-< ); *)
   (* let ( <-< ) ta tb = failwith "Oh..." in
      let is_correct_type t =
        Closure.is_correct_type (module SampleCT) ~closure_subtyping:( <-< ) t
@@ -184,6 +192,7 @@ let () =
 
 let _ =
   let module SampleCT = SampleCT () in
+  let is_subtype_holder = ref (fun _ _ _ -> failure) in
   let module V = FO.Verifier (SampleCT) in
   let open Closure in
   let { is_correct_type = _; direct_subtyping = ( -<- ); closure = ( <-< ) } =
