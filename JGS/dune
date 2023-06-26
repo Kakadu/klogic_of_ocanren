@@ -7,7 +7,8 @@
   (:standard
    -rectypes
    ;-dsource
-   ))
+   -w
+   -9))
  (preprocess
   (pps
    OCanren-ppx.ppx_wildcard
@@ -18,10 +19,23 @@
 
 (library
  (name test_JGS)
- (modules test_JGS)
+ (modules MutableTypeTable Closure JGS_Helpers)
  (libraries JGS)
+ (wrapped false)
  (flags
   (:standard -rectypes))
  (inline_tests)
  (preprocess
-  (pps ppx_hack ppx_expect ppx_inline_test)))
+  (pps ppx_hack ppx_expect ppx_inline_test GT.ppx_all)))
+
+(executable
+ (name relationalClosureTests)
+ (flags
+  (:standard -rectypes))
+ (modules RelationalClosureTests)
+ (libraries test_JGS)
+ (preprocess
+  (pps ppx_hack GT.ppx_all)))
+
+(cram
+ (deps ./relationalClosureTests.exe))
