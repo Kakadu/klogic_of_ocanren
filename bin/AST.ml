@@ -67,9 +67,13 @@ let map_ast f = function
 ;;
 
 module Inh_info = struct
+  type item =
+    | RVB of Rvb.t
+    | Plain_kotlin of string
+
   type t =
     { type_mangle_hints : (string, string) Hashtbl.t
-    ; mutable rvbs : Rvb.t list
+    ; mutable rvbs : item list
     ; mutable preamble : string
     ; mutable epilogue : string
     }
@@ -78,7 +82,7 @@ module Inh_info = struct
     { type_mangle_hints = Hashtbl.create 13; rvbs = []; preamble = ""; epilogue = "" }
   ;;
 
-  let add_rvb t rvb = t.rvbs <- rvb :: t.rvbs
+  let add_rvb t rvb = t.rvbs <- RVB rvb :: t.rvbs
   let lookup_typ_exn t typ = Hashtbl.find t.type_mangle_hints typ
 
   let add_hints info hints =
@@ -88,7 +92,7 @@ module Inh_info = struct
       Hashtbl.add_exn info.type_mangle_hints ~key ~data)
   ;;
 
-  let iter_vbs { rvbs; _ } ~f = List.iter ~f (List.rev rvbs)
+  let iter_vbs { rvbs; _ } ~f = List.iter (List.rev rvbs) ~f
   let add_preamble t s = t.preamble <- t.preamble ^ s
   let add_epilogue t s = t.epilogue <- t.epilogue ^ s
   let preamble { preamble; _ } = preamble

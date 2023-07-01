@@ -354,9 +354,10 @@ let analyze_cmt _source_file out_file stru =
       Printf.fprintf ch "%s\n" (Inh_info.preamble info);
       Printf.fprintf ch "// There are %d relations\n" (List.length info.Inh_info.rvbs);
       let ppf = Format.formatter_of_out_channel ch in
-      Inh_info.iter_vbs
-        ~f:(pp_rvb_as_kotlin ~pretty:Trans_config.(config.pretty) info ppf)
-        info;
+      Inh_info.iter_vbs info ~f:(function
+        | Inh_info.RVB rvb ->
+          pp_rvb_as_kotlin ~pretty:Trans_config.(config.pretty) info ppf rvb
+        | Plain_kotlin s -> Format.fprintf ppf "%s" s);
       Printf.fprintf ch "%s\n" (Inh_info.epilogue info);
       Format.pp_print_flush ppf ();
       flush ch
