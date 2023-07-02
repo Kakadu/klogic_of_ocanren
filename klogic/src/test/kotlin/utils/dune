@@ -1,9 +1,7 @@
 (rule
- ;(alias)
  (deps
   %{project_root}/bin/klogic_of_ocanren.exe
   ../../../../../.oleg_numbers.objs/byte/oleg_numbers.cmo
-  ;../../../../../.oleg_numbers.native/byte/oleg_numbers.cmx
   ;
   )
  (target OlegNumbers.kt)
@@ -15,5 +13,20 @@
    -o
    %{target})))
 
+(rule
+ (deps
+  %{project_root}/bin/klogic_of_ocanren.exe
+  ../../../../../JGS/.JGS.objs/byte/jGS.cmo
+  ;
+  )
+ (target JGS.kt)
+ (mode promote)
+ (action
+  (run
+   %{project_root}/bin/klogic_of_ocanren.exe
+   ../../../../../JGS/.JGS.objs/byte/jGS.cmt
+   -o
+   %{target})))
+
 (cram
- (deps OlegNumbers.kt))
+ (deps OlegNumbers.kt JGS.kt))
