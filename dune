@@ -14,7 +14,7 @@
    ;-dsource
    ))
  (preprocess
-  (pps ppx_hack GT.ppx_all)))
+  (pps OCanren-ppx.ppx_fresh GT.ppx_all)))
 
 (library
  (name test_numbers)
@@ -24,4 +24,4 @@
   (:standard -rectypes))
  (inline_tests)
  (preprocess
-  (pps ppx_hack ppx_expect ppx_inline_test)))
+  (pps OCanren-ppx.ppx_fresh ppx_expect ppx_inline_test)))

@@ -40,11 +40,12 @@ val none : ('a option, 'b, 'b) t
 val some : ('a, 'b, 'c) t -> ('a option, 'b, 'c) t
 val pair : ('a, 'b, 'c) t -> ('d, 'c, 'e) t -> ('a * 'd, 'b, 'e) t
 val ( ** ) : ('a, 'b, 'c) t -> ('d, 'c, 'e) t -> ('a * 'd, 'b, 'e) t
-val ( ||| ) : ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> ('a, 'b, 'c) t
 val loc : ('a, 'b, 'c) t -> ('a Location.loc, 'b, 'c) t
 val ( >>| ) : ('a, 'b, 'c) t -> ('d -> 'b) -> ('a, 'd, 'c) t
+val ( ||| ) : ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> ('a, 'b, 'c) t
 
 (** Mapping results of applying pattern-combinator *)
+val choice : ('a, 'b, 'c) t list -> ('a, 'b, 'c) t
 
 val map : ('a, 'b, 'c) t -> f:('d -> 'b) -> ('a, 'd, 'c) t
 val map0 : ('a, 'b, 'c) t -> f:'d -> ('a, 'd -> 'b, 'c) t
@@ -235,3 +236,4 @@ type context
 val of_func : (context -> Location.t -> 'a -> 'b -> 'c) -> ('a, 'b, 'c) t
 val to_func : ('a, 'b, 'c) t -> context -> Location.t -> 'a -> 'b -> 'c
 val fail : Warnings.loc -> string -> 'a
+val texp_list : (expression, 'a -> 'a, 'b) t -> (expression, 'b list -> 'd, 'd) t

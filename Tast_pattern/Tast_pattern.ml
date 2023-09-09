@@ -24,12 +24,13 @@ module Ast_pattern0 = struct
 end
 
 open Location
-open Base
-module Format = Caml.Format
+module Format = Stdlib.Format
 open Format
 open Ast_pattern0
+open Stdppx
 
 let debug_enabled = false
+let debug_enabled = true
 
 let log fmt =
   let open Format in
@@ -38,6 +39,8 @@ let log fmt =
 
 type ('a, 'b, 'c) t = ('a, 'b, 'c) Ast_pattern0.t
 
+let of_func f = T f
+let to_func (T f) = f
 let save_context ctx = ctx.matched
 let restore_context ctx backup = ctx.matched <- backup
 let incr_matched c = c.matched <- c.matched + 1
@@ -170,6 +173,7 @@ let none =
       match x with
       | None ->
         ctx.matched <- ctx.matched + 1;
+        log "none succeded";
         k
       | _ -> fail loc "None")
 ;;
@@ -213,6 +217,20 @@ let alt (T f1) (T f2) =
 ;;
 
 let ( ||| ) = alt
+
+let choice ps =
+  T
+    (fun ctx loc e k ->
+      let rec helper = function
+        | [] -> fail loc "no choices left "
+        | h :: tl ->
+          (match to_func h ctx loc e k with
+           | exception Expected _ -> helper tl
+           | x -> x)
+      in
+      helper ps)
+;;
+
 let map (T func) ~f = T (fun ctx loc x k -> func ctx loc x (f k))
 let map' (T func) ~f = T (fun ctx loc x k -> func ctx loc x (f loc k))
 let map_result (T func) ~f = T (fun ctx loc x k -> f (func ctx loc x k))
@@ -278,16 +296,20 @@ let path xs =
     let __ _ = Format.printf "path = %a\n%!" Path.print x in
     match x, ps with
     | Path.Pident id, [ id0 ] ->
+      log "ident = %a, id0 = %s" Path.print x id0;
       if cmp_names (Ident.name id) id0
       then (
         let () = ctx.matched <- ctx.matched + 1 in
+        log "path succeeded";
         k)
-      else fail loc "path"
+      else (
+        let () = log "AAA" in
+        fail loc "path")
     | Path.Pdot (next, id), id0 :: ids when cmp_names id id0 -> helper ids ctx loc next k
     | Path.Papply _, _ -> fail loc "path got Papply"
     | _ ->
       let msg = sprintf "path %s" (String.concat ~sep:"." xs) in
-      (* let __ _ = Format.printf "path failed: %s\n%!" msg in  *)
+      let __ _ = Format.printf "path failed: %s\n%!" msg in
       fail loc msg
   in
   T (helper (List.rev xs))
@@ -310,7 +332,7 @@ let%test_module " " =
     let%test_unit _ =
       let old = !Clflags.unique_ids in
       Clflags.unique_ids := false;
-      [%test_eq: string]
+      [%test_eq: Base.string]
         "Stdlib!.List.length"
         (asprintf "%a" Path.print (path_of_list names));
       Clflags.unique_ids := old
@@ -367,10 +389,13 @@ let ebool =
 let tpat_var (T fname) =
   T
     (fun ctx loc x k ->
+      log "tpat_var";
       match x.pat_desc with
       | Tpat_var (_, { txt }) ->
         ctx.matched <- ctx.matched + 1;
-        k |> fname ctx loc txt
+        let ans = k |> fname ctx loc txt in
+        log "tpat_var +";
+        ans
       | _ -> fail loc "tpat_var")
 ;;
 
@@ -417,15 +442,15 @@ let tpat_any =
 let texp_ident (T fpath) =
   T
     (fun ctx loc x k ->
-      let _ = log "texp_ident %a\n%!" MyPrinttyped.expr x in
+      (* let _ = log "texp_ident %a (%s %d)\n%!" MyPrinttyped.expr x __FILE__ __LINE__ in *)
       match x.exp_desc with
       | Texp_ident (path, _, _) ->
         ctx.matched <- ctx.matched + 1;
         let ans = fpath ctx loc path k in
-        log "texp_ident + %a\n%!" MyPrinttyped.expr x;
+        (* log "texp_ident + %a\n%!" MyPrinttyped.expr x; *)
         ans
       | _ ->
-        let _ = log "FAILED: texp_ident %a\n%!" MyPrinttyped.expr x in
+        (* let _ = log "FAILED: texp_ident %a\n%!" MyPrinttyped.expr x in *)
         fail loc "texp_ident")
 ;;
 
@@ -477,14 +502,16 @@ let texp_assert (T fexp) =
 let texp_apply (T f0) (T args0) =
   T
     (fun ctx loc x k ->
-      (* let __ _ = log "texp_apply %a\n%!" MyPrinttyped.expr x in *)
+      (* let _ = log "texp_apply %a\n%!" MyPrinttyped.expr x in *)
       match x.exp_desc with
       | Texp_apply (f, args) ->
         ctx.matched <- ctx.matched + 1;
         let ans = k |> f0 ctx loc f |> args0 ctx loc args in
         (* let _ = log "texp_apply + %a\n%!" MyPrinttyped.expr x in *)
         ans
-      | _ -> fail loc "texp_apply")
+      | _ ->
+        (* let _ = log "texp_apply failed" in *)
+        fail loc "texp_apply")
 ;;
 
 let texp_apply_nolabelled (T f0) (T args0) =
@@ -575,9 +602,14 @@ let texp_function (T fcases) =
     (fun ctx loc e k ->
       match e.exp_desc with
       | Texp_function { cases } ->
+        log "texp_function with %d cases" (List.length cases);
         ctx.matched <- ctx.matched + 1;
-        k |> fcases ctx loc cases
-      | _ -> fail loc "texp_function")
+        let ans = k |> fcases ctx loc cases in
+        log "texp_function +";
+        ans
+      | _ ->
+        log "texp_function failed";
+        fail loc "texp_function")
 ;;
 
 let case (T pat) (T guard) (T rhs) =
@@ -634,6 +666,28 @@ let texp_field (T fexpr) (T fdesc) =
         ctx.matched <- ctx.matched + 1;
         k |> fexpr ctx loc e |> fdesc ctx loc desc
       | _ -> fail loc "texp_field")
+;;
+
+let texp_list : (expression, 'a, 'b) t -> (_, 'b list -> 'd, 'd) t =
+ fun felem ->
+  let rec lookup loc e =
+    (* TODO: tailrec *)
+    match e.exp_desc with
+    | Texp_construct ({ txt = Longident.Lident "[]" }, _, _) -> []
+    | Texp_construct ({ txt = Longident.Lident "::" }, _, [ h; tl ]) -> h :: lookup loc tl
+    | _ ->
+      log "texp_list#lookup failed %s %d\n%!" __FILE__ __LINE__;
+      fail loc "texp_list"
+  in
+  T
+    (fun ctx loc e k ->
+      printf "%s %d\n%!" __FILE__ __LINE__;
+      let items = lookup loc e in
+      printf "texp_list found %d items\n %!" (List.length items);
+      let items =
+        ListLabels.map ~f:(fun e -> to_func felem ctx loc e Stdlib.Fun.id) items
+      in
+      k items)
 ;;
 
 let label_desc (T fname) =
@@ -702,7 +756,7 @@ let rec typ_constr (T fpath) (T fargs) =
   T helper
 ;;
 
-let rec typ_arrow (T l) (T r) =
+let typ_arrow (T l) (T r) =
   let rec helper ctx loc x k =
     (* Format.printf "typ = %a\n%!" Printtyp.type_expr x; *)
     match Types.get_desc x with
@@ -795,5 +849,3 @@ let parse_conde cases loc =
 type context = Ast_pattern0.context
 
 let fail = fail
-let of_func f = T f
-let to_func (T f) = f

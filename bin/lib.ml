@@ -48,7 +48,13 @@ let translate_expr fallback : (unit, _ ast) Tast_folder.t =
 
     let pat_pause () : (Typedtree.expression, _ ast -> 'a, 'b) Tast_pattern.t =
       texp_apply1
-        (texp_ident (path [ "OCanren"; "pause" ] ||| path [ "OCanren!"; "pause" ]))
+        (texp_ident
+           (choice
+              [ path [ "OCanren"; "pause" ]
+              ; path [ "OCanren!"; "pause" ]
+              ; path [ "OCanren!"; "delay" ]
+              ; path [ "OCanren"; "delay" ]
+              ]))
         (texp_function (case tpat_unit drop __ ^:: nil))
       |> map1 ~f:(fun x -> Pause x)
     ;;
@@ -88,7 +94,9 @@ let translate_expr fallback : (unit, _ ast) Tast_folder.t =
         (texp_ident (path [ "OCanren!"; "===" ] ||| path [ "OCanren"; "===" ]))
         __
         __
-      |> map2 ~f:(fun x y -> Unify (translate_term x, translate_term y))
+      |> map2 ~f:(fun x y ->
+           log "Unification constructed";
+           Unify (translate_term x, translate_term y))
     ;;
 
     let pat_bind () : (Typedtree.expression, _ -> 'a, 'b) Tast_pattern.t =
@@ -101,45 +109,73 @@ let translate_expr fallback : (unit, _ ast) Tast_folder.t =
 
     let pat_call () : (Typedtree.expression, _ -> 'a, 'b) Tast_pattern.t =
       texp_apply_nolabelled (texp_ident __) __
-      |> map2 ~f:(fun f args -> Call_rel (f, List.map ~f:translate_term args))
+      |> map2 ~f:(fun f args ->
+           log "Call constructed";
+           Call_rel (f, List.map ~f:translate_term args))
+    ;;
+
+    let pat_conde () : _ =
+      texp_apply1 (texp_ident (path [ "OCanren"; "conde" ])) (texp_list __)
+      |> map1 ~f:(fun xs ->
+           log "conde constructed with %d args" (List.length xs);
+           Conde xs)
+    ;;
+
+    let pat_conj_many () : _ =
+      texp_apply1 (texp_ident (path [ "OCanren"; "?&" ])) (texp_list __)
+      |> map1 ~f:(fun xs ->
+           (* log "conde constructed with %d args" (List.length xs); *)
+           Conj_multi xs)
+    ;;
+
+    let pat_conj2 () : _ =
+      texp_apply2
+        (texp_ident (choice [ path [ "OCanren"; "&&&" ]; path [ "OCanren!"; "&&&" ] ]))
+        __
+        __
+      |> map2 ~f:(fun l r -> Infix_conj2 (l, r))
     ;;
 
     let pat_fresh () : _ =
-      let rec helper acc e =
-        parse
-          (texp_let
-             (value_binding
-                (tpat_var __)
-                (as__
-                 @@ texp_apply1
-                      (texp_ident (path [ "OCanren"; "State"; "fresh" ]))
-                      (texp_ident (path [ "st" ])))
-              ^:: nil)
-             __
-           |> map3 ~f:(fun a b c -> `Let (a, b, c))
-           ||| (__ |> map1 ~f:(fun x -> `Other x)))
-          e.Typedtree.exp_loc
-          e
-          ~on_error:(fun _ -> failwith "should not happen")
-          (fun rez ->
-            match rez, acc with
-            | `Other _, [] -> fail e.exp_loc ""
-            | `Other e, acc -> Fresh (List.rev acc, e)
-            | `Let (name, rhs_expr, e), acc -> helper ((name, rhs_expr.exp_type) :: acc) e)
-      in
-      of_func (fun _ctx _loc e k -> k (helper [] e))
+      (* log "%d helper: @[%a@]\n" __LINE__ MyPrinttyped.expr e; *)
+      choice
+        [ texp_apply1
+            (texp_ident
+               (path [ "OCanren"; "Fresh"; "one" ])
+               (* ||| texp_ident (path [ "Fresh"; "one" ]) *)
+               (* ||| texp_ident (path [ "OCanren"; "Fresh"; "one" ]) *))
+            (as__ (texp_function (case (tpat_var __) none __ ^:: nil)))
+          |> map3 ~f:(fun name func rhs () ->
+               log "%s %d" __FILE__ __LINE__;
+               `Call_fresh (name, func, rhs))
+          (*    ; __
+               |> map1 ~f:(fun x () ->
+                    log "%s %d" __FILE__ __LINE__;
+                    `Other x) *)
+        ]
+      |> map1 ~f:(fun rez ->
+           match rez () with
+           | `Other _ -> fail Location.none ""
+           | `Call_fresh (_, name, rhs) -> Fresh ([ name, Predef.type_int ], rhs)
+           (* | `Let (name, rhs_expr, e), acc ->
+              helper ((name, rhs_expr.Typedtree.exp_type) :: acc) e *))
     ;;
 
     let pat () =
-      pat_pause ()
-      ||| pat_new_scope ()
-      ||| pat_mplus ()
-      ||| pat_bind ()
-      ||| pat_st_abstr ()
-      ||| pat_st_app ()
-      ||| pat_fresh ()
-      ||| pat_unify ()
-      ||| pat_call ()
+      choice
+        [ pat_pause ()
+        ; pat_fresh ()
+          (* ; pat_new_scope () *)
+          (* ; pat_mplus () *)
+          (* ; pat_bind () *)
+        ; pat_conj2 ()
+        ; pat_conj_many ()
+          (* ; pat_st_abstr () *)
+          (* ; pat_st_app () *)
+        ; pat_unify ()
+        ; pat_conde ()
+        ; pat_call ()
+        ]
     ;;
   end in
   (* Printf.printf "%s %d\n" __FILE__ __LINE__; *)

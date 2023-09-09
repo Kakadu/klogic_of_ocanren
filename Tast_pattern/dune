@@ -13,3 +13,14 @@
  (instrumentation
   (backend bisect_ppx))
  (inline_tests))
+
+(library
+ (name Tast_pattern_test)
+ (modules Tast_pattern_test)
+ (wrapped false)
+ (libraries ppxlib Tast_pattern)
+ (preprocess
+  (pps ppx_inline_test ppxlib.metaquot ppx_expect))
+ (instrumentation
+  (backend bisect_ppx))
+ (inline_tests))

@@ -14,6 +14,9 @@ type 'a ast =
   | St_abstr of 'a
   | St_app of 'a
   | Mplus of 'a * 'a
+  | Conde of 'a list
+  | Conj_multi of 'a list
+  | Infix_conj2 of 'a * 'a
   | New_scope of 'a
   | Bind of 'a * 'a
   | Fresh of (string * Types.type_expr) list * 'a
@@ -61,6 +64,9 @@ let map_ast f = function
   | St_app e -> St_app (f e)
   | Fresh (xs, e) -> Fresh (xs, f e)
   | New_scope x -> New_scope (f x)
+  | Conde xs -> Conde (List.map ~f xs)
+  | Conj_multi xs -> Conj_multi (List.map ~f xs)
+  | Infix_conj2 (l, r) -> Infix_conj2 (f l, f r)
   | Mplus (a, b) -> Mplus (f a, f b)
   | Bind (a, b) -> Bind (f a, f b)
   | (Call_rel _ | Unify _ | Other _ | Error) as other -> other
@@ -112,6 +118,8 @@ let pp_typ_as_kotlin inh_info ppf typ =
 module Fold_syntax_macro = struct
   type 'a t =
     | Conde of 'a t list
+    | Conj2 of 'a t * 'a t
+    | Conj_multi of 'a t list
     | Bind2 of 'a * 'a
     | New_scope of 'a
     | Fresh of (string * Types.type_expr) list * 'a
@@ -130,6 +138,8 @@ module Fold_syntax_macro = struct
     | Bind_star xs -> Bind_star (List.map ~f xs)
     | Mplus_star xs -> Mplus_star (List.map ~f xs)
     | Bind2 (l, r) -> Bind2 (f l, f r)
+    | Conj2 (l, r) -> Conj2 (f l, f r)
+    | Conj_multi xs -> Conj_multi (List.map ~f xs)
     | Mplus (l, r) -> Mplus (f l, f r)
     | New_scope a -> New_scope (f a)
     | Fresh (v, a) -> Fresh (v, f a)
@@ -143,11 +153,14 @@ module Fold_syntax_macro = struct
     let rec helper = function
       | Unify (a, b) -> U (a, b)
       | Bind (a, b) -> Bind2 (helper a, helper b)
-      | Other _ | Error -> assert false
+      | Other _ | Error -> failwith "Bad argument of transform"
       | Call_rel (f, args) -> Call (f, args)
       | St_abstr a -> Abstr (helper a)
       | St_app a -> App (helper a)
       | Pause a -> Delay (helper a)
+      | Conde xs -> Conde (List.map ~f:helper xs)
+      | Conj_multi xs -> Conj_multi (List.map ~f:helper xs)
+      | Infix_conj2 (l, r) -> Conj2 (helper l, helper r)
       | Mplus (a, b) -> Mplus (helper a, helper b)
       | New_scope a -> New_scope (helper a)
       | Fresh (args, e) -> Fresh (args, helper e)
@@ -162,6 +175,7 @@ module Fold_syntax_macro = struct
         (* TODO: if left argument is an empty list, swap the arguments to make Kotlin typecheck this *)
         fprintf ppf "@[(%a `===` %a)@]" pp_term_as_kotlin l pp_term_as_kotlin r
       | Conde xs -> fprintf ppf "@[<v 2>@[conde (@]%a@[)@]@]" (pp_comma_list helper) xs
+      | Conj_multi xs -> fprintf ppf "@[<v 2>@[and (@]%a@[)@]@]" (pp_comma_list helper) xs
       | Call (f, args) ->
         fprintf ppf "@[%a(%a)@]" Printtyp.path f (pp_comma_list pp_term_as_kotlin) args
       | New_scope a -> fprintf ppf "/* ERROR */ %a" helper a
@@ -171,6 +185,7 @@ module Fold_syntax_macro = struct
       | Abstr a -> fprintf ppf "/* ERROR */ { st -> %a }" helper a
       | App a -> fprintf ppf "/* ERROR */ %a(st)" helper a
       | Bind2 (l, r) -> fprintf ppf "/* ERROR? */  (%a and %a)" helper l helper r
+      | Conj2 (l, r) -> fprintf ppf "(%a and %a)" helper l helper r
       | Fresh (xs, e) ->
         fprintf ppf "@[<hov>@[freshTypedVars {";
         pp_comma_list
@@ -286,6 +301,9 @@ let pp_ast_as_kotlin ?(pretty = false) inh_info =
         (* fprintf ppf "(%a debugUnify %a)" pp_term_as_kotlin l pp_term_as_kotlin r *)
       | Call_rel (p, args) ->
         fprintf ppf "@[%a(%a)@]" Printtyp.path p (pp_comma_list pp_term_as_kotlin) args
+      | Conde xs -> fprintf ppf "@[conde(%a)@]" (pp_comma_list helper) xs
+      | Conj_multi xs -> fprintf ppf "@[and(%a)@]" (pp_comma_list helper) xs
+      | Infix_conj2 (l, r) -> fprintf ppf "@[(%a and %a)@]" helper l helper r
       | Other e -> fprintf ppf "@[{| Other %a |}@]" Pprintast.expression (MyUntype.expr e)
       | Error -> fprintf ppf "ERROR "
     in

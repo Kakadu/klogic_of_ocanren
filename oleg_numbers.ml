@@ -75,7 +75,7 @@ let poso : int ilogic Std.List.injected -> OCanren.goal =
  fun n -> fresh (h t) (n === h % t)
 ;;
 
-(* 
+(*
 let poso : int ilogic Std.List.injected -> OCanren.goal =
  fun n st ->
   pause (fun () ->
@@ -147,85 +147,8 @@ let full_addero : _ -> _ -> _ -> _ -> _ -> OCanren.goal =
     ]
 ;;
 
-(** Satisfies [b] + [x] + [y] = [r] + 2 * [c]  *)
-(*
-let full_addero b x y r c st =
-  log
-    "\tfull_addero %s %s %s %s %s (REIFIED)\n"
-    (bit_trace_after_reify b st)
-    (bit_trace_after_reify x st)
-    (bit_trace_after_reify y st)
-    (bit_trace_after_reify r st)
-    (bit_trace_after_reify c st);
-  pause (fun () ->
-    log "  full_addero after pause 1\n";
-    let st = State.new_scope st in
-    mplus
-      (bind
-         (bind (bind (bind ((!0 === b) st) (!0 === x)) (!0 === y)) (!0 === r))
-         (!0 === c))
-      (pause (fun () ->
-        log "  full_addero after pause 2\n";
-         mplus
-           (bind
-              (bind (bind (bind ((!1 === b) st) (!0 === x)) (!0 === y)) (!1 === r))
-              (!0 === c))
-           (pause (fun () ->
-             log "  full_addero after pause 3\n";
-              mplus
-                (bind
-                   (bind
-                      (bind (bind ((!0 === b) st) (!1 === x)) (!0 === y))
-                      (!1 === r))
-                   (!0 === c))
-                (pause (fun () ->
-                  log "  full_addero after pause 4\n";
-                   mplus
-                     (bind
-                        (bind
-                           (bind (bind ((!1 === b) st) (!1 === x)) (!0 === y))
-                           (!0 === r))
-                        (!1 === c))
-                     (pause (fun () ->
-                      log "  full_addero after pause 5\n";
-                        mplus
-                          (bind
-                             (bind
-                                (bind (bind ((!0 === b) st) (!0 === x)) (!1 === y))
-                                (!1 === r))
-                             (!0 === c))
-                          (pause (fun () ->
-                            log "  full_addero after pause 6\n";
-                             mplus
-                               (bind
-                                  (bind
-                                     (bind
-                                        (bind ((!1 === b) st) (!0 === x))
-                                        (!1 === y))
-                                     (!0 === r))
-                                  (!1 === c))
-                               (pause (fun () ->
-                                log "  full_addero after pause 7\n";
-                                  mplus
-                                    (bind
-                                       (bind
-                                          (bind
-                                             (bind ((!0 === b) st) (!1 === x))
-                                             (!1 === y))
-                                          (!0 === r))
-                                       (!1 === c))
-                                    (pause (fun () ->
-                                       log "  full_addero after pause 8\n";
-                                       bind
-                                         (bind
-                                            (bind
-                                               (bind ((!1 === b) st) (!1 === x))
-                                               (!1 === y))
-                                            (!1 === r))
-                                         (!1 === c))))))))))))))))
-;; *)
-
 (** Adds a carry-in bit [d] to arbitrarily large numbers [n] and [m] to produce a number [r]. *)
+
 let rec addero
   :  _ -> int ilogic Std.List.injected -> int ilogic Std.List.injected
   -> int ilogic Std.List.injected -> OCanren.goal
@@ -352,7 +275,7 @@ and gen_addero d n m r st =
       (addero e x y z))
 ;;
  *)
-
+(*
 let pluso n m k = addero !!0 n m k
 let minuso n m k = pluso m k n
 
@@ -395,7 +318,7 @@ and odd_multo
   =
  fun x n m p -> fresh q (bound_multo q p n m) (multo x m q) (pluso (!!0 % q) m p)
 ;;
-
+*)
 (*
 let rec bound_multo q p n m st =
   (* Printf.printf "bound_multo %s %s %s %s\n" (traceP q) (traceP p) (traceP n) (traceP m); *)
@@ -536,7 +459,7 @@ and odd_multo x n m p st =
     let head = (bound_multo q p n m) st in
     bind (bind head (multo x m q)) (pluso (!0 % q) m p))
 ;; *)
-
+(*
 (** have the same length *)
 let rec eqlo
   : int ilogic Std.List.injected -> int ilogic Std.List.injected -> OCanren.goal
@@ -737,3 +660,4 @@ let show_num = GT.(show List.ground @@ show int)
   run_exn show_num (-1)   q  qh (REPR (fun q       -> logo (build_num 14) (build_num 2) (build_num 3) q));
   run_exn show_num (-1)   q  qh (REPR (fun q       -> expo (build_num 3) (build_num 5) q               ));
   () *)
+ *)
