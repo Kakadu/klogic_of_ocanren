@@ -1,7 +1,7 @@
 [submodule "OCanren"]
 	path = OCanren
 	url = git@github.com:Kakadu/OCanren.git
-	branch = miniKanren2023
+	branch = klogic_of_ocanren
 [submodule "noCanren"]
 	path = noCanren
 	url = https://github.com/PLTools/noCanren.git

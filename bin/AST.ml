@@ -186,7 +186,16 @@ module Fold_syntax_macro = struct
       | App a -> fprintf ppf "/* ERROR */ %a(st)" helper a
       | Bind2 (l, r) -> fprintf ppf "/* ERROR? */  (%a and %a)" helper l helper r
       | Conj2 (l, r) -> fprintf ppf "(%a and %a)" helper l helper r
+      | Fresh (xs, Delay e) ->
+        fprintf ppf "@[<hov>@[freshTypedVars {";
+        pp_comma_list
+          (fun ppf (name, typ) ->
+            fprintf ppf "@[ %s : %a@]" name (pp_typ_as_kotlin inh_info) typ)
+          ppf
+          xs;
+        fprintf ppf " ->@]@ %a@ @[}@]@]" helper e
       | Fresh (xs, e) ->
+        fprintf ppf "/* NOTE: fresh without delay */@ ";
         fprintf ppf "@[<hov>@[freshTypedVars {";
         pp_comma_list
           (fun ppf (name, typ) ->

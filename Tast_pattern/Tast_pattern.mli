@@ -67,6 +67,11 @@ val map5
   -> f:('b -> 'c -> 'd -> 'e -> 'f -> 'i)
   -> ('a, 'i -> 'g, 'h) t
 
+val map6
+  :  ('a, 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h, 'i) t
+  -> f:('b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'j)
+  -> ('a, 'j -> 'h, 'i) t
+
 val map_result : ('a, 'b, 'c) t -> f:('c -> 'd) -> ('a, 'b, 'd) t
 
 open Typedtree

@@ -140,25 +140,66 @@ let translate_expr fallback : (unit, _ ast) Tast_folder.t =
       (* log "%d helper: @[%a@]\n" __LINE__ MyPrinttyped.expr e; *)
       choice
         [ texp_apply1
-            (texp_ident
-               (path [ "OCanren"; "Fresh"; "one" ])
-               (* ||| texp_ident (path [ "Fresh"; "one" ]) *)
-               (* ||| texp_ident (path [ "OCanren"; "Fresh"; "one" ]) *))
+            (texp_ident (path [ "OCanren"; "Fresh"; "one" ]))
             (as__ (texp_function (case (tpat_var __) none __ ^:: nil)))
-          |> map3 ~f:(fun name func rhs () ->
-               log "%s %d" __FILE__ __LINE__;
-               `Call_fresh (name, func, rhs))
-          (*    ; __
-               |> map1 ~f:(fun x () ->
-                    log "%s %d" __FILE__ __LINE__;
-                    `Other x) *)
+          |> map3 ~f:(fun e name rhs -> `Call_fresh ([ name, e ], rhs))
+        ; texp_apply1
+            (texp_ident (path [ "OCanren"; "Fresh"; "two" ]))
+            (as__
+               (texp_function
+                  (case
+                     (tpat_var __)
+                     none
+                     (texp_function (case (tpat_var __) none __ ^:: nil))
+                   ^:: nil)))
+          |> map4 ~f:(fun e name1 name2 rhs ->
+               (* TODO: TYPES!!! *)
+               `Call_fresh ([ name1, e; name2, e ], rhs))
+        ; texp_apply1
+            (texp_ident (path [ "OCanren"; "Fresh"; "three" ]))
+            (as__
+               (texp_function
+                  (case
+                     (tpat_var __)
+                     none
+                     (texp_function
+                        (case
+                           (tpat_var __)
+                           none
+                           (texp_function (case (tpat_var __) none __ ^:: nil))
+                         ^:: nil))
+                   ^:: nil)))
+          |> map5 ~f:(fun e name1 name2 name3 rhs ->
+               (* TODO: TYPES!!! *)
+               `Call_fresh ([ name1, e; name2, e; name3, e ], rhs))
+        ; texp_apply1
+            (texp_ident (path [ "OCanren"; "Fresh"; "four" ]))
+            (as__
+               (texp_function
+                  (case
+                     (tpat_var __)
+                     none
+                     (texp_function
+                        (case
+                           (tpat_var __)
+                           none
+                           (texp_function
+                              (case
+                                 (tpat_var __)
+                                 none
+                                 (texp_function (case (tpat_var __) none __ ^:: nil))
+                               ^:: nil))
+                         ^:: nil))
+                   ^:: nil)))
+          |> map6 ~f:(fun e name1 name2 name3 name4 rhs ->
+               (* TODO: TYPES!!! *)
+               `Call_fresh ([ name1, e; name2, e; name3, e; name4, e ], rhs))
         ]
       |> map1 ~f:(fun rez ->
-           match rez () with
+           match rez with
            | `Other _ -> fail Location.none ""
-           | `Call_fresh (_, name, rhs) -> Fresh ([ name, Predef.type_int ], rhs)
-           (* | `Let (name, rhs_expr, e), acc ->
-              helper ((name, rhs_expr.Typedtree.exp_type) :: acc) e *))
+           | `Call_fresh (pats, rhs) ->
+             Fresh (List.map pats ~f:(fun (name, _e) -> name, Predef.type_int), rhs))
     ;;
 
     let pat () =

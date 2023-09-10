@@ -80,15 +80,23 @@ m: Term<LogicList<LogicInt>>, r: Term<LogicList<LogicInt>>): Goal =
   (gt1o(n) and gen_addero(d, n, m, r)))
 fun gen_addero(d: Term<LogicInt>, n: Term<LogicList<LogicInt>>,
 m: Term<LogicList<LogicInt>>, r: Term<LogicList<LogicInt>>): Goal =
-  val a : int = freshTypedVar();
-  val b : int = freshTypedVar();
-  val c : int = freshTypedVar();
-  val e : int = freshTypedVar();
-  val x : int = freshTypedVar();
-  val y : int = freshTypedVar();
-  val z : int = freshTypedVar();
-  pause { and(((a + x) `===` n), ((b + y) `===` m), poso(y),
-          ((c + z) `===` r), poso(z), full_addero(d, a, b, c, e),
-          addero(e, x, y, z))
-  }
+  OCanren.Fresh.five(/* ERROR ? */{|  fun a ->
+                                        fun b ->
+                                          fun c ->
+                                            fun e ->
+                                              fun x ->
+                                                Fresh.two
+                                                  (fun y ->
+                                                     fun z ->
+                                                       delay
+                                                         (fun () ->
+                                                            ?&
+                                                              [(a % x) === n;
+                                                              (b % y) === m;
+                                                              poso y;
+                                                              (c % z) === r;
+                                                              poso z;
+                                                              full_addero d a
+                                                                b c e;
+                                                              addero e x y z])) |})
 // Put epilogue here 
