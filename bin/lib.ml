@@ -32,8 +32,8 @@ let translate_term =
         ; texp_ident __ |> map1 ~f:(fun x -> Tident x)
         ; __
           |> map1 ~f:(fun x ->
-               Format.printf "Tother parsed: @[%a@]\n%!" MyPrinttyped.expr x;
-               Tother x)
+            Format.printf "Tother parsed: @[%a@]\n%!" MyPrinttyped.expr x;
+            Tother x)
         ])
       e.exp_loc
       e
@@ -42,7 +42,7 @@ let translate_term =
   helper
 ;;
 
-let translate_expr fallback : (unit, _ ast) Tast_folder.t =
+let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
   let open struct
     open Tast_pattern
 
@@ -80,8 +80,6 @@ let translate_expr fallback : (unit, _ ast) Tast_folder.t =
     ;;
 
     let pat_mplus () : (Typedtree.expression, _ -> 'a, 'b) Tast_pattern.t =
-      (* texp_let (value_binding drop drop ^:: nil)
-      @@ *)
       texp_apply2
         (texp_ident (path [ "OCanren!"; "mplus" ] ||| path [ "OCanren"; "mplus" ]))
         __
@@ -94,9 +92,7 @@ let translate_expr fallback : (unit, _ ast) Tast_folder.t =
         (texp_ident (path [ "OCanren!"; "===" ] ||| path [ "OCanren"; "===" ]))
         __
         __
-      |> map2 ~f:(fun x y ->
-           log "Unification constructed";
-           Unify (translate_term x, translate_term y))
+      |> map2 ~f:(fun x y -> Unify (translate_term x, translate_term y))
     ;;
 
     let pat_bind () : (Typedtree.expression, _ -> 'a, 'b) Tast_pattern.t =
@@ -109,23 +105,21 @@ let translate_expr fallback : (unit, _ ast) Tast_folder.t =
 
     let pat_call () : (Typedtree.expression, _ -> 'a, 'b) Tast_pattern.t =
       texp_apply_nolabelled (texp_ident __) __
-      |> map2 ~f:(fun f args ->
-           log "Call constructed";
-           Call_rel (f, List.map ~f:translate_term args))
+      |> map2 ~f:(fun f args -> Call_rel (f, List.map ~f:translate_term args))
     ;;
 
     let pat_conde () : _ =
       texp_apply1 (texp_ident (path [ "OCanren"; "conde" ])) (texp_list __)
       |> map1 ~f:(fun xs ->
-           log "conde constructed with %d args" (List.length xs);
-           Conde xs)
+        (* log "conde constructed with %d args" (List.length xs); *)
+        Conde xs)
     ;;
 
     let pat_conj_many () : _ =
       texp_apply1 (texp_ident (path [ "OCanren"; "?&" ])) (texp_list __)
       |> map1 ~f:(fun xs ->
-           (* log "conde constructed with %d args" (List.length xs); *)
-           Conj_multi xs)
+        (* log "conde constructed with %d args" (List.length xs); *)
+        Conj_multi xs)
     ;;
 
     let pat_conj2 () : _ =
@@ -133,73 +127,54 @@ let translate_expr fallback : (unit, _ ast) Tast_folder.t =
         (texp_ident (choice [ path [ "OCanren"; "&&&" ]; path [ "OCanren!"; "&&&" ] ]))
         __
         __
-      |> map2 ~f:(fun l r -> Infix_conj2 (l, r))
+      |> map2 ~f:(fun x y -> Infix_conj2 (x, y))
     ;;
 
+    type fresh_rez =
+      | Call_fresh of (string * Types.type_expr) list * Typedtree.expression
+
     let pat_fresh () : _ =
-      (* log "%d helper: @[%a@]\n" __LINE__ MyPrinttyped.expr e; *)
+      let ( ** ) lhs rhs = texp_lambda (tpat_var lhs) rhs in
       choice
         [ texp_apply1
             (texp_ident (path [ "OCanren"; "Fresh"; "one" ]))
-            (as__ (texp_function (case (tpat_var __) none __ ^:: nil)))
-          |> map3 ~f:(fun e name rhs -> `Call_fresh ([ name, e ], rhs))
+            (texp_ascription (__ ** __) (__ @-> drop))
+          |> map3 ~f:(fun name rhs typ ->
+            (* log "%d: %a\n" __LINE__ Printtyp.type_expr typ; *)
+            Call_fresh ([ name, typ ], rhs))
         ; texp_apply1
             (texp_ident (path [ "OCanren"; "Fresh"; "two" ]))
-            (as__
-               (texp_function
-                  (case
-                     (tpat_var __)
-                     none
-                     (texp_function (case (tpat_var __) none __ ^:: nil))
-                   ^:: nil)))
-          |> map4 ~f:(fun e name1 name2 rhs ->
-               (* TODO: TYPES!!! *)
-               `Call_fresh ([ name1, e; name2, e ], rhs))
+            (texp_ascription (__ ** __ ** __) (as__ (__ @-> __ @-> drop)))
+          |> map6 ~f:(fun name1 name2 rhs _typ typ1 typ2 ->
+            (* log "%d: %a\n" __LINE__ Printtyp.type_expr typ; *)
+            Call_fresh ([ name1, typ1; name2, typ2 ], rhs))
         ; texp_apply1
             (texp_ident (path [ "OCanren"; "Fresh"; "three" ]))
-            (as__
-               (texp_function
-                  (case
-                     (tpat_var __)
-                     none
-                     (texp_function
-                        (case
-                           (tpat_var __)
-                           none
-                           (texp_function (case (tpat_var __) none __ ^:: nil))
-                         ^:: nil))
-                   ^:: nil)))
-          |> map5 ~f:(fun e name1 name2 name3 rhs ->
-               (* TODO: TYPES!!! *)
-               `Call_fresh ([ name1, e; name2, e; name3, e ], rhs))
-        ; texp_apply1
-            (texp_ident (path [ "OCanren"; "Fresh"; "four" ]))
-            (as__
-               (texp_function
-                  (case
-                     (tpat_var __)
-                     none
-                     (texp_function
-                        (case
-                           (tpat_var __)
-                           none
-                           (texp_function
-                              (case
-                                 (tpat_var __)
-                                 none
-                                 (texp_function (case (tpat_var __) none __ ^:: nil))
-                               ^:: nil))
-                         ^:: nil))
-                   ^:: nil)))
-          |> map6 ~f:(fun e name1 name2 name3 name4 rhs ->
-               (* TODO: TYPES!!! *)
-               `Call_fresh ([ name1, e; name2, e; name3, e; name4, e ], rhs))
+            (texp_ascription
+               (__ ** __ ** __ ** __ |> pack3)
+               (as__ (__ @-> __ @-> __ @-> drop |> pack3)))
+          |> map4 ~f:(fun (name1, name2, name3) rhs _typ (typ1, typ2, typ3) ->
+            (* log "%d: %a\n" __LINE__ Printtyp.type_expr typ; *)
+            Call_fresh ([ name1, typ1; name2, typ2; name3, typ3 ], rhs))
+          (*  *)
+        ; (let ( ** ) lhs rhs = texp_lambda (tpat_var lhs) rhs in
+           texp_apply1
+             (texp_ident (path [ "OCanren"; "Fresh"; "four" ]))
+             (texp_ascription
+                (__ ** __ ** __ ** __ ** __ |> pack4)
+                (__ @-> __ @-> __ @-> __ @-> drop |> pack4))
+           |> map3 ~f:(fun (name1, name2, name3, name4) rhs (t1, t2, t3, t4) ->
+             Call_fresh ([ name1, t1; name2, t2; name3, t3; name4, t4 ], rhs)))
+        ; (let ( ** ) lhs rhs = texp_lambda (tpat_var lhs) rhs in
+           texp_apply1
+             (texp_ident (path [ "OCanren"; "Fresh"; "five" ]))
+             (texp_ascription
+                (__ ** __ ** __ ** __ ** __ ** __ |> pack5)
+                (__ @-> __ @-> __ @-> __ @-> __ @-> drop |> pack5))
+           |> map3 ~f:(fun (name1, name2, name3, name4, name5) rhs (t1, t2, t3, t4, t5) ->
+             Call_fresh ([ name1, t1; name2, t2; name3, t3; name4, t4; name5, t5 ], rhs)))
         ]
-      |> map1 ~f:(fun rez ->
-           match rez with
-           | `Other _ -> fail Location.none ""
-           | `Call_fresh (pats, rhs) ->
-             Fresh (List.map pats ~f:(fun (name, _e) -> name, Predef.type_int), rhs))
+      |> map1 ~f:(function Call_fresh (pats, rhs) -> Fresh (pats, rhs))
     ;;
 
     let pat () =
@@ -227,6 +202,8 @@ let translate_expr fallback : (unit, _ ast) Tast_folder.t =
         let open Typedtree in
         let loc = expr.exp_loc in
         let ast =
+          (* log "%d:  @[%a@]\n" __LINE__ MyPrinttyped.expr expr; *)
+          (* log "%d:  @[%a@]\n" __LINE__ Printtyp.type_expr expr.Typedtree.exp_type; *)
           Tast_pattern.parse
             (pat ())
             loc
@@ -258,7 +235,7 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
   in
   let expr_is_a_goal (e : Typedtree.expression) =
     let rec helper acc : Types.type_expr -> _ =
-     fun e ->
+      fun e ->
       Tast_pattern.parse
         Tast_pattern.(
           typ_arrow drop __
@@ -277,9 +254,9 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
         ~on_error:(fun _ -> None)
     in
     (* Format.eprintf
-      "@[<2>Check expr_is_a_goal:@,%a@]\n"
-      Printtyp.type_expr
-      e.Typedtree.exp_type; *)
+       "@[<2>Check expr_is_a_goal:@,%a@]\n"
+       Printtyp.type_expr
+       e.Typedtree.exp_type; *)
     helper 0 e.Typedtree.exp_type
   in
   (* Printf.printf "%s %d\n" __FILE__ __LINE__; *)
@@ -343,16 +320,19 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
                let args, body = extract_rel_arguments argcount vb.vb_expr in
                let rez, _ = iter_expr.expr iter_expr () body in
                let () =
-                 match rez with
+                 match AST.simplify_ast rez with
                  | Error -> Format.eprintf "an error in value_binding name = %s\n%!" name
                  | rez ->
                    let rvb = Rvb.mk name args rez in
                    Inh_info.add_rvb inh rvb;
-                   Format.printf "%a\n" (pp_rvb_as_kotlin ~pretty:false inh) rvb;
                    Format.printf
+                     "\027[m@[%a\027[m\n"
+                     (pp_rvb_as_kotlin ~pretty:false inh)
+                     rvb
+                 (* Format.printf
                      "\027[31m@[<v 2>%a@]@ %!\027[m"
                      (AST.Fold_syntax_macro.pp inh)
-                     AST.Fold_syntax_macro.(upper @@ transform rez)
+                     AST.Fold_syntax_macro.(upper @@ transform rez) *)
                in
                (), si)
           | { Typedtree.vb_pat = { pat_desc = Tpat_any; _ }; _ } -> (), si

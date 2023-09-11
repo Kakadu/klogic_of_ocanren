@@ -17,13 +17,13 @@ val parse_conde
   -> 'c
 
 module Packed : sig
-  type ('a, 'b, 'c) pattern = ('a, 'b, 'c) t
-  type ('a, 'b) t
+    type ('a, 'b, 'c) pattern = ('a, 'b, 'c) t
+    type ('a, 'b) t
 
-  val create : ('a, 'b, 'c) pattern -> 'b -> ('a, 'c) t
-  val parse : ('a, 'b) t -> Location.t -> 'a -> 'b
-end
-with type ('a, 'b, 'c) pattern := ('a, 'b, 'c) t
+    val create : ('a, 'b, 'c) pattern -> 'b -> ('a, 'c) t
+    val parse : ('a, 'b) t -> Location.t -> 'a -> 'b
+  end
+  with type ('a, 'b, 'c) pattern := ('a, 'b, 'c) t
 
 val as__ : ('a, 'b, 'c) t -> ('a, 'a -> 'b, 'c) t
 
@@ -72,7 +72,20 @@ val map6
   -> f:('b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'j)
   -> ('a, 'j -> 'h, 'i) t
 
+val map7
+  :  ('a, 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> 'i, 'j) t
+  -> f:('b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> 'k)
+  -> ('a, 'k -> 'i, 'j) t
+
 val map_result : ('a, 'b, 'c) t -> f:('c -> 'd) -> ('a, 'b, 'd) t
+val pack0 : ('a, 'b, 'c) t -> ('a, unit -> 'b, 'c) t
+val pack2 : ('a, 'b -> 'c -> 'd, 'e) t -> ('a, 'b * 'c -> 'd, 'e) t
+val pack3 : ('a, 'b -> 'c -> 'd -> 'e, 'f) t -> ('a, 'b * 'c * 'd -> 'e, 'f) t
+val pack4 : ('a, 'b -> 'c -> 'd -> 'e -> 'f, 'g) t -> ('a, 'b * 'c * 'd * 'e -> 'f, 'g) t
+
+val pack5
+  :  ('a, 'b -> 'c -> 'd -> 'e -> 'f -> 'g, 'h) t
+  -> ('a, 'b * 'c * 'd * 'e * 'f -> 'g, 'h) t
 
 open Typedtree
 
@@ -116,11 +129,10 @@ val tpat_any : (value_pat, 'a, 'a) t
 val pident : (string, 'a, 'b) t -> (Path.t, 'a, 'b) t
 
 (** Trying to parse identifier with a given path. Beware that standard function
-  are locted implicitly in Stdlib module. For example
+    are locted implicitly in Stdlib module. For example
 
     texp_ident (path [ "&&" ])  (* WRONG *)
-    texp_ident (path [ "Stdlib"; "&&" ])  (* CORRECT *)
-*)
+    texp_ident (path [ "Stdlib"; "&&" ])  (* CORRECT *) *)
 val texp_ident : (Path.t, 'a, 'b) t -> (expression, 'a, 'b) t
 
 val texp_ident_typ
@@ -164,6 +176,11 @@ val texp_apply_nolabelled
   -> (expression list, 'b, 'c) t
   -> (expression, 'a, 'c) t
 
+val texp_lambda
+  :  (value general_pattern, 'a, 'b) t
+  -> (expression, 'b, 'c) t
+  -> (expression, 'a, 'c) t
+
 val texp_function : (case_val list, 'a, 'b) t -> (expression, 'a, 'b) t
 
 val case
@@ -171,6 +188,11 @@ val case
   -> (expression option, 'b, 'c) t
   -> (expression, 'c, 'd) t
   -> (case_val, 'a, 'd) t
+
+val texp_ascription
+  :  (expression, 'a, 'b) t
+  -> (Types.type_expr, 'b, 'c) t
+  -> (expression, 'a, 'c) t
 
 val texp_match
   :  (expression, 'a, 'b) t
@@ -213,6 +235,12 @@ val typ_constr
   -> (Types.type_expr, 'a, 'c) t
 
 val typ_arrow
+  :  (Types.type_expr, 'a, 'b) t
+  -> (Types.type_expr, 'b, 'c) t
+  -> (Types.type_expr, 'a, 'c) t
+
+(** An alias to [typ_arrow] *)
+val ( @-> )
   :  (Types.type_expr, 'a, 'b) t
   -> (Types.type_expr, 'b, 'c) t
   -> (Types.type_expr, 'a, 'c) t

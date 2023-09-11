@@ -15,6 +15,7 @@ val digitOne: Digit = 1.toLogic()
 
 typealias Digit = LogicInt
 typealias OlegLogicNumber = LogicList<Digit>
+typealias OlegTerm = Term<OlegLogicNumber>
 
 val zero: OlegLogicNumber = logicListOf()
 val one: OlegLogicNumber = logicListOf( 1.toLogic() )
@@ -28,75 +29,355 @@ fun UInt.toLogicList(): LogicList<Digit> =
         else -> digitOne + (this / 2u).toLogicList()
     }
 
-fun <T> pause(f: () -> RecursiveStream<T>): RecursiveStream<T> = ThunkStream(f)
+fun  pause(f: () -> Goal): Goal = { st -> ThunkStream { f()(st) } }
 
-
-// There are 7 relations
-fun poso(n: Term<LogicList<LogicInt>>): Goal =
-  val h : int = freshTypedVar();
-  val t : int = freshTypedVar();
-  pause { (n `===` (h + t)) }
-fun zeroo(n: Term<LogicList<LogicInt>>): Goal =
-  (n `===` nilLogicList())
-fun appendo(l: Term<LogicList<LogicInt>>, s: Term<LogicList<LogicInt>>,
-out: Term<LogicList<LogicInt>>): Goal =
-  conde(((l `===` nilLogicList()) and (s `===` out)),
-  val a : int = freshTypedVar();
-  val d : int = freshTypedVar();
-  val res : int = freshTypedVar();
-  pause { and(((a + d) `===` l), ((a + res) `===` out), appendo(d, s, res)) })
-fun gt1o(n: Term<LogicList<LogicInt>>): Goal =
-  val a : int = freshTypedVar();
-  val ad : int = freshTypedVar();
-  val dd : int = freshTypedVar();
-  pause { (n `===` (a + (ad + dd))) }
+// There are 23 relations
+fun zeroo(n: OlegTerm): Goal =
+n `===` nilLogicList()
+fun poso(n: OlegTerm): Goal =
+freshTypedVars { h: Term<LogicInt>, t: OlegTerm -> (n `===` (h + t)) }
+fun appendo(l: OlegTerm, s: OlegTerm, out: OlegTerm): Goal =
+conde(((l `===` nilLogicList()) and (s `===` out)),
+      freshTypedVars { a: Term<LogicInt>, d: OlegTerm, res: OlegTerm ->
+      and((a + d) `===` l,
+          (a + res) `===` out,
+          appendo(d, s, res))
+      })
+fun gt1o(n: OlegTerm): Goal =
+freshTypedVars { a: Term<LogicInt>, ad: Term<LogicInt>, dd: OlegTerm ->
+(n `===` (a + (ad + dd))) }
 fun full_addero(b: Term<LogicInt>, x: Term<LogicInt>, y: Term<LogicInt>,
 r: Term<LogicInt>, c: Term<LogicInt>): Goal =
-  conde((((((0.toLogic() `===` b) and (0.toLogic() `===` x)) and (0.toLogic() `===` y)) and (0.toLogic() `===` r)) and (0.toLogic() `===` c)),
-  (((((1.toLogic() `===` b) and (0.toLogic() `===` x)) and (0.toLogic() `===` y)) and (1.toLogic() `===` r)) and (0.toLogic() `===` c)),
-  (((((0.toLogic() `===` b) and (1.toLogic() `===` x)) and (0.toLogic() `===` y)) and (1.toLogic() `===` r)) and (0.toLogic() `===` c)),
-  (((((1.toLogic() `===` b) and (1.toLogic() `===` x)) and (0.toLogic() `===` y)) and (0.toLogic() `===` r)) and (1.toLogic() `===` c)),
-  (((((0.toLogic() `===` b) and (0.toLogic() `===` x)) and (1.toLogic() `===` y)) and (1.toLogic() `===` r)) and (0.toLogic() `===` c)),
-  (((((1.toLogic() `===` b) and (0.toLogic() `===` x)) and (1.toLogic() `===` y)) and (0.toLogic() `===` r)) and (1.toLogic() `===` c)),
-  (((((0.toLogic() `===` b) and (1.toLogic() `===` x)) and (1.toLogic() `===` y)) and (0.toLogic() `===` r)) and (1.toLogic() `===` c)),
-  (((((1.toLogic() `===` b) and (1.toLogic() `===` x)) and (1.toLogic() `===` y)) and (1.toLogic() `===` r)) and (1.toLogic() `===` c)))
-fun addero(d: Term<LogicInt>, n: Term<LogicList<LogicInt>>,
-m: Term<LogicList<LogicInt>>, r: Term<LogicList<LogicInt>>): Goal =
-  conde((((0.toLogic() `===` d) and (m `===` nilLogicList())) and (n `===` r)),
-  ((((0.toLogic() `===` d) and (n `===` nilLogicList())) and (m `===` r)) and 
-  poso(m)),
-  (((1.toLogic() `===` d) and (m `===` nilLogicList())) and addero(0.toLogic(),
-                                                            n, one, r)),
-  ((((1.toLogic() `===` d) and (n `===` nilLogicList())) and poso(m)) and 
-  addero(0.toLogic(), m, one, r)),
-  (((n `===` one) and (m `===` one)) and val a : int = freshTypedVar();
-                                         val c : int = freshTypedVar();
-                                         pause { and(((a + (c + nilLogicList())) `===` r),
-                                                 full_addero(d, 1.toLogic(),
-                                                 1.toLogic(), a, c))
-                                         }),
-  ((n `===` one) and gen_addero(d, n, m, r)),
-  ((((m `===` one) and gt1o(n)) and gt1o(r)) and addero(d, one, n, r)),
-  (gt1o(n) and gen_addero(d, n, m, r)))
-fun gen_addero(d: Term<LogicInt>, n: Term<LogicList<LogicInt>>,
-m: Term<LogicList<LogicInt>>, r: Term<LogicList<LogicInt>>): Goal =
-  OCanren.Fresh.five(/* ERROR ? */{|  fun a ->
-                                        fun b ->
-                                          fun c ->
-                                            fun e ->
-                                              fun x ->
-                                                Fresh.two
-                                                  (fun y ->
-                                                     fun z ->
-                                                       delay
-                                                         (fun () ->
-                                                            ?&
-                                                              [(a % x) === n;
-                                                              (b % y) === m;
-                                                              poso y;
-                                                              (c % z) === r;
-                                                              poso z;
-                                                              full_addero d a
-                                                                b c e;
-                                                              addero e x y z])) |})
+conde(and(((0.toLogic() `===` b) and (0.toLogic() `===` x)),
+          0.toLogic() `===` y,
+          0.toLogic() `===` r,
+          0.toLogic() `===` c),
+      and(((1.toLogic() `===` b) and (0.toLogic() `===` x)),
+          0.toLogic() `===` y,
+          1.toLogic() `===` r,
+          0.toLogic() `===` c),
+      and(((0.toLogic() `===` b) and (1.toLogic() `===` x)),
+          0.toLogic() `===` y,
+          1.toLogic() `===` r,
+          0.toLogic() `===` c),
+      and(((1.toLogic() `===` b) and (1.toLogic() `===` x)),
+          0.toLogic() `===` y,
+          0.toLogic() `===` r,
+          1.toLogic() `===` c),
+      and(((0.toLogic() `===` b) and (0.toLogic() `===` x)),
+          1.toLogic() `===` y,
+          1.toLogic() `===` r,
+          0.toLogic() `===` c),
+      and(((1.toLogic() `===` b) and (0.toLogic() `===` x)),
+          1.toLogic() `===` y,
+          0.toLogic() `===` r,
+          1.toLogic() `===` c),
+      and(((0.toLogic() `===` b) and (1.toLogic() `===` x)),
+          1.toLogic() `===` y,
+          0.toLogic() `===` r,
+          1.toLogic() `===` c),
+      and(((1.toLogic() `===` b) and (1.toLogic() `===` x)),
+          1.toLogic() `===` y,
+          1.toLogic() `===` r,
+          1.toLogic() `===` c))
+fun addero(d: Term<LogicInt>, n: OlegTerm, m: OlegTerm, r: OlegTerm): Goal =
+conde(and(0.toLogic() `===` d,
+          m `===` nilLogicList(),
+          n `===` r),
+      and(0.toLogic() `===` d,
+          n `===` nilLogicList(),
+          m `===` r,
+          poso(m)),
+      and(1.toLogic() `===` d,
+          m `===` nilLogicList(),
+          pause { addero(0.toLogic(), n, one, r) }),
+      and(1.toLogic() `===` d,
+          n `===` nilLogicList(),
+          poso(m),
+          pause { addero(0.toLogic(), m, one, r) }),
+      and(n `===` one,
+          m `===` one,
+          freshTypedVars { a: Term<LogicInt>, c: Term<LogicInt> ->
+          and((a + (c + nilLogicList())) `===` r,
+              full_addero(d, 1.toLogic(), 1.toLogic(), a, c))
+          }),
+      ((n `===` one) and gen_addero(d, n, m, r)),
+      and(m `===` one,
+          gt1o(n),
+          gt1o(r),
+          pause { addero(d, one, n, r) }),
+      (gt1o(n) and gen_addero(d, n, m, r)))
+fun gen_addero(d: Term<LogicInt>, n: OlegTerm, m: OlegTerm,
+r: OlegTerm): Goal =
+/* NOTE: fresh without delay */
+freshTypedVars { a : Term<LogicInt>,  b : Term<LogicInt>,
+ c : Term<LogicInt>,  e : Term<LogicInt>,  x : OlegTerm ->
+freshTypedVars { y: OlegTerm, z: OlegTerm ->
+and((a + x) `===` n,
+    (b + y) `===` m,
+    poso(y),
+    (c + z) `===` r,
+    poso(z),
+    full_addero(d, a, b, c, e),
+    addero(e, x, y, z))
+} }
+fun pluso(n: OlegTerm, m: OlegTerm, k: OlegTerm): Goal =
+addero(0.toLogic(), n, m, k)
+fun minuso(n: OlegTerm, m: OlegTerm, k: OlegTerm): Goal =
+pluso(m, k, n)
+fun bound_multo(q: OlegTerm, p: OlegTerm, n: OlegTerm, m: OlegTerm): Goal =
+conde(((q `===` zero) and poso(p)),
+      /* NOTE: fresh without delay */
+      freshTypedVars { a0 : Term<LogicInt>,  a1 : Term<LogicInt>,
+       a2 : Term<LogicInt>,  a3 : Term<LogicInt>,  x : OlegTerm ->
+      freshTypedVars { y: OlegTerm, z: OlegTerm ->
+      and(q `===` (a0 + x),
+          p `===` (a1 + y),
+          conde((((n `===` zero) and (m `===` (a2 + z))) and bound_multo(x,
+                                                             y, z, zero)),
+                ((n `===` (a3 + z)) and bound_multo(x, y, z, m))))
+      } })
+fun multo(n: OlegTerm, m: OlegTerm, p: OlegTerm): Goal =
+conde(((n `===` zero) and (p `===` zero)),
+      and(poso(n),
+          m `===` zero,
+          p `===` zero),
+      and(n `===` one,
+          poso(m),
+          m `===` p),
+      and(gt1o(n),
+          m `===` one,
+          n `===` p),
+      freshTypedVars { x: OlegTerm, z: OlegTerm ->
+      and(n `===` (0.toLogic() + x),
+          poso(x),
+          p `===` (0.toLogic() + z),
+          poso(z),
+          gt1o(m),
+          multo(x, m, z))
+      },
+      freshTypedVars { x: OlegTerm, y: OlegTerm ->
+      and(n `===` (1.toLogic() + x),
+          poso(x),
+          m `===` (0.toLogic() + y),
+          poso(y),
+          multo(m, n, p))
+      },
+      freshTypedVars { x: OlegTerm, y: OlegTerm ->
+      and(n `===` (1.toLogic() + x),
+          poso(x),
+          m `===` (1.toLogic() + y),
+          poso(y),
+          odd_multo(x, n, m, p))
+      })
+fun odd_multo(x: OlegTerm, n: OlegTerm, m: OlegTerm, p: OlegTerm): Goal =
+freshTypedVars { q: OlegTerm ->
+and(bound_multo(q, p, n, m),
+    multo(x, m, q),
+    pluso((0.toLogic() + q), m, p))
+}
+fun eqlo(n: OlegTerm, m: OlegTerm): Goal =
+conde(((n `===` zero) and (m `===` zero)),
+      ((n `===` one) and (m `===` one)),
+      freshTypedVars { a: Term<LogicInt>, x: OlegTerm, b: Term<LogicInt>,
+        y: OlegTerm ->
+      and((a + x) `===` n,
+          poso(x),
+          (b + y) `===` m,
+          poso(y),
+          eqlo(x, y))
+      })
+fun ltlo(n: OlegTerm, m: OlegTerm): Goal =
+conde(((n `===` zero) and poso(m)),
+      ((n `===` one) and gt1o(m)),
+      freshTypedVars { a: Term<LogicInt>, x: OlegTerm, b: Term<LogicInt>,
+        y: OlegTerm ->
+      and((a + x) `===` n,
+          poso(x),
+          (b + y) `===` m,
+          poso(y),
+          ltlo(x, y))
+      })
+fun lelo(n: OlegTerm, m: OlegTerm): Goal =
+conde(eqlo(n, m),
+      ltlo(n, m))
+fun lto(n: OlegTerm, m: OlegTerm): Goal =
+conde(ltlo(n, m),
+      (eqlo(n, m) and freshTypedVars { x: OlegTerm ->
+                      and(poso(x),
+                          pluso(n, x, m))
+                      }))
+fun leo(n: OlegTerm, m: OlegTerm): Goal =
+conde(n `===` m,
+      lto(n, m))
+fun splito(n: OlegTerm, r: OlegTerm, l: OlegTerm, h: OlegTerm): Goal =
+conde(and(n `===` zero,
+          h `===` zero,
+          l `===` zero),
+      freshTypedVars { b: Term<LogicInt>, n_: OlegTerm ->
+      and(n `===` (0.toLogic() + (b + n_)),
+          r `===` zero,
+          h `===` (b + n_),
+          l `===` zero)
+      },
+      freshTypedVars { n_: OlegTerm ->
+      and(n `===` (1.toLogic() + n_),
+          r `===` zero,
+          n_ `===` h,
+          l `===` one)
+      },
+      freshTypedVars { b: Term<LogicInt>, n_: OlegTerm, a: Term<LogicInt>,
+        r_: OlegTerm ->
+      and(n `===` (0.toLogic() + (b + n_)),
+          (a + r_) `===` r,
+          l `===` zero,
+          splito((b + n_), r_, zero, h))
+      },
+      freshTypedVars { n_: OlegTerm, a: Term<LogicInt>, r_: OlegTerm ->
+      and(n `===` (1.toLogic() + n_),
+          r `===` (a + r_),
+          l `===` one,
+          splito(n_, r_, zero, h))
+      },
+      freshTypedVars { b: Term<LogicInt>, n_: OlegTerm, a: Term<LogicInt>,
+        r_: OlegTerm, l_: OlegTerm ->
+      and(n `===` (b + n_),
+          r `===` (a + r_),
+          l `===` (b + l_),
+          poso(l_),
+          splito(n_, r_, l_, h))
+      })
+fun divo(n: OlegTerm, m: OlegTerm, q: OlegTerm, r: OlegTerm): Goal =
+conde(and(r `===` n,
+          q `===` zero,
+          lto(n, m)),
+      and(q `===` one,
+          eqlo(n, m),
+          pluso(r, m, n),
+          lto(r, m)),
+      and(ltlo(m, n),
+          lto(r, m),
+          poso(q),
+          /* NOTE: fresh without delay */
+          freshTypedVars { nh : OlegTerm,  nl : OlegTerm,  qh : OlegTerm,
+           ql : OlegTerm,  qlm : OlegTerm ->
+          freshTypedVars { qlmr: OlegTerm, rr: OlegTerm, rh: OlegTerm ->
+          and(splito(n, r, nl, nh),
+              splito(q, r, ql, qh),
+              conde(((((nh `===` zero) and (qh `===` zero)) and minuso(nl, r,
+                                                                qlm)) and 
+                    multo(ql, m, qlm)),
+                    (((((poso(nh) and multo(ql, m, qlm)) and pluso(qlm, r,
+                                                             qlmr)) and 
+                      minuso(qlmr, nl, rr)) and splito(rr, r, zero, rh)) and 
+                    divo(nh, m, qh, rh))))
+          } }))
+fun repeated_mul(n: OlegTerm, q: OlegTerm, nq: OlegTerm): Goal =
+conde(and(poso(n),
+          q `===` zero,
+          nq `===` one),
+      ((q `===` one) and (n `===` nq)),
+      (gt1o(q) and freshTypedVars { q1: OlegTerm, nq1: OlegTerm ->
+                   and(pluso(q1, one, q),
+                       repeated_mul(n, q1, nq1),
+                       multo(nq1, n, nq))
+                   }))
+fun exp2(n: OlegTerm, b: OlegTerm, q: OlegTerm): Goal =
+conde(((n `===` one) and (q `===` zero)),
+      and(gt1o(n),
+          q `===` one,
+          freshTypedVars { s: OlegTerm -> splito(n, b, s, one) }),
+      freshTypedVars { q1: OlegTerm, b2: OlegTerm ->
+      and(q `===` (0.toLogic() + q1),
+          poso(q1),
+          ltlo(b, n),
+          appendo(b, (1.toLogic() + b), b2),
+          exp2(n, b2, q1))
+      },
+      freshTypedVars { q1: OlegTerm, nh: OlegTerm, b2: OlegTerm,
+        s: OlegTerm ->
+      and(q `===` (1.toLogic() + q1),
+          poso(q1),
+          poso(nh),
+          splito(n, b, s, nh),
+          appendo(b, (1.toLogic() + b), b2),
+          exp2(nh, b2, q1))
+      })
+fun logo(n: OlegTerm, b: OlegTerm, q: OlegTerm, r: OlegTerm): Goal =
+conde(and(n `===` one,
+          poso(b),
+          q `===` zero,
+          r `===` zero),
+      and(q `===` zero,
+          lto(n, b),
+          pluso(r, one, n)),
+      and(q `===` one,
+          gt1o(b),
+          eqlo(n, b),
+          pluso(r, b, n)),
+      and(b `===` one,
+          poso(q),
+          pluso(r, one, n)),
+      and(b `===` zero,
+          poso(q),
+          r `===` n),
+      (((0.toLogic() + (1.toLogic() + nilLogicList())) `===` b) and freshTypedVars { 
+                                                                    a: Term<LogicInt>,
+                                                                    ad: Term<LogicInt>,
+                                                                    dd: OlegTerm ->
+                                                                    and(poso(dd),
+                                                                    n `===` 
+                                                                    (a + 
+                                                                    (ad + dd)),
+                                                                    exp2(n,
+                                                                    nilLogicList(),
+                                                                    q),
+                                                                    freshTypedVars { 
+                                                                    s: OlegTerm ->
+                                                                    splito(n,
+                                                                    dd, r, s)
+                                                                    }) 
+                                                                    }),
+      and(freshTypedVars { a: Term<LogicInt>, ad: Term<LogicInt>,
+            add: Term<LogicInt>, ddd: OlegTerm ->
+          conde(b `===` three,
+                b `===` (a + (ad + (add + ddd))))
+          },
+          ltlo(b, n),
+          /* NOTE: fresh without delay */
+          freshTypedVars { bw1 : OlegTerm,  bw : OlegTerm,  nw : OlegTerm,
+           nw1 : OlegTerm,  ql1 : OlegTerm ->
+          freshTypedVars { ql: OlegTerm, s: OlegTerm ->
+          and(exp2(b, zero, bw1),
+              pluso(bw1, one, bw),
+              ltlo(q, n),
+              freshTypedVars { q1: OlegTerm, bwq1: OlegTerm ->
+              and(pluso(q, one, q1),
+                  multo(bw, q1, bwq1),
+                  lto(nw1, bwq1))
+              },
+              exp2(n, zero, nw1),
+              pluso(nw1, one, nw),
+              divo(nw, bw, ql1, s),
+              pluso(ql, one, ql1),
+              lelo(ql, q),
+              freshTypedVars { bql: OlegTerm, qh: OlegTerm, s2: OlegTerm,
+                qdh: OlegTerm, qd: OlegTerm ->
+              and(repeated_mul(b, ql, bql),
+                  divo(nw, bw1, qh, s2),
+                  pluso(ql, qdh, qh),
+                  pluso(ql, qd, q),
+                  leo(qd, qdh),
+                  freshTypedVars { bqd: OlegTerm, bq1: OlegTerm,
+                    bq: OlegTerm ->
+                  and(repeated_mul(b, qd, bqd),
+                      multo(bql, bqd, bq),
+                      multo(b, bq, bq1),
+                      pluso(bq, r, n),
+                      lto(n, bq1))
+                  })
+              })
+          } }))
+fun expo(b: OlegTerm, q: OlegTerm, n: OlegTerm): Goal =
+logo(n, b, q, zero)
 // Put epilogue here 
