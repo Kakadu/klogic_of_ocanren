@@ -93,6 +93,7 @@ module Inh_info = struct
   type item =
     | RVB of Rvb.t
     | Plain_kotlin of string
+    | MT_as_interface of string * Typedtree.signature
 
   type t =
     { type_mangle_hints : (string, string) Hashtbl.t
@@ -106,6 +107,7 @@ module Inh_info = struct
   ;;
 
   let add_rvb t rvb = t.rvbs <- RVB rvb :: t.rvbs
+  let add_modtype t ident types = t.rvbs <- MT_as_interface (ident, types) :: t.rvbs
   let lookup_typ_exn t typ = Hashtbl.find t.type_mangle_hints typ
 
   let add_hints info hints =
@@ -395,7 +397,7 @@ let pp_rvb_as_kotlin ~pretty inh_info ppf { Rvb.name; args; body } =
       (fun ppf (name, typ) -> fprintf ppf "%s: %a" name (pp_typ_as_kotlin inh_info) typ)
       ppf
   in
-  Format.fprintf
+  fprintf
     ppf
     "@[fun %s(%a): Goal =@]@,@[%a@]\n%!"
     name
@@ -403,4 +405,17 @@ let pp_rvb_as_kotlin ~pretty inh_info ppf { Rvb.name; args; body } =
     args
     (pp_ast_as_kotlin ~pretty inh_info)
     body
+;;
+
+let pp_modtype_as_kotlin name sign ppf =
+  let open Format in
+  printf "%s %d\n%!" __FILE__ __LINE__;
+  let printfn fmt = Format.kfprintf (fun fmt -> fprintf fmt "\n%!") ppf fmt in
+  fprintf ppf "// %s \n%!" name;
+  printfn "@[<v 2>@[interface {@]";
+  List.iter sign.Typedtree.sig_items ~f:(fun sitem ->
+    match sitem.sig_desc with
+    | Tsig_value { val_name = { txt = name; _ }; _ } -> printfn "@[// %s@]" name
+    | _ -> printfn "@[//@]");
+  printfn "}@]"
 ;;

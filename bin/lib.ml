@@ -14,7 +14,11 @@ let translate_term =
       parse_conde
         [ texp_apply1
             (texp_ident
-               (path [ "OCanren!"; "Std"; "nil" ] ||| path [ "OCanren"; "Std"; "nil" ]))
+               (choice
+                  [ path [ "OCanren!"; "Std"; "nil" ]
+                  ; path [ "OCanren"; "Std"; "List"; "nil" ]
+                  ; path [ "OCanren"; "Std"; "nil" ]
+                  ]))
             drop
           |> map0 ~f:T_list_nil
         ; texp_apply2
@@ -59,7 +63,7 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
       |> map1 ~f:(fun x -> Pause x)
     ;;
 
-    let pat_st_abstr () : (Typedtree.expression, _ ast -> 'a, 'b) Tast_pattern.t =
+    let _pat_st_abstr () : (Typedtree.expression, _ ast -> 'a, 'b) Tast_pattern.t =
       texp_function
         (case
            (tpat_var (string "st"))
@@ -70,16 +74,16 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
       |> map1 ~f:(fun x -> St_abstr x)
     ;;
 
-    let pat_st_app () : (Typedtree.expression, _ ast -> 'a, 'b) Tast_pattern.t =
+    let _pat_st_app () : (Typedtree.expression, _ ast -> 'a, 'b) Tast_pattern.t =
       texp_apply1 __ (texp_ident (path [ "st" ])) |> map1 ~f:(fun x -> St_app x)
     ;;
 
-    let pat_new_scope () : (Typedtree.expression, _ -> 'a, 'b) Tast_pattern.t =
+    let _pat_new_scope () : (Typedtree.expression, _ -> 'a, 'b) Tast_pattern.t =
       texp_let (value_binding (tpat_var (string "st")) drop ^:: nil) __
       |> map1 ~f:(fun x -> New_scope x)
     ;;
 
-    let pat_mplus () : (Typedtree.expression, _ -> 'a, 'b) Tast_pattern.t =
+    let _pat_mplus () : (Typedtree.expression, _ -> 'a, 'b) Tast_pattern.t =
       texp_apply2
         (texp_ident (path [ "OCanren!"; "mplus" ] ||| path [ "OCanren"; "mplus" ]))
         __
@@ -389,6 +393,14 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
           on_type_mangle_spec inh attr_payload;
           (* TODO: specify mangling of names as an attribute *)
           (), si
+        | Tstr_modtype
+            { mtd_type = Some { mty_desc = Tmty_signature sign; _ }
+            ; mtd_name = { txt; _ }
+            ; _
+            } ->
+          Inh_info.add_modtype inh txt sign;
+          log "%s %d" __FILE__ __LINE__;
+          (), si
         | Tstr_attribute _ | Tstr_type _ | Tstr_open _ -> (), si
         | _ ->
           Format.eprintf "%a\n%!" Pprintast.structure_item (MyUntype.untype_stru_item si);
@@ -414,7 +426,8 @@ let analyze_cmt _source_file out_file stru =
       Inh_info.iter_vbs info ~f:(function
         | Inh_info.RVB rvb ->
           pp_rvb_as_kotlin ~pretty:Trans_config.(config.pretty) info ppf rvb
-        | Plain_kotlin s -> Format.fprintf ppf "%s" s);
+        | Plain_kotlin s -> Format.fprintf ppf "%s" s
+        | MT_as_interface (name, sign) -> pp_modtype_as_kotlin name sign ppf);
       Printf.fprintf ch "%s\n" (Inh_info.epilogue info);
       Format.pp_print_flush ppf ();
       flush ch

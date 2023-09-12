@@ -28,5 +28,20 @@
    -o
    %{target})))
 
+(rule
+ (deps
+  %{project_root}/bin/klogic_of_ocanren.exe
+  ../../../../../JGS/.miniJGS.objs/byte/miniJGS.cmo
+  ;
+  )
+ (target miniJGS.kt)
+ (mode promote)
+ (action
+  (run
+   %{project_root}/bin/klogic_of_ocanren.exe
+   ../../../../../JGS/.miniJGS.objs/byte/miniJGS.cmt
+   -o
+   %{target})))
+
 (cram
- (deps OlegNumbers.kt JGS.kt))
+ (deps OlegNumbers.kt JGS.kt miniJGS.kt))
