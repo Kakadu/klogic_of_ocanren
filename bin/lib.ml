@@ -23,7 +23,11 @@ let translate_term =
           |> map0 ~f:T_list_nil
         ; texp_apply2
             (texp_ident
-               (path [ "OCanren!"; "Std"; "%" ] ||| path [ "OCanren"; "Std"; "%" ]))
+               (choice
+                  [ path [ "OCanren!"; "Std"; "%" ]
+                  ; path [ "OCanren"; "Std"; "%" ]
+                  ; path [ "OCanren"; "Std"; "List"; "cons" ]
+                  ]))
             __
             __
           |> map2 ~f:(fun a b -> T_list_cons (helper a, helper b))
@@ -427,7 +431,7 @@ let analyze_cmt _source_file out_file stru =
         | Inh_info.RVB rvb ->
           pp_rvb_as_kotlin ~pretty:Trans_config.(config.pretty) info ppf rvb
         | Plain_kotlin s -> Format.fprintf ppf "%s" s
-        | MT_as_interface (name, sign) -> pp_modtype_as_kotlin name sign ppf);
+        | MT_as_interface (name, sign) -> pp_modtype_as_kotlin info name sign ppf);
       Printf.fprintf ch "%s\n" (Inh_info.epilogue info);
       Format.pp_print_flush ppf ();
       flush ch

@@ -124,14 +124,36 @@ module Inh_info = struct
   let epilogue { epilogue; _ } = epilogue
 end
 
-let pp_typ_as_kotlin inh_info ppf typ =
-  let caml_repr =
+let unparse_arrows typ =
+  let rec helper acc te =
+    Tast_pattern.(parse (typ_arrow __ __) Location.none)
+      ~on_error:(fun _ -> List.rev acc, te)
+      te
+      (fun h tl -> helper (h :: acc) tl)
+  in
+  helper [] typ
+;;
+
+let rec pp_typ_as_kotlin inh_info ppf typ =
+  let to_caml_string typ =
     Format.asprintf "%a" Printtyp.type_expr typ |> Str.global_replace (Str.regexp "\n") ""
   in
-  (* log "caml_repr = '%s'" caml_repr; *)
-  match Inh_info.lookup_typ_exn inh_info caml_repr with
-  | s -> Format.fprintf ppf "%s" s
-  | exception Not_found -> Format.fprintf ppf "%s" caml_repr
+  let textual typ ~fk =
+    let caml_repr = to_caml_string typ in
+    match Inh_info.lookup_typ_exn inh_info caml_repr with
+    | s -> Format.fprintf ppf "%s" s
+    | exception Not_found -> fk ()
+  in
+  textual typ ~fk:(fun () ->
+    match unparse_arrows typ with
+    | [], rest ->
+      textual rest ~fk:(fun () -> Format.fprintf ppf "%s" (to_caml_string rest))
+    | args, rest ->
+      Format.fprintf ppf "(";
+      List.iteri args ~f:(fun i typ ->
+        if i <> 0 then Format.fprintf ppf ", ";
+        pp_typ_as_kotlin inh_info ppf typ);
+      Format.fprintf ppf ") -> %a" (pp_typ_as_kotlin inh_info) rest)
 ;;
 
 module Fold_syntax_macro = struct
@@ -407,15 +429,32 @@ let pp_rvb_as_kotlin ~pretty inh_info ppf { Rvb.name; args; body } =
     body
 ;;
 
-let pp_modtype_as_kotlin name sign ppf =
+(* pp_typ_as_kotlin *)
+let pp_modtype_as_kotlin info name sign ppf =
   let open Format in
   printf "%s %d\n%!" __FILE__ __LINE__;
-  let printfn fmt = Format.kfprintf (fun fmt -> fprintf fmt "\n%!") ppf fmt in
+  let printfn fmt = Format.kfprintf (fun fmt -> fprintf fmt "@,") ppf fmt in
+  (* let printf fmt = Format.fprintf ppf fmt in *)
   fprintf ppf "// %s \n%!" name;
-  printfn "@[<v 2>@[interface {@]";
+  printfn "@[<v 2>@[interface %s {@]" name;
+  let gensym =
+    let c = ref 0 in
+    fun () ->
+      incr c;
+      Printf.sprintf "v%d" !c
+  in
   List.iter sign.Typedtree.sig_items ~f:(fun sitem ->
     match sitem.sig_desc with
-    | Tsig_value { val_name = { txt = name; _ }; _ } -> printfn "@[// %s@]" name
+    | Tsig_value { val_name = { txt = name; _ }; val_val = { val_type; _ }; _ } ->
+      let args, ret = unparse_arrows val_type in
+      printfn "@[// %s@]" name;
+      (* TODO: generate varnames *)
+      printfn "@[fun %s(" name;
+      List.iteri args ~f:(fun i t ->
+        if i <> 0 then fprintf ppf ",@ ";
+        fprintf ppf "%s: %a" (gensym ()) (pp_typ_as_kotlin info) t);
+      fprintf ppf "): %a" (pp_typ_as_kotlin info) ret;
+      printfn "@]"
     | _ -> printfn "@[//@]");
   printfn "}@]"
 ;;
