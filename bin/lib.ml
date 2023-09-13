@@ -314,7 +314,7 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
         in
         (), expr)
   ; stru_item =
-      (fun _self inh si ->
+      (fun self inh si ->
         let on_rel_decl = function
           | { Typedtree.vb_pat = { pat_desc = Tpat_var (_, { txt = name; _ }); _ }; _ } as
             vb ->
@@ -405,6 +405,24 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
           Inh_info.add_modtype inh txt sign;
           log "%s %d" __FILE__ __LINE__;
           (), si
+        | Tstr_module
+            { mb_id = Some _
+            ; mb_expr =
+                { mod_desc =
+                    Tmod_functor
+                      ( Named
+                          ( Some name
+                          , _
+                          , { mty_desc = Tmty_ident (_, { txt = typlid }); _ } )
+                      , { mod_desc = Tmod_structure mod_body; _ } )
+                ; _
+                }
+            ; _
+            } ->
+          let new_inh_info = Inh_info.create () in
+          let _, _ = self.stru self new_inh_info mod_body in
+          Inh_info.add_functor inh "" new_inh_info;
+          (), si
         | Tstr_attribute _ | Tstr_type _ | Tstr_open _ -> (), si
         | _ ->
           Format.eprintf "%a\n%!" Pprintast.structure_item (MyUntype.untype_stru_item si);
@@ -431,7 +449,8 @@ let analyze_cmt _source_file out_file stru =
         | Inh_info.RVB rvb ->
           pp_rvb_as_kotlin ~pretty:Trans_config.(config.pretty) info ppf rvb
         | Plain_kotlin s -> Format.fprintf ppf "%s" s
-        | MT_as_interface (name, sign) -> pp_modtype_as_kotlin info name sign ppf);
+        | MT_as_interface (name, sign) -> pp_modtype_as_kotlin info name sign ppf
+        | Functor1 _ -> Format.fprintf ppf "// functor\n%!");
       Printf.fprintf ch "%s\n" (Inh_info.epilogue info);
       Format.pp_print_flush ppf ();
       flush ch

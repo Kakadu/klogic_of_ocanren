@@ -64,3 +64,9 @@ module type CT = sig
      val serializable_t : jtype_injected -> OCanren.goal *)
   val new_var : (int OCanren.ilogic -> OCanren.goal) -> int ilogic -> OCanren.goal
 end
+
+module Stuff (Impl : CT) = struct
+  let not_a_superclass : int ilogic -> int ilogic -> goal =
+    fun a b -> Impl.get_superclass (( === ) a) (( === ) b) (Std.none ())
+  ;;
+end

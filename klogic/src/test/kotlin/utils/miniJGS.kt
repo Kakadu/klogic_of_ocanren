@@ -16,7 +16,7 @@ typealias JType = LogicInt
 
 fun  pause(f: () -> Goal): Goal = { st -> ThunkStream { f()(st) } }
 
-// There are 3 relations
+// There are 4 relations
 fun conso1(xs: Term<LogicList<LogicInt>>): Goal =
 freshTypedVars { h: Term<LogicInt>, tl: Term<LogicList<LogicInt>> ->
 (xs `===` (h + tl)) }
@@ -30,6 +30,7 @@ interface CT {
   fun get_superclass(v3: (Term<LogicInt>) -> Goal,
   v4: (Term<LogicInt>) -> Goal, v5: Term<Option<JType>>): Goal
   // new_var
-  fun new_var(v6: (Term<LogicInt>) -> Goal, v7: Term<LogicInt>): Goal// Put epilogue here 
-
+  fun new_var(v6: (Term<LogicInt>) -> Goal, v7: Term<LogicInt>): Goal
   }
+// functor
+// Put epilogue here 

@@ -94,6 +94,7 @@ module Inh_info = struct
     | RVB of Rvb.t
     | Plain_kotlin of string
     | MT_as_interface of string * Typedtree.signature
+    | Functor1 of item list
 
   type t =
     { type_mangle_hints : (string, string) Hashtbl.t
@@ -106,8 +107,10 @@ module Inh_info = struct
     { type_mangle_hints = Hashtbl.create 13; rvbs = []; preamble = ""; epilogue = "" }
   ;;
 
-  let add_rvb t rvb = t.rvbs <- RVB rvb :: t.rvbs
+  let extend t item = t.rvbs <- item :: t.rvbs
+  let add_rvb t rvb = extend t (RVB rvb)
   let add_modtype t ident types = t.rvbs <- MT_as_interface (ident, types) :: t.rvbs
+  let add_functor t name other_info = extend t (Functor1 other_info.rvbs)
   let lookup_typ_exn t typ = Hashtbl.find t.type_mangle_hints typ
 
   let add_hints info hints =
