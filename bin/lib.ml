@@ -40,8 +40,8 @@ let translate_term =
         ; texp_ident __ |> map1 ~f:(fun x -> Tident x)
         ; __
           |> map1 ~f:(fun x ->
-            Format.printf "Tother parsed: @[%a@]\n%!" MyPrinttyped.expr x;
-            Tother x)
+               Format.printf "Tother parsed: @[%a@]\n%!" MyPrinttyped.expr x;
+               Tother x)
         ])
       e.exp_loc
       e
@@ -119,15 +119,15 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
     let pat_conde () : _ =
       texp_apply1 (texp_ident (path [ "OCanren"; "conde" ])) (texp_list __)
       |> map1 ~f:(fun xs ->
-        (* log "conde constructed with %d args" (List.length xs); *)
-        Conde xs)
+           (* log "conde constructed with %d args" (List.length xs); *)
+           Conde xs)
     ;;
 
     let pat_conj_many () : _ =
       texp_apply1 (texp_ident (path [ "OCanren"; "?&" ])) (texp_list __)
       |> map1 ~f:(fun xs ->
-        (* log "conde constructed with %d args" (List.length xs); *)
-        Conj_multi xs)
+           (* log "conde constructed with %d args" (List.length xs); *)
+           Conj_multi xs)
     ;;
 
     let pat_conj2 () : _ =
@@ -148,22 +148,22 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
             (texp_ident (path [ "OCanren"; "Fresh"; "one" ]))
             (texp_ascription (__ ** __) (__ @-> drop))
           |> map3 ~f:(fun name rhs typ ->
-            (* log "%d: %a\n" __LINE__ Printtyp.type_expr typ; *)
-            Call_fresh ([ name, typ ], rhs))
+               (* log "%d: %a\n" __LINE__ Printtyp.type_expr typ; *)
+               Call_fresh ([ name, typ ], rhs))
         ; texp_apply1
             (texp_ident (path [ "OCanren"; "Fresh"; "two" ]))
             (texp_ascription (__ ** __ ** __) (as__ (__ @-> __ @-> drop)))
           |> map6 ~f:(fun name1 name2 rhs _typ typ1 typ2 ->
-            (* log "%d: %a\n" __LINE__ Printtyp.type_expr typ; *)
-            Call_fresh ([ name1, typ1; name2, typ2 ], rhs))
+               (* log "%d: %a\n" __LINE__ Printtyp.type_expr typ; *)
+               Call_fresh ([ name1, typ1; name2, typ2 ], rhs))
         ; texp_apply1
             (texp_ident (path [ "OCanren"; "Fresh"; "three" ]))
             (texp_ascription
                (__ ** __ ** __ ** __ |> pack3)
                (as__ (__ @-> __ @-> __ @-> drop |> pack3)))
           |> map4 ~f:(fun (name1, name2, name3) rhs _typ (typ1, typ2, typ3) ->
-            (* log "%d: %a\n" __LINE__ Printtyp.type_expr typ; *)
-            Call_fresh ([ name1, typ1; name2, typ2; name3, typ3 ], rhs))
+               (* log "%d: %a\n" __LINE__ Printtyp.type_expr typ; *)
+               Call_fresh ([ name1, typ1; name2, typ2; name3, typ3 ], rhs))
           (*  *)
         ; (let ( ** ) lhs rhs = texp_lambda (tpat_var lhs) rhs in
            texp_apply1
@@ -172,7 +172,7 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
                 (__ ** __ ** __ ** __ ** __ |> pack4)
                 (__ @-> __ @-> __ @-> __ @-> drop |> pack4))
            |> map3 ~f:(fun (name1, name2, name3, name4) rhs (t1, t2, t3, t4) ->
-             Call_fresh ([ name1, t1; name2, t2; name3, t3; name4, t4 ], rhs)))
+                Call_fresh ([ name1, t1; name2, t2; name3, t3; name4, t4 ], rhs)))
         ; (let ( ** ) lhs rhs = texp_lambda (tpat_var lhs) rhs in
            texp_apply1
              (texp_ident (path [ "OCanren"; "Fresh"; "five" ]))
@@ -180,7 +180,7 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
                 (__ ** __ ** __ ** __ ** __ ** __ |> pack5)
                 (__ @-> __ @-> __ @-> __ @-> __ @-> drop |> pack5))
            |> map3 ~f:(fun (name1, name2, name3, name4, name5) rhs (t1, t2, t3, t4, t5) ->
-             Call_fresh ([ name1, t1; name2, t2; name3, t3; name4, t4; name5, t5 ], rhs)))
+                Call_fresh ([ name1, t1; name2, t2; name3, t3; name4, t4; name5, t5 ], rhs)))
         ]
       |> map1 ~f:(function Call_fresh (pats, rhs) -> Fresh (pats, rhs))
     ;;
@@ -243,7 +243,7 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
   in
   let expr_is_a_goal (e : Typedtree.expression) =
     let rec helper acc : Types.type_expr -> _ =
-      fun e ->
+     fun e ->
       Tast_pattern.parse
         Tast_pattern.(
           typ_arrow drop __
@@ -346,88 +346,100 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
           | { Typedtree.vb_pat = { pat_desc = Tpat_any; _ }; _ } -> (), si
           | _ -> assert false
         in
-        match si.str_desc with
-        | Tstr_value (_, [ vb ]) -> on_rel_decl vb
-        | Tstr_value (_, (_ :: _ :: _ as vbs)) ->
-          List.iter vbs ~f:(fun x ->
-            let _, _ = on_rel_decl x in
-            ());
-          (), si
-        | Tstr_value (_, []) ->
-          Printf.ksprintf failwith "Should not happen (%s %d)" __FILE__ __LINE__
-        | Tstr_attribute
-            { attr_name = { txt = "klogic.preamble" | "klogic.prologue"; _ }
-            ; attr_payload =
-                Parsetree.PStr
-                  [ { pstr_desc =
-                        Pstr_eval
-                          ( { pexp_desc =
-                                Pexp_constant (Pconst_string (s, _, (None | Some "")))
-                            ; _
-                            }
-                          , _ )
-                    ; _
-                    }
-                  ]
-            ; _
-            } ->
-          Inh_info.add_preamble inh s;
-          (), si
-        | Tstr_attribute
-            { attr_name = { txt = "klogic.epilogue"; _ }
-            ; attr_payload =
-                Parsetree.PStr
-                  [ { pstr_desc =
-                        Pstr_eval
-                          ( { pexp_desc =
-                                Pexp_constant (Pconst_string (s, _, (None | Some "")))
-                            ; _
-                            }
-                          , _ )
-                    ; _
-                    }
-                  ]
-            ; _
-            } ->
-          Inh_info.add_epilogue inh s;
-          (), si
-        | Tstr_attribute
-            { attr_name = { txt = "klogic.type.mangle"; _ }; attr_payload; _ } ->
-          log "%s\n%!" "klogic.type.mangle";
-          on_type_mangle_spec inh attr_payload;
-          (* TODO: specify mangling of names as an attribute *)
-          (), si
-        | Tstr_modtype
-            { mtd_type = Some { mty_desc = Tmty_signature sign; _ }
-            ; mtd_name = { txt; _ }
-            ; _
-            } ->
-          Inh_info.add_modtype inh txt sign;
-          log "%s %d" __FILE__ __LINE__;
-          (), si
-        | Tstr_module
-            { mb_id = Some _
-            ; mb_expr =
-                { mod_desc =
-                    Tmod_functor
-                      ( Named
-                          ( Some name
-                          , _
-                          , { mty_desc = Tmty_ident (_, { txt = typlid }); _ } )
-                      , { mod_desc = Tmod_structure mod_body; _ } )
-                ; _
-                }
-            ; _
-            } ->
-          let new_inh_info = Inh_info.create () in
-          let _, _ = self.stru self new_inh_info mod_body in
-          Inh_info.add_functor inh "" new_inh_info;
-          (), si
-        | Tstr_attribute _ | Tstr_type _ | Tstr_open _ -> (), si
-        | _ ->
-          Format.eprintf "%a\n%!" Pprintast.structure_item (MyUntype.untype_stru_item si);
-          Printf.ksprintf failwith "Not implemented in 'folder' (%s %d)" __FILE__ __LINE__
-        (* self.stru_item self inh si *))
+        Tast_pattern.(
+          parse (choice [ tstr_value (__ ^:: nil) |> map1 ~f:on_rel_decl ]) si.str_loc)
+          si
+          Fun.id
+          ~on_error:(fun _ ->
+          match si.str_desc with
+          | Tstr_value (_, [ vb ]) -> on_rel_decl vb
+          | Tstr_value (_, (_ :: _ :: _ as vbs)) ->
+            List.iter vbs ~f:(fun x ->
+              let _, _ = on_rel_decl x in
+              ());
+            (), si
+          | Tstr_value (_, []) ->
+            Printf.ksprintf failwith "Should not happen (%s %d)" __FILE__ __LINE__
+          | Tstr_attribute
+              { attr_name = { txt = "klogic.preamble" | "klogic.prologue"; _ }
+              ; attr_payload =
+                  Parsetree.PStr
+                    [ { pstr_desc =
+                          Pstr_eval
+                            ( { pexp_desc =
+                                  Pexp_constant (Pconst_string (s, _, (None | Some "")))
+                              ; _
+                              }
+                            , _ )
+                      ; _
+                      }
+                    ]
+              ; _
+              } ->
+            Inh_info.add_preamble inh s;
+            (), si
+          | Tstr_attribute
+              { attr_name = { txt = "klogic.epilogue"; _ }
+              ; attr_payload =
+                  Parsetree.PStr
+                    [ { pstr_desc =
+                          Pstr_eval
+                            ( { pexp_desc =
+                                  Pexp_constant (Pconst_string (s, _, (None | Some "")))
+                              ; _
+                              }
+                            , _ )
+                      ; _
+                      }
+                    ]
+              ; _
+              } ->
+            Inh_info.add_epilogue inh s;
+            (), si
+          | Tstr_attribute
+              { attr_name = { txt = "klogic.type.mangle"; _ }; attr_payload; _ } ->
+            log "%s\n%!" "klogic.type.mangle";
+            on_type_mangle_spec inh attr_payload;
+            (* TODO: specify mangling of names as an attribute *)
+            (), si
+          | Tstr_modtype
+              { mtd_type = Some { mty_desc = Tmty_signature sign; _ }
+              ; mtd_name = { txt; _ }
+              ; _
+              } ->
+            Inh_info.add_modtype inh txt sign;
+            log "%s %d" __FILE__ __LINE__;
+            (), si
+          | Tstr_module
+              { mb_id = Some _
+              ; mb_expr =
+                  { mod_desc =
+                      Tmod_functor
+                        ( Named
+                            ( Some name
+                            , _
+                            , { mty_desc = Tmty_ident (_, { txt = typlid }); _ } )
+                        , { mod_desc = Tmod_structure mod_body; _ } )
+                  ; _
+                  }
+              ; _
+              } ->
+            let new_inh_info = Inh_info.create () in
+            let _, _ = self.stru self new_inh_info mod_body in
+            Inh_info.add_functor inh (Ident.name name) new_inh_info;
+            (), si
+          | Tstr_attribute _ | Tstr_type _ | Tstr_open _ -> (), si
+          | _ ->
+            Format.eprintf
+              "%a\n%!"
+              Pprintast.structure_item
+              (MyUntype.untype_stru_item si);
+            Printf.ksprintf
+              failwith
+              "Not implemented in 'folder' (%s %d)"
+              __FILE__
+              __LINE__
+          (* self.stru_item self inh si *)))
   }
 ;;
 
@@ -439,18 +451,27 @@ let translate_implementation stru =
 ;;
 
 let analyze_cmt _source_file out_file stru =
+  let rec pp_item info ppf =
+    let open Format in
+    function
+    | Inh_info.RVB rvb ->
+      pp_rvb_as_kotlin ~pretty:Trans_config.(config.pretty) info ppf rvb
+    | Plain_kotlin s -> Format.fprintf ppf "%s" s
+    | MT_as_interface (name, sign) -> pp_modtype_as_kotlin info name sign ppf
+    | Functor1 body ->
+      Format.fprintf ppf "// functor\n%!";
+      fprintf ppf "@[private val xxx : (Int) -> SAY = { arg: Int ->@]@ ";
+      fprintf ppf "@[<v 2>@[object: SAY {@]@,";
+      pp_print_list (pp_item info) ppf body;
+      fprintf ppf "@]}}"
+  in
   Out_channel.with_file out_file ~f:(fun ch ->
     match translate_implementation stru with
     | Stdlib.Result.Ok info ->
       Printf.fprintf ch "%s\n" (Inh_info.preamble info);
       Printf.fprintf ch "// There are %d relations\n" (List.length info.Inh_info.rvbs);
       let ppf = Format.formatter_of_out_channel ch in
-      Inh_info.iter_vbs info ~f:(function
-        | Inh_info.RVB rvb ->
-          pp_rvb_as_kotlin ~pretty:Trans_config.(config.pretty) info ppf rvb
-        | Plain_kotlin s -> Format.fprintf ppf "%s" s
-        | MT_as_interface (name, sign) -> pp_modtype_as_kotlin info name sign ppf
-        | Functor1 _ -> Format.fprintf ppf "// functor\n%!");
+      Inh_info.iter_vbs info ~f:(pp_item info ppf);
       Printf.fprintf ch "%s\n" (Inh_info.epilogue info);
       Format.pp_print_flush ppf ();
       flush ch

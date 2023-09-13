@@ -68,7 +68,7 @@ let __ : 'a 'b. ('a, 'a -> 'b, 'b) t =
 ;;
 
 let as__ : 'a 'b 'c. ('a, 'b, 'c) t -> ('a, 'a -> 'b, 'c) t =
-  fun (T f1) ->
+ fun (T f1) ->
   T
     (fun ctx loc x k ->
       let k = f1 ctx loc x (k x) in
@@ -703,7 +703,7 @@ let texp_field (T fexpr) (T fdesc) =
 ;;
 
 let texp_list : (expression, 'a, 'b) t -> (_, 'b list -> 'd, 'd) t =
-  fun felem ->
+ fun felem ->
   let rec lookup loc e =
     (* TODO: tailrec *)
     match e.exp_desc with
@@ -807,6 +807,26 @@ let typ_arrow (T l) (T r) =
 let ( @-> ) = typ_arrow
 
 (* Structure *)
+
+let tstr_value (T fvbs) =
+  T
+    (fun ctx loc str k ->
+      match str.str_desc with
+      | Tstr_value (_, vbs) ->
+        ctx.matched <- ctx.matched + 1;
+        k |> fvbs ctx loc vbs
+      | _ -> fail loc "tstr_value")
+;;
+
+let tstr_module (T fid) (T fexpr) =
+  T
+    (fun ctx loc str k ->
+      match str.str_desc with
+      | Tstr_module { mb_id = Some name; mb_expr } ->
+        ctx.matched <- ctx.matched + 1;
+        k |> fid ctx loc name |> fexpr ctx loc mb_expr
+      | _ -> fail loc "tstr_module")
+;;
 
 let tstr_attribute (T fattr) =
   T

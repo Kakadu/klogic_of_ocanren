@@ -17,13 +17,13 @@ val parse_conde
   -> 'c
 
 module Packed : sig
-    type ('a, 'b, 'c) pattern = ('a, 'b, 'c) t
-    type ('a, 'b) t
+  type ('a, 'b, 'c) pattern = ('a, 'b, 'c) t
+  type ('a, 'b) t
 
-    val create : ('a, 'b, 'c) pattern -> 'b -> ('a, 'c) t
-    val parse : ('a, 'b) t -> Location.t -> 'a -> 'b
-  end
-  with type ('a, 'b, 'c) pattern := ('a, 'b, 'c) t
+  val create : ('a, 'b, 'c) pattern -> 'b -> ('a, 'c) t
+  val parse : ('a, 'b) t -> Location.t -> 'a -> 'b
+end
+with type ('a, 'b, 'c) pattern := ('a, 'b, 'c) t
 
 val as__ : ('a, 'b, 'c) t -> ('a, 'a -> 'b, 'c) t
 
@@ -248,6 +248,8 @@ val ( @-> )
 val core_typ : (Types.type_expr, 'a, 'b) t -> (core_type, 'a, 'b) t
 
 (* Structure *)
+
+val tstr_value : (value_binding list, 'a, 'b) t -> (structure_item, 'a, 'b) t
 val tstr_attribute : (attribute, 'a, 'b) t -> (structure_item, 'a, 'b) t
 val tsig_attribute : (attribute, 'a, 'b) t -> (signature_item, 'a, 'b) t
 

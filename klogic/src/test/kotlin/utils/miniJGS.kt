@@ -33,4 +33,10 @@ interface CT {
   fun new_var(v6: (Term<LogicInt>) -> Goal, v7: Term<LogicInt>): Goal
   }
 // functor
+private val xxx : (Int) -> SAY = { arg: Int ->
+object: SAY {
+  fun not_a_superclass(a: Term<LogicInt>, b: Term<LogicInt>): Goal =
+  Impl.get_superclass(OCanren.===(a), OCanren.===(b),
+  OCanren.Std.none(/* ERROR ? */{|  () |}))
 // Put epilogue here 
+}}
