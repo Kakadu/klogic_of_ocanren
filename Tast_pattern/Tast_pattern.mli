@@ -250,6 +250,12 @@ val core_typ : (Types.type_expr, 'a, 'b) t -> (core_type, 'a, 'b) t
 (* Structure *)
 
 val tstr_value : (value_binding list, 'a, 'b) t -> (structure_item, 'a, 'b) t
+
+val tstr_module
+  :  (Ident.t, 'a, 'b) t
+  -> (module_expr, 'b, 'c) t
+  -> (structure_item, 'a, 'c) t
+
 val tstr_attribute : (attribute, 'a, 'b) t -> (structure_item, 'a, 'b) t
 val tsig_attribute : (attribute, 'a, 'b) t -> (signature_item, 'a, 'b) t
 
@@ -261,10 +267,25 @@ val attribute
 val tstr_docattr : (string, 'a, 'b) t -> (structure_item, 'a, 'b) t
 val tsig_docattr : (string, 'a, 'b) t -> (signature_item, 'a, 'b) t
 
+val tmod_ascription
+  :  (module_expr, 'a, 'b) t
+  -> (module_type, 'b, 'c) t
+  -> (module_expr, 'a, 'c) t
+
+val tmod_structure : (structure, 'a, 'b) t -> (module_expr, 'a, 'b) t
+
+val tmod_functor
+  :  (functor_parameter, 'a, 'b) t
+  -> (module_expr, 'b, 'c) t
+  -> (module_expr, 'a, 'c) t
+
 val value_binding
   :  (pattern, 'a, 'b) t
   -> (expression, 'b, 'c) t
   -> (value_binding, 'a, 'c) t
+
+val tmod_structure : (structure, 'a, 'b) t -> (module_expr, 'a, 'b) t
+val tfun_param_named : (Ident.t, 'a, 'b) t -> (functor_parameter, 'a, 'b) t
 
 type context
 

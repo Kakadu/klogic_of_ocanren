@@ -16,7 +16,7 @@ typealias JType = LogicInt
 
 fun  pause(f: () -> Goal): Goal = { st -> ThunkStream { f()(st) } }
 
-// There are 4 relations
+// There are 5 relations
 fun conso1(xs: Term<LogicList<LogicInt>>): Goal =
 freshTypedVars { h: Term<LogicInt>, tl: Term<LogicList<LogicInt>> ->
 (xs `===` (h + tl)) }
@@ -31,6 +31,9 @@ interface CT {
   v4: (Term<LogicInt>) -> Goal, v5: Term<Option<JType>>): Goal
   // new_var
   fun new_var(v6: (Term<LogicInt>) -> Goal, v7: Term<LogicInt>): Goal
+  }
+// STUFF 
+interface STUFF {
   }
 // functor
 private val xxx : (Int) -> SAY = { arg: Int ->

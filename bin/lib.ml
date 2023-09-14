@@ -347,7 +347,21 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
           | _ -> assert false
         in
         Tast_pattern.(
-          parse (choice [ tstr_value (__ ^:: nil) |> map1 ~f:on_rel_decl ]) si.str_loc)
+          parse
+            (choice
+               [ tstr_value (__ ^:: nil) |> map1 ~f:on_rel_decl
+               ; tstr_module
+                   __
+                   (tmod_functor
+                      (tfun_param_named __)
+                      (tmod_ascription (tmod_structure __) __))
+                 |> map4 ~f:(fun (name : Ident.t) _param_name mod_body _rez_typ ->
+                      let new_inh_info = Inh_info.create () in
+                      let _, _ = self.stru self new_inh_info mod_body in
+                      Inh_info.add_functor inh (Ident.name name) new_inh_info;
+                      (), si)
+               ])
+            si.str_loc)
           si
           Fun.id
           ~on_error:(fun _ ->
@@ -410,7 +424,7 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
             Inh_info.add_modtype inh txt sign;
             log "%s %d" __FILE__ __LINE__;
             (), si
-          | Tstr_module
+          (* | Tstr_module
               { mb_id = Some _
               ; mb_expr =
                   { mod_desc =
@@ -427,7 +441,7 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
             let new_inh_info = Inh_info.create () in
             let _, _ = self.stru self new_inh_info mod_body in
             Inh_info.add_functor inh (Ident.name name) new_inh_info;
-            (), si
+            (), si *)
           | Tstr_attribute _ | Tstr_type _ | Tstr_open _ -> (), si
           | _ ->
             Format.eprintf

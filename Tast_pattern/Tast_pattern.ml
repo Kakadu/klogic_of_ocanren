@@ -806,6 +806,51 @@ let typ_arrow (T l) (T r) =
 
 let ( @-> ) = typ_arrow
 
+let tfun_param_named (T fname) =
+  T
+    (fun ctx loc p k ->
+      match p with
+      | Typedtree.Named (Some ident, _, _) ->
+        ctx.matched <- ctx.matched + 1;
+        k |> fname ctx loc ident
+      | _ -> fail loc "tfun_param_named")
+;;
+
+let tmod_functor (T fparam) (T fme) =
+  T
+    (fun ctx loc str k ->
+      match str.mod_desc with
+      | Tmod_functor (param, me) ->
+        ctx.matched <- ctx.matched + 1;
+        log "asdfasd";
+        k |> fparam ctx loc param |> fme ctx loc me
+      | _ -> fail loc "tmod_functor")
+;;
+
+let tmod_structure (T fstru) =
+  T
+    (fun ctx loc str k ->
+      match str.mod_desc with
+      | Tmod_structure stru ->
+        ctx.matched <- ctx.matched + 1;
+        k |> fstru ctx loc stru
+      | _ -> fail loc "tmod_structure")
+;;
+
+let tmod_ascription (T fme) (T ftyp) =
+  T
+    (fun ctx loc str k ->
+      log "%d" __LINE__;
+      match str.mod_desc with
+      (* | Tmod_constraint _ -> assert false *)
+      (* | Tmod_functor _ -> failwith "herr" *)
+      | Tmod_constraint (me, _, Tmodtype_explicit mt, _) ->
+        log "parsing ascription";
+        ctx.matched <- ctx.matched + 1;
+        k |> fme ctx loc me |> ftyp ctx loc mt
+      | _ -> fail loc "tmod_ascription")
+;;
+
 (* Structure *)
 
 let tstr_value (T fvbs) =
@@ -823,6 +868,7 @@ let tstr_module (T fid) (T fexpr) =
     (fun ctx loc str k ->
       match str.str_desc with
       | Tstr_module { mb_id = Some name; mb_expr } ->
+        log "tstr_module %S" (Ident.name name);
         ctx.matched <- ctx.matched + 1;
         k |> fid ctx loc name |> fexpr ctx loc mb_expr
       | _ -> fail loc "tstr_module")
