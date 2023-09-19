@@ -7,48 +7,48 @@ let log fmt =
   else Format.ifprintf Format.std_formatter fmt
 ;;
 
-let translate_term =
+(* 
+let parse_term fself =
+  Tast_pattern.(
+    parse_conde
+      [ texp_apply1
+          (texp_ident
+             (choice
+                [ path [ "OCanren!"; "Std"; "nil" ]
+                ; path [ "OCanren"; "Std"; "List"; "nil" ]
+                ; path [ "OCanren"; "Std"; "nil" ]
+                ]))
+          drop
+        |> map0 ~f:T_list_nil
+      ; texp_apply2
+          (texp_ident
+             (choice
+                [ path [ "OCanren!"; "Std"; "%" ]
+                ; path [ "OCanren"; "Std"; "%" ]
+                ; path [ "OCanren"; "Std"; "List"; "cons" ]
+                ]))
+          __
+          __
+        |> map2 ~f:(fun a b -> T_list_cons (a, b))
+      ; texp_apply1
+          (texp_ident (path [ "OCanren!"; "!!" ] ||| path [ "OCanren"; "!!" ]))
+          (eint __)
+        |> map1 ~f:(fun n -> T_int n)
+      ; texp_apply_nolabelled __ __
+        |> map2 ~f:(fun x args -> Tapp (x, List.map ~f:helper args))
+      ; texp_ident __ |> map1 ~f:(fun x -> Tident x)
+      ; __
+        |> map1 ~f:(fun x ->
+             Format.printf "Other parsed: @[%a@]\n%!" MyPrinttyped.expr x;
+             Other x)
+      ])
+;; *)
+
+(* let translate_term =
   let open Typedtree in
-  let rec helper e =
-    Tast_pattern.(
-      parse_conde
-        [ texp_apply1
-            (texp_ident
-               (choice
-                  [ path [ "OCanren!"; "Std"; "nil" ]
-                  ; path [ "OCanren"; "Std"; "List"; "nil" ]
-                  ; path [ "OCanren"; "Std"; "nil" ]
-                  ]))
-            drop
-          |> map0 ~f:T_list_nil
-        ; texp_apply2
-            (texp_ident
-               (choice
-                  [ path [ "OCanren!"; "Std"; "%" ]
-                  ; path [ "OCanren"; "Std"; "%" ]
-                  ; path [ "OCanren"; "Std"; "List"; "cons" ]
-                  ]))
-            __
-            __
-          |> map2 ~f:(fun a b -> T_list_cons (helper a, helper b))
-        ; texp_apply1
-            (texp_ident (path [ "OCanren!"; "!!" ] ||| path [ "OCanren"; "!!" ]))
-            (eint __)
-          |> map1 ~f:(fun n -> T_int n)
-        ; texp_apply_nolabelled __ __
-          |> map2 ~f:(fun x args -> Tapp (helper x, List.map ~f:helper args))
-        ; texp_ident __ |> map1 ~f:(fun x -> Tident x)
-        ; __
-          |> map1 ~f:(fun x ->
-               Format.printf "Tother parsed: @[%a@]\n%!" MyPrinttyped.expr x;
-               Tother x)
-        ])
-      e.exp_loc
-      e
-      Fun.id
-  in
+  let rec helper e = parse_term e.exp_loc e Fun.id in
   helper
-;;
+;; *)
 
 let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
   let open struct
@@ -100,7 +100,7 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
         (texp_ident (path [ "OCanren!"; "===" ] ||| path [ "OCanren"; "===" ]))
         __
         __
-      |> map2 ~f:(fun x y -> Unify (translate_term x, translate_term y))
+      |> map2 ~f:(fun x y -> Unify (x, y))
     ;;
 
     let pat_bind () : (Typedtree.expression, _ -> 'a, 'b) Tast_pattern.t =
@@ -113,7 +113,8 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
 
     let pat_call () : (Typedtree.expression, _ -> 'a, 'b) Tast_pattern.t =
       texp_apply_nolabelled (texp_ident __) __
-      |> map2 ~f:(fun f args -> Call_rel (f, List.map ~f:translate_term args))
+      |> map2 ~f:(fun f args -> (* TODO: type analysis *)
+                                Call_rel (f, args))
     ;;
 
     let pat_conde () : _ =
@@ -185,13 +186,45 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
       |> map1 ~f:(function Call_fresh (pats, rhs) -> Fresh (pats, rhs))
     ;;
 
+    let tnil () =
+      texp_apply1
+        (texp_ident
+           (choice
+              [ path [ "OCanren!"; "Std"; "nil" ]
+              ; path [ "OCanren"; "Std"; "List"; "nil" ]
+              ; path [ "OCanren"; "Std"; "nil" ]
+              ]))
+        drop
+      |> map0 ~f:T_list_nil
+    ;;
+
+    let tcons () =
+      texp_apply2
+        (texp_ident
+           (choice
+              [ path [ "OCanren!"; "Std"; "%" ]
+              ; path [ "OCanren"; "Std"; "%" ]
+              ; path [ "OCanren"; "Std"; "List"; "cons" ]
+              ]))
+        __
+        __
+      |> map2 ~f:(fun a b -> T_list_cons (a, b))
+    ;;
+
+    let tint () =
+      texp_apply1
+        (texp_ident (path [ "OCanren!"; "!!" ] ||| path [ "OCanren"; "!!" ]))
+        (eint __)
+      |> map1 ~f:(fun n -> T_int n)
+    ;;
+
     let pat () =
       choice
-        [ pat_pause ()
+        [ tnil ()
+        ; tcons ()
+        ; tint ()
+        ; pat_pause ()
         ; pat_fresh ()
-          (* ; pat_new_scope () *)
-          (* ; pat_mplus () *)
-          (* ; pat_bind () *)
         ; pat_conj2 ()
         ; pat_conj_many ()
           (* ; pat_st_abstr () *)
@@ -329,7 +362,7 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
                let rez, _ = iter_expr.expr iter_expr () body in
                let () =
                  match AST.simplify_ast rez with
-                 | Error -> Format.eprintf "an error in value_binding name = %s\n%!" name
+                 (* | Error -> Format.eprintf "an error in value_binding name = %s\n%!" name *)
                  | rez ->
                    let rvb = Rvb.mk name args rez in
                    Inh_info.add_rvb inh rvb;

@@ -1,13 +1,8 @@
 open Stdppx
-
+(* 
 type 'a term =
-  | T_int of int
-  | T_list_init of 'a list
-  | T_list_nil
-  | T_list_cons of 'a * 'a
-  | Tident of Path.t
-  | Tapp of 'a * 'a list
-  | Tother of Typedtree.expression
+  
+  | Tother of Typedtree.expression *)
 
 type 'a ast =
   | Pause of 'a
@@ -20,10 +15,16 @@ type 'a ast =
   | New_scope of 'a
   | Bind of 'a * 'a
   | Fresh of (string * Types.type_expr) list * 'a
-  | Unify of ('t term as 't) * 't
-  | Call_rel of Path.t * ('t term as 't) list
+  | Unify of 'a * 'a
+  | Call_rel of Path.t * 'a list
+  | Tapp of 'a * 'a list (** Application of terms. Is similar to Call_rel *)
+  | T_int of int
+  | T_list_init of 'a list
+  | T_list_nil
+  | T_list_cons of 'a * 'a
+  | Tabstr of string list * 'a (** TODO: Types? *)
+  | Tident of Path.t (** TODO: Do we need this? *)
   | Other of Typedtree.expression
-  | Error
 
 (** Relational value bindings *)
 module Rvb = struct
@@ -40,24 +41,6 @@ let pp_comma_list ppf =
   Format.pp_print_list ~pp_sep:(fun ppf () -> Format.fprintf ppf ",@ ") ppf
 ;;
 
-let pp_term_as_kotlin =
-  let open Format in
-  let rec helper ppf = function
-    | T_int n -> fprintf ppf "%d.toLogic()" n
-    | T_list_init ls ->
-      fprintf ppf "@[%a@]" (pp_print_list ~pp_sep:pp_print_space helper) ls
-    | T_list_nil -> fprintf ppf "nilLogicList()"
-    | T_list_cons (h, tl) -> fprintf ppf "@[(%a + %a)@]" helper h helper tl
-    (* | Tident p -> fprintf ppf "%a" Printtyp.path p *)
-    (* TODO: Printtyp.path sometimes fives /n in the end. *)
-    | Tident p -> fprintf ppf "%s" (Path.name p)
-    | Tapp (f, args) -> fprintf ppf "@[%a(%a)@]" helper f (pp_comma_list helper) args
-    | Tother e ->
-      fprintf ppf "/* ERROR ? */{|  %a |}" Pprintast.expression (MyUntype.expr e)
-  in
-  helper
-;;
-
 let map_ast f = function
   | Pause x -> Pause (f x)
   | St_abstr e -> St_abstr (f e)
@@ -69,7 +52,13 @@ let map_ast f = function
   | Infix_conj2 (l, r) -> Infix_conj2 (f l, f r)
   | Mplus (a, b) -> Mplus (f a, f b)
   | Bind (a, b) -> Bind (f a, f b)
-  | (Call_rel _ | Unify _ | Other _ | Error) as other -> other
+  | Tapp (func, args) -> Tapp (f func, List.map ~f args)
+  | Call_rel (path, args) -> Call_rel (path, List.map ~f args)
+  | T_list_cons (h, tl) -> T_list_cons (f h, f tl)
+  | Tabstr (args, body) -> Tabstr (args, f body)
+  | T_list_init xs -> T_list_init (List.map ~f xs)
+  | (Tident _ | Other _ | T_list_nil | T_int _) as rez -> rez
+  | Unify (a, b) -> Unify (f a, f b)
 ;;
 
 let simplify_ast =
@@ -110,7 +99,7 @@ module Inh_info = struct
   let extend t item = t.rvbs <- item :: t.rvbs
   let add_rvb t rvb = extend t (RVB rvb)
   let add_modtype t ident types = t.rvbs <- MT_as_interface (ident, types) :: t.rvbs
-  let add_functor t name other_info = extend t (Functor1 other_info.rvbs)
+  let add_functor t _name other_info = extend t (Functor1 other_info.rvbs)
   let lookup_typ_exn t typ = Hashtbl.find t.type_mangle_hints typ
 
   let add_hints info hints =
@@ -159,6 +148,7 @@ let rec pp_typ_as_kotlin inh_info ppf typ =
       Format.fprintf ppf ") -> %a" (pp_typ_as_kotlin inh_info) rest)
 ;;
 
+(* 
 module Fold_syntax_macro = struct
   type 'a t =
     | Conde of 'a t list
@@ -197,7 +187,7 @@ module Fold_syntax_macro = struct
     let rec helper = function
       | Unify (a, b) -> U (a, b)
       | Bind (a, b) -> Bind2 (helper a, helper b)
-      | Other _ | Error -> failwith "Bad argument of transform"
+      | Other _ -> failwith "Bad argument of transform"
       | Call_rel (f, args) -> Call (f, args)
       | St_abstr a -> Abstr (helper a)
       | St_app a -> App (helper a)
@@ -301,39 +291,34 @@ let%expect_test _ =
     {|
     /* NOTE: fresh without delay */
     freshTypedVars { a : 'a -> (nilLogicList() `===` nilLogicList()) } |}]
-;;
+;; *)
 
-let pp_ast_as_kotlin ?(pretty = false) inh_info =
-  if pretty
-  then
-    fun ppf x ->
-    let open Fold_syntax_macro in
-    pp inh_info ppf (upper (transform x))
-  else
-    let open Format in
-    let rec helper ?(par = true) ppf = function
-      (* | St_abstr (Pause (Mplus )) *)
-      (* | Pause (Fresh (xs, Bind (Bind (St_app a, b), c))) when pretty ->
-        fprintf ppf "freshTypedVars { ";
-        List.iter xs ~f:(fun (name, typ) ->
-          fprintf ppf "@[%s : %a,@]@ " name (pp_typ_as_kotlin inh_info) typ);
-        fprintf ppf " -> %a and %a and %a }@]" helper a helper b helper c *)
-      (* | Bind (Bind (a, b), c) when pretty ->
-         fprintf ppf "bind_star %a %a %a " helper a helper b helper c *)
-      (* | Mplus (e, Pause (Mplus (e2, Pause e3))) ->
-         fprintf ppf "conde [ %a; %a; %a ]" helper e helper e2 helper e3 *)
-      (* Pretty is above
-         Default is below
-      *)
-      | Pause e -> fprintf ppf "@[pause { %a@ }@]" nopar e
-      | St_abstr l -> fprintf ppf "@[<v 2>@[{ st: State ->@ %a@ }@]" default l
-      | St_app l -> fprintf ppf "%a(st)" default l
-      | New_scope x -> helper ppf x
-      | Mplus (l, r) ->
-        fprintf ppf "@[<v 2>(@[(%a)@]@,@[mplus@]@,@,@[(%a)@])@]" default l default r
-      | Bind (l, r) ->
-        fprintf ppf "@[<v 2>(@[(%a)@]@,@[bind@]@,@[(%a)@])@]" default l default r
-      (* | Fresh (xs, e) ->
+(* let pp_term_as_kotlin =
+  let open Format in
+  let rec helper ppf = function
+    
+    (* | Tident p -> fprintf ppf "%a" Printtyp.path p *)
+    (* TODO: Printtyp.path sometimes fives /n in the end. *)
+
+    
+    | Tother e ->
+      fprintf ppf "/* ERROR ? */{|  %a |}" Pprintast.expression (MyUntype.expr e)
+  in
+  helper
+;; *)
+
+let pp_ast_as_kotlin inh_info =
+  let open Format in
+  let rec helper ?(par = true) ppf = function
+    | Pause e -> fprintf ppf "@[pause { %a@ }@]" nopar e
+    | St_abstr l -> fprintf ppf "@[<v 2>@[{ st: State ->@ %a@ }@]" default l
+    | St_app l -> fprintf ppf "%a(st)" default l
+    | New_scope x -> helper ppf x
+    | Mplus (l, r) ->
+      fprintf ppf "@[<v 2>(@[(%a)@]@,@[mplus@]@,@,@[(%a)@])@]" default l default r
+    | Bind (l, r) ->
+      fprintf ppf "@[<v 2>(@[(%a)@]@,@[bind@]@,@[(%a)@])@]" default l default r
+    (* | Fresh (xs, e) ->
          fprintf ppf "@[<v>";
         List.iter xs ~f:(fun (name, typ) ->
           fprintf
@@ -343,52 +328,59 @@ let pp_ast_as_kotlin ?(pretty = false) inh_info =
             (pp_typ_as_kotlin inh_info)
             typ);
         fprintf ppf "@[%a@]@]" helper e *)
-      | Fresh (xs, Pause e) ->
-        fprintf ppf "@[@[<hov 2>freshTypedVars { ";
-        pp_comma_list
-          (fun ppf (name, typ) ->
-            fprintf ppf "@[%s: %a@]" name (pp_typ_as_kotlin inh_info) typ)
-          ppf
-          xs;
-        fprintf ppf " ->@]@ %a@ @[}@]@]" default e
-      | Fresh (xs, e) ->
-        fprintf ppf "/* NOTE: fresh without delay */@ ";
-        fprintf ppf "@[<hov>@[freshTypedVars {";
-        pp_comma_list
-          (fun ppf (name, typ) ->
-            fprintf ppf "@[ %s : %a@]" name (pp_typ_as_kotlin inh_info) typ)
-          ppf
-          xs;
-        fprintf ppf " ->@]@ %a@ @[}@]@]" default e
-      | Unify (l, r) when par ->
-        (* TODO: if left argument is an empty list, swap the arguments to make Kotlin typecheck this *)
-        fprintf ppf "(%a `===` %a)" pp_term_as_kotlin l pp_term_as_kotlin r
-      (* fprintf ppf "(%a debugUnify %a)" pp_term_as_kotlin l pp_term_as_kotlin r *)
-      | Unify (l, r) ->
-        (* TODO: if left argument is an empty list, swap the arguments to make Kotlin typecheck this *)
-        fprintf ppf "%a `===` %a" pp_term_as_kotlin l pp_term_as_kotlin r
-      | Call_rel (p, args) ->
-        fprintf ppf "@[%a(%a)@]" Printtyp.path p (pp_comma_list pp_term_as_kotlin) args
-      (* | Conde xs -> fprintf ppf "@[conde(%a)@]" (pp_comma_list helper) xs *)
-      | Conde xs ->
-        fprintf ppf "@[<v 6>conde(";
-        List.iteri xs ~f:(fun i ->
-          if i <> 0 then fprintf ppf ",@ ";
-          nopar ppf);
-        fprintf ppf ")@]"
-      | Conj_multi xs ->
-        (* fprintf ppf "@[and(%a)@]" (pp_comma_list helper) xs *)
-        fprintf ppf "@[<v 4>and(";
-        List.iteri xs ~f:(fun i ->
-          if i <> 0 then fprintf ppf ",@ ";
-          nopar ppf);
-        fprintf ppf ")@]"
-      | Infix_conj2 (l, r) -> fprintf ppf "@[(%a and %a)@]" default l default r
-      | Other e -> fprintf ppf "@[{| Other %a |}@]" Pprintast.expression (MyUntype.expr e)
-      | Error -> fprintf ppf "ERROR "
-    and default ppf = helper ~par:true ppf
-    and nopar ppf = helper ~par:false ppf in
-    helper ~par:false
+    | Fresh (xs, Pause e) ->
+      fprintf ppf "@[@[<hov 2>freshTypedVars { ";
+      pp_comma_list
+        (fun ppf (name, typ) ->
+          fprintf ppf "@[%s: %a@]" name (pp_typ_as_kotlin inh_info) typ)
+        ppf
+        xs;
+      fprintf ppf " ->@]@ %a@ @[}@]@]" default e
+    | Fresh (xs, e) ->
+      fprintf ppf "/* NOTE: fresh without delay */@ ";
+      fprintf ppf "@[<hov>@[freshTypedVars {";
+      pp_comma_list
+        (fun ppf (name, typ) ->
+          fprintf ppf "@[ %s : %a@]" name (pp_typ_as_kotlin inh_info) typ)
+        ppf
+        xs;
+      fprintf ppf " ->@]@ %a@ @[}@]@]" default e
+    | Unify (l, r) when par ->
+      (* TODO: if left argument is an empty list, swap the arguments to make Kotlin typecheck this *)
+      fprintf ppf "(%a `===` %a)" default l default r
+    (* fprintf ppf "(%a debugUnify %a)" pp_term_as_kotlin l pp_term_as_kotlin r *)
+    | Unify (l, r) ->
+      (* TODO: if left argument is an empty list, swap the arguments to make Kotlin typecheck this *)
+      fprintf ppf "%a `===` %a" default l default r
+    | Call_rel (p, args) ->
+      fprintf ppf "@[%a(%a)@]" Printtyp.path p (pp_comma_list default) args
+    | Tapp (f, args) -> fprintf ppf "@[%a(%a)@]" default f (pp_comma_list default) args
+    | Tident p -> fprintf ppf "%s" (Path.name p)
+    (* | Conde xs -> fprintf ppf "@[conde(%a)@]" (pp_comma_list helper) xs *)
+    | Conde xs ->
+      fprintf ppf "@[<v 6>conde(";
+      List.iteri xs ~f:(fun i ->
+        if i <> 0 then fprintf ppf ",@ ";
+        nopar ppf);
+      fprintf ppf ")@]"
+    | Conj_multi xs ->
+      (* fprintf ppf "@[and(%a)@]" (pp_comma_list helper) xs *)
+      fprintf ppf "@[<v 4>and(";
+      List.iteri xs ~f:(fun i ->
+        if i <> 0 then fprintf ppf ",@ ";
+        nopar ppf);
+      fprintf ppf ")@]"
+    | Infix_conj2 (l, r) -> fprintf ppf "@[(%a and %a)@]" default l default r
+    | T_int n -> fprintf ppf "%d.toLogic()" n
+    | T_list_init ls ->
+      fprintf ppf "@[%a@]" (pp_print_list ~pp_sep:pp_print_space helper) ls
+    | T_list_nil -> fprintf ppf "nilLogicList()"
+    | T_list_cons (h, tl) -> fprintf ppf "@[(%a + %a)@]" default h default tl
+    | Tabstr _ -> fprintf ppf "<ABSTR>"
+    | Other e -> fprintf ppf "@[{| Other %a |}@]" Pprintast.expression (MyUntype.expr e)
+  and default ppf = helper ~par:true ppf
+  and nopar ppf = helper ~par:false ppf in
+  helper ~par:false
 ;;
 
 let%expect_test " " =
@@ -414,7 +406,7 @@ let%expect_test " " =
           ) |}]
 ;;
 
-let pp_rvb_as_kotlin ~pretty inh_info ppf { Rvb.name; args; body } =
+let pp_rvb_as_kotlin inh_info ppf { Rvb.name; args; body } =
   let open Format in
   let pp_args ppf =
     pp_print_list
@@ -428,7 +420,7 @@ let pp_rvb_as_kotlin ~pretty inh_info ppf { Rvb.name; args; body } =
     name
     pp_args
     args
-    (pp_ast_as_kotlin ~pretty inh_info)
+    (pp_ast_as_kotlin inh_info)
     body
 ;;
 
