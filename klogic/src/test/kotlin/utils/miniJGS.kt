@@ -39,7 +39,7 @@ interface STUFF {
 private val xxx : (Int) -> SAY = { arg: Int ->
 object: SAY {
   fun not_a_superclass(a: Term<LogicInt>, b: Term<LogicInt>): Goal =
-  Impl.get_superclass({| Other fun x -> x === a |},
-  {| Other fun x -> x === b |}, OCanren.Std.none({| Other () |}))
+  Impl.get_superclass({  x-> x `===` a }, {  x-> x `===` b },
+  OCanren.Std.none({| Other () |}))
 // Put epilogue here 
 }}

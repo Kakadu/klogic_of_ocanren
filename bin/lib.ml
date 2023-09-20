@@ -7,7 +7,7 @@ let log fmt =
   else Format.ifprintf Format.std_formatter fmt
 ;;
 
-(* 
+(*
 let parse_term fself =
   Tast_pattern.(
     parse_conde
@@ -151,7 +151,7 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
              | [] -> fail e.exp_loc "pat_abstraction"
              | _ -> List.rev acc, e)
         in
-        assert false)
+        k (Tabstr (helper [] e)))
     ;;
 
     type fresh_rez =

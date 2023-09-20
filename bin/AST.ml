@@ -1,7 +1,7 @@
 open Stdppx
-(* 
+(*
 type 'a term =
-  
+
   | Tother of Typedtree.expression *)
 
 type 'a ast =
@@ -22,7 +22,7 @@ type 'a ast =
   | T_list_init of 'a list
   | T_list_nil
   | T_list_cons of 'a * 'a
-  | Tabstr of string list * 'a (** TODO: Types? *)
+  | Tabstr of (string list * 'a) (** TODO: Types? *)
   | Tident of Path.t (** TODO: Do we need this? *)
   | Other of Typedtree.expression
 
@@ -148,7 +148,7 @@ let rec pp_typ_as_kotlin inh_info ppf typ =
       Format.fprintf ppf ") -> %a" (pp_typ_as_kotlin inh_info) rest)
 ;;
 
-(* 
+(*
 module Fold_syntax_macro = struct
   type 'a t =
     | Conde of 'a t list
@@ -296,11 +296,11 @@ let%expect_test _ =
 (* let pp_term_as_kotlin =
   let open Format in
   let rec helper ppf = function
-    
+
     (* | Tident p -> fprintf ppf "%a" Printtyp.path p *)
     (* TODO: Printtyp.path sometimes fives /n in the end. *)
 
-    
+
     | Tother e ->
       fprintf ppf "/* ERROR ? */{|  %a |}" Pprintast.expression (MyUntype.expr e)
   in
@@ -376,7 +376,12 @@ let pp_ast_as_kotlin inh_info =
       fprintf ppf "@[%a@]" (pp_print_list ~pp_sep:pp_print_space helper) ls
     | T_list_nil -> fprintf ppf "nilLogicList()"
     | T_list_cons (h, tl) -> fprintf ppf "@[(%a + %a)@]" default h default tl
-    | Tabstr _ -> fprintf ppf "<ABSTR>"
+    | Tabstr (names, rhs) ->
+      fprintf ppf "@[{ ";
+      List.iteri names ~f:(fun i ->
+        if i <> 0 then fprintf ppf ", ";
+        fprintf ppf " %s");
+      fprintf ppf "-> %a }@]" nopar rhs
     | Other e -> fprintf ppf "@[{| Other %a |}@]" Pprintast.expression (MyUntype.expr e)
   and default ppf = helper ~par:true ppf
   and nopar ppf = helper ~par:false ppf in
