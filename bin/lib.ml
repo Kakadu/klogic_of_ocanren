@@ -139,6 +139,21 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
       |> map2 ~f:(fun x y -> Infix_conj2 (x, y))
     ;;
 
+    let pat_abstraction () =
+      of_func (fun ctx loc e k ->
+        let rec helper acc e =
+          match e.Typedtree.exp_desc with
+          | Texp_function
+              { cases = [ { c_lhs = { pat_desc = Tpat_var (_, { txt }) }; c_rhs } ] } ->
+            helper (txt :: acc) c_rhs
+          | _ ->
+            (match acc with
+             | [] -> fail e.exp_loc "pat_abstraction"
+             | _ -> List.rev acc, e)
+        in
+        assert false)
+    ;;
+
     type fresh_rez =
       | Call_fresh of (string * Types.type_expr) list * Typedtree.expression
 
@@ -218,6 +233,8 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
       |> map1 ~f:(fun n -> T_int n)
     ;;
 
+    let tident () = texp_ident __ |> map1 ~f:(fun x -> Tident x)
+
     let pat () =
       choice
         [ tnil ()
@@ -232,6 +249,8 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
         ; pat_unify ()
         ; pat_conde ()
         ; pat_call ()
+        ; tident ()
+        ; pat_abstraction ()
         ]
     ;;
   end in
@@ -366,10 +385,7 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
                  | rez ->
                    let rvb = Rvb.mk name args rez in
                    Inh_info.add_rvb inh rvb;
-                   Format.printf
-                     "\027[m@[%a\027[m\n"
-                     (pp_rvb_as_kotlin ~pretty:false inh)
-                     rvb
+                   Format.printf "\027[m@[%a\027[m\n" (pp_rvb_as_kotlin inh) rvb
                  (* Format.printf
                      "\027[31m@[<v 2>%a@]@ %!\027[m"
                      (AST.Fold_syntax_macro.pp inh)
@@ -501,8 +517,7 @@ let analyze_cmt _source_file out_file stru =
   let rec pp_item info ppf =
     let open Format in
     function
-    | Inh_info.RVB rvb ->
-      pp_rvb_as_kotlin ~pretty:Trans_config.(config.pretty) info ppf rvb
+    | Inh_info.RVB rvb -> pp_rvb_as_kotlin info ppf rvb
     | Plain_kotlin s -> Format.fprintf ppf "%s" s
     | MT_as_interface (name, sign) -> pp_modtype_as_kotlin info name sign ppf
     | Functor1 body ->

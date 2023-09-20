@@ -69,6 +69,6 @@ module type STUFF = sig end
 
 module Stuff (Impl : CT) : STUFF = struct
   let not_a_superclass : int ilogic -> int ilogic -> goal =
-   fun a b -> Impl.get_superclass (( === ) a) (( === ) b) (Std.none ())
+   fun a b -> Impl.get_superclass (fun x -> x === a) (fun x -> x === b) (Std.none ())
  ;;
 end
