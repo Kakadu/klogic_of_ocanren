@@ -806,14 +806,23 @@ let typ_arrow (T l) (T r) =
 
 let ( @-> ) = typ_arrow
 
-let tfun_param_named (T fname) =
+let tfun_param_named (T fname) (T fmodtyp) =
   T
     (fun ctx loc p k ->
       match p with
-      | Typedtree.Named (Some ident, _, _) ->
+      | Typedtree.Named (Some ident, _, param_type) ->
         ctx.matched <- ctx.matched + 1;
-        k |> fname ctx loc ident
+        let k = k |> fname ctx loc ident in
+        k |> fmodtyp ctx loc param_type
       | _ -> fail loc "tfun_param_named")
+;;
+
+let tmodule_type_ident (T fident) =
+  T
+    (fun ctx loc mt k ->
+      match mt.mty_desc with
+      | Tmty_ident (_, { txt = id; _ }) -> k |> fident ctx loc id
+      | _ -> fail loc "tmodule_type_ident")
 ;;
 
 let tmod_functor (T fparam) (T fme) =

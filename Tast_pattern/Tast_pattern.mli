@@ -285,7 +285,13 @@ val value_binding
   -> (value_binding, 'a, 'c) t
 
 val tmod_structure : (structure, 'a, 'b) t -> (module_expr, 'a, 'b) t
-val tfun_param_named : (Ident.t, 'a, 'b) t -> (functor_parameter, 'a, 'b) t
+
+val tfun_param_named
+  :  (Ident.t, 'a, 'b) t
+  -> (module_type, 'b, 'c) t
+  -> (functor_parameter, 'a, 'c) t
+
+val tmodule_type_ident : (Longident.t, 'a, 'b) t -> (Typedtree.module_type, 'a, 'b) t
 
 type context
 

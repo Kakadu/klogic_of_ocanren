@@ -404,12 +404,21 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
                ; tstr_module
                    __
                    (tmod_functor
-                      (tfun_param_named __)
-                      (tmod_ascription (tmod_structure __) __))
-                 |> map4 ~f:(fun (name : Ident.t) _param_name mod_body _rez_typ ->
+                      (tfun_param_named __ (tmodule_type_ident (lident __)))
+                      (tmod_ascription
+                         (tmod_structure __)
+                         (tmodule_type_ident (lident __))))
+                 |> map5
+                      ~f:(fun (name : Ident.t) param_name param_type mod_body rez_typ ->
                       let new_inh_info = Inh_info.create () in
                       let _, _ = self.stru self new_inh_info mod_body in
-                      Inh_info.add_functor inh (Ident.name name) new_inh_info;
+                      Inh_info.add_functor
+                        inh
+                        ~name:(Ident.name name)
+                        ~typ:rez_typ
+                        ~arg_name:(Ident.name param_name)
+                        ~arg_typ:param_type
+                        new_inh_info;
                       (), si)
                ])
             si.str_loc)
@@ -522,10 +531,17 @@ let analyze_cmt _source_file out_file stru =
     | Inh_info.RVB rvb -> pp_rvb_as_kotlin info ppf rvb
     | Plain_kotlin s -> Format.fprintf ppf "%s" s
     | MT_as_interface (name, sign) -> pp_modtype_as_kotlin info name sign ppf
-    | Functor1 body ->
+    | Functor1 { name; typ; arg_name; arg_typ; body } ->
       Format.fprintf ppf "// functor\n%!";
-      fprintf ppf "@[private val xxx : (Int) -> SAY = { arg: Int ->@]@ ";
-      fprintf ppf "@[<v 2>@[object: SAY {@]@,";
+      fprintf
+        ppf
+        "@[private val %s : (%s) -> %s = { %s: %s ->@]@ "
+        name
+        arg_typ
+        typ
+        arg_name
+        arg_typ;
+      fprintf ppf "@[<v 2>@[object: %s {@]@," typ;
       pp_print_list (pp_item info) ppf body;
       fprintf ppf "@]}}"
   in
