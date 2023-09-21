@@ -145,7 +145,9 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
           match e.Typedtree.exp_desc with
           | Texp_function
               { cases = [ { c_lhs = { pat_desc = Tpat_var (_, { txt }) }; c_rhs } ] } ->
-            helper (txt :: acc) c_rhs
+            (match Types.get_desc e.exp_type with
+             | Tarrow (_, tl, _tr, _) -> helper ((txt, tl) :: acc) c_rhs
+             | _ -> fail e.exp_loc "pat_abstraction")
           | _ ->
             (match acc with
              | [] -> fail e.exp_loc "pat_abstraction"

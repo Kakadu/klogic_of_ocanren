@@ -22,7 +22,7 @@ type 'a ast =
   | T_list_init of 'a list
   | T_list_nil
   | T_list_cons of 'a * 'a
-  | Tabstr of (string list * 'a) (** TODO: Types? *)
+  | Tabstr of ((string * Types.type_expr) list * 'a) (** TODO: Types? *)
   | Tident of Path.t (** TODO: Do we need this? *)
   | Other of Typedtree.expression
 
@@ -378,9 +378,9 @@ let pp_ast_as_kotlin inh_info =
     | T_list_cons (h, tl) -> fprintf ppf "@[(%a + %a)@]" default h default tl
     | Tabstr (names, rhs) ->
       fprintf ppf "@[{ ";
-      List.iteri names ~f:(fun i ->
+      List.iteri names ~f:(fun i (name, _typ) ->
         if i <> 0 then fprintf ppf ", ";
-        fprintf ppf " %s");
+        fprintf ppf " %s" name);
       fprintf ppf "-> %a }@]" nopar rhs
     | Other e -> fprintf ppf "@[{| Other %a |}@]" Pprintast.expression (MyUntype.expr e)
   and default ppf = helper ~par:true ppf
