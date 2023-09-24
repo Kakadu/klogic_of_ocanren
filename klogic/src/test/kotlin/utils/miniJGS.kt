@@ -15,35 +15,20 @@ import utils.LogicOption
 typealias Decl = LogicInt
 typealias JType = LogicInt
 
+@Suppress("UNCHECKED_CAST")
 fun <T: Term<T>> None(): LogicOption<T> = utils.None as LogicOption<T>
 
 fun  pause(f: () -> Goal): Goal = { st -> ThunkStream { f()(st) } }
 
-// There are 5 relations
-fun conso1(xs: Term<LogicList<LogicInt>>): Goal =
-/* NOTE: fresh without delay */
-freshTypedVars { h : Term<LogicInt> ->
-freshTypedVars { tl: Term<LogicList<LogicInt>> -> (xs `===` (h + tl)) } 
-}
-fun nilo1(xs: Term<LogicList<LogicInt>>): Goal =
-xs `===` nilLogicList()
-// CT 
-interface CT {
-  // decl_by_id
-  fun decl_by_id(v1: (Term<LogicInt>) -> Goal, v2: Term<Decl>): Goal
-  // get_superclass
-  fun get_superclass(v3: (Term<LogicInt>) -> Goal,
-  v4: (Term<LogicInt>) -> Goal, v5: Term<LogicOption<JType>>): Goal
-  // new_var
-  fun new_var(v6: (Term<LogicInt>) -> Goal, v7: Term<LogicInt>): Goal
-  }
-// STUFF 
-interface STUFF {
-  }
-// functor
-private val Stuff : (CT) -> STUFF = { Impl: CT ->
-object: STUFF {
-  fun not_a_superclass(a: Term<LogicInt>, b: Term<LogicInt>): Goal =
-  Impl.get_superclass({  x-> x `===` a }, {  x-> x `===` b }, None())
+// There are 1 relations
+fun <B : Term<B>, A : Term<A>> mapo(f: (Term<A>, Term<B>) -> Goal,
+xs: Term<LogicList<A>>, ys: Term<LogicList<B>>): Goal =
+conde(((xs `===` nilLogicList()) and (ys `===` nilLogicList())),
+      freshTypedVars { h: Term<A>, tl: Term<LogicList<A>>, tmph: Term<B>,
+        tmptl: Term<LogicList<B>> ->
+      and(xs `===` (h + tl),
+          ys `===` (tmph + tmptl),
+          f(h, tmph),
+          mapo(f, tl, tmptl))
+      })
 // Put epilogue here 
-}}

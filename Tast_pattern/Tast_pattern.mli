@@ -229,6 +229,8 @@ val rld_overriden
   -> (expression, 'b, 'c) t
   -> (record_label_definition, 'a, 'c) t
 
+val typ_var : (string, 'a, 'b) t -> (Types.type_expr, 'a, 'b) t
+
 val typ_constr
   :  (Path.t, 'a, 'b) t
   -> (Types.type_expr list, 'b, 'c) t

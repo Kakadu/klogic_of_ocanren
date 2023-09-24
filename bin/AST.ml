@@ -137,26 +137,84 @@ let unparse_arrows typ =
   helper [] typ
 ;;
 
-let rec pp_typ_as_kotlin inh_info ppf typ =
+let ocaml_to_kotlin_tvar s = String.map s ~f:Char.uppercase_ascii
+
+let rec pp_typ_as_kotlin inh_info =
   let to_caml_string typ =
     Format.asprintf "%a" Printtyp.type_expr typ |> Str.global_replace (Str.regexp "\n") ""
   in
-  let textual typ ~fk =
+  let textual ppf typ ~fk =
     let caml_repr = to_caml_string typ in
     match Inh_info.lookup_typ_exn inh_info caml_repr with
     | s -> Format.fprintf ppf "%s" s
     | exception Not_found -> fk ()
   in
-  textual typ ~fk:(fun () ->
-    match unparse_arrows typ with
-    | [], rest ->
-      textual rest ~fk:(fun () -> Format.fprintf ppf "%s" (to_caml_string rest))
-    | args, rest ->
-      Format.fprintf ppf "(";
-      List.iteri args ~f:(fun i typ ->
-        if i <> 0 then Format.fprintf ppf ", ";
-        pp_typ_as_kotlin inh_info ppf typ);
-      Format.fprintf ppf ") -> %a" (pp_typ_as_kotlin inh_info) rest)
+  let rec helper ~add ppf (typ : Types.type_expr) =
+    (* Format.eprintf "Run helper on %S\n%!" (to_caml_string typ); *)
+    (* Format.eprintf "%a\n" Printtyp.raw_type_expr typ; *)
+    let sk =
+      let open Format in
+      fun x (* print_endline "SK called"; *) () ->
+        let run x =
+          match x with
+          | `Logic_list arg -> fprintf ppf "LogicList<%a>" helper_no arg
+          | `Int_ilogic -> fprintf ppf " LogicInt "
+          | `Ilogic_of_poly name -> fprintf ppf "%s" (ocaml_to_kotlin_tvar name)
+        in
+        if add then fprintf ppf "Term<%a>" (fun _ -> run) x else run x
+    in
+    let pilogic () =
+      let open Tast_pattern in
+      path [ "OCanren"; "ilogic" ]
+      ||| path [ "OCanren!"; "ilogic" ]
+      ||| path [ "OCanren__"; "Logic"; "ilogic" ]
+      ||| path [ "OCanren__!"; "Logic"; "ilogic" ]
+    in
+    let pinj_list () =
+      let open Tast_pattern in
+      path [ "OCanren"; "Std"; "List"; "injected" ]
+    in
+    let pinj_list_t () =
+      let open Tast_pattern in
+      path [ "OCanren"; "Std"; "List"; "t" ]
+    in
+    Tast_pattern.(
+      parse_conde
+        [ choice
+            [ typ_constr
+                (pilogic ())
+                (typ_constr
+                   (pinj_list_t ())
+                   (__ ^:: typ_constr (pinj_list ()) (drop ^:: nil) ^:: nil)
+                 ^:: nil)
+            ; typ_constr (pinj_list ()) (__ ^:: nil)
+            ]
+          |> map1 ~f:(fun x -> `Logic_list x)
+        ; typ_constr (pilogic ()) (typ_constr (path [ "int" ]) nil ^:: nil)
+          |> map0 ~f:`Int_ilogic
+        ; typ_constr (pilogic ()) (typ_var __ ^:: nil)
+          |> map1 ~f:(fun name -> `Ilogic_of_poly name)
+        ; typ_var __ |> map1 ~f:(fun name -> `Ilogic_of_poly name)
+        ])
+      Location.none
+      typ
+      ~on_error:(fun _err () ->
+        (* Format.eprintf "Error happend on %S: %s\n%!" (to_caml_string typ) err; *)
+        textual ppf typ ~fk:(fun () ->
+          match unparse_arrows typ with
+          | [], rest ->
+            textual ppf rest ~fk:(fun () ->
+              Format.fprintf ppf " /*%s*/" (to_caml_string rest))
+          | args, rest ->
+            Format.fprintf ppf "(";
+            List.iteri args ~f:(fun i typ ->
+              if i <> 0 then Format.fprintf ppf ", ";
+              pp_typ_as_kotlin inh_info ppf typ);
+            Format.fprintf ppf ") -> %a" (pp_typ_as_kotlin inh_info) rest))
+      sk
+      ()
+  and helper_no eta = helper ~add:false eta in
+  helper ~add:true
 ;;
 
 (*
@@ -432,6 +490,27 @@ let%expect_test " " =
           ) |}]
 ;;
 
+module S = Set.Make (String)
+
+let collect_type_variables : _ =
+  let rec helper acc desc =
+    Tast_pattern.(
+      parse
+      @@ choice
+           [ typ_var __ |> map1 ~f:(fun x -> S.add x acc)
+           ; __ @-> __ |> map2 ~f:(fun l r -> helper (helper acc l) r)
+           ; typ_constr drop __ |> map1 ~f:(List.fold_left ~f:helper ~init:acc)
+           ])
+      Location.none
+      desc
+      ~on_error:(fun _ ->
+        Format.eprintf "Unsupported case: '%a'\n%!" Printtyp.type_expr desc;
+        assert false)
+      (fun acc -> acc)
+  in
+  fun texpr -> helper S.empty texpr
+;;
+
 let pp_rvb_as_kotlin inh_info ppf { Rvb.name; args; body } =
   let open Format in
   let pp_args ppf =
@@ -440,9 +519,27 @@ let pp_rvb_as_kotlin inh_info ppf { Rvb.name; args; body } =
       (fun ppf (name, typ) -> fprintf ppf "%s: %a" name (pp_typ_as_kotlin inh_info) typ)
       ppf
   in
+  let tvars =
+    List.fold_left
+      ~f:(fun acc (_, typ) -> S.union acc (collect_type_variables typ))
+      ~init:S.empty
+      args
+  in
   fprintf
     ppf
-    "@[fun %s(%a): Goal =@]@,@[%a@]\n%!"
+    "@[fun %s %s(%a): Goal =@]@,@[%a@]\n%!"
+    (if S.is_empty tvars
+     then ""
+     else (
+       let names =
+         S.fold
+           (fun s acc ->
+             let mangled = ocaml_to_kotlin_tvar s in
+             sprintf "%s : Term<%s>" mangled mangled :: acc)
+           tvars
+           []
+       in
+       "<" ^ String.concat ~sep:", " names ^ ">"))
     name
     pp_args
     args
@@ -473,9 +570,9 @@ let pp_modtype_as_kotlin info name sign ppf =
       printfn "@[fun %s(" name;
       List.iteri args ~f:(fun i t ->
         if i <> 0 then fprintf ppf ",@ ";
-        fprintf ppf "%s: %a" (gensym ()) (pp_typ_as_kotlin info) t);
-      fprintf ppf "): %a" (pp_typ_as_kotlin info) ret;
+        fprintf ppf "@[%s: %a@]" (gensym ()) (pp_typ_as_kotlin info) t);
+      fprintf ppf "@ ): %a" (pp_typ_as_kotlin info) ret;
       printfn "@]"
     | _ -> printfn "@[//@]");
-  printfn "}@]"
+  printfn "}@]\n"
 ;;

@@ -1,7 +1,7 @@
 (env
  (dev
   (flags
-   (:standard -w -9))))
+   (:standard -w -9 -warn-error -39))))
 
 (executable
  (name klogic_of_ocanren)

@@ -21,6 +21,7 @@ import utils.LogicOption
 typealias Decl = LogicInt
 typealias JType = LogicInt
 
+@Suppress("UNCHECKED_CAST")
 fun <T: Term<T>> None(): LogicOption<T> = utils.None as LogicOption<T>
 
 fun  pause(f: () -> Goal): Goal = { st -> ThunkStream { f()(st) } }
@@ -46,14 +47,14 @@ fun  pause(f: () -> Goal): Goal = { st -> ThunkStream { f()(st) } }
 ; "OCanren.goal", "Goal"
 ]]
 
-let conso1 : int ilogic Std.List.injected -> goal =
+(* let conso1 : int ilogic Std.List.injected -> goal =
  fun xs -> fresh (h tl) (xs === Std.List.cons h tl)
-;;
+;; *)
 
-let nilo1 : int ilogic Std.List.injected -> goal = fun xs -> xs === Std.List.nil ()
+(* let nilo1 : int ilogic Std.List.injected -> goal = fun xs -> xs === Std.List.nil () *)
 (* let nilo2 : int ilogic Std.List.injected -> goal = fun xs -> xs =/= Std.List.cons __ __ *)
 
-module type CT = sig
+(* module type CT = sig
   val decl_by_id : (int ilogic -> OCanren.goal) -> decl_injected -> OCanren.goal
 
   val get_superclass
@@ -74,4 +75,23 @@ module Stuff (Impl : CT) : STUFF = struct
   let not_a_superclass : int ilogic -> int ilogic -> goal =
    fun a b -> Impl.get_superclass (fun x -> x === a) (fun x -> x === b) (Std.none ())
  ;;
-end
+end *)
+
+let rec mapo
+  :  ('a ilogic -> 'b ilogic -> goal) -> 'a ilogic Std.List.injected
+  -> 'b ilogic Std.List.injected -> goal
+  =
+ fun f xs ys ->
+  conde
+    [ xs === Std.nil () &&& (ys === Std.nil ())
+    ; fresh
+        (h tl tmph tmptl)
+        (xs === Std.List.cons h tl)
+        (ys === Std.(tmph % tmptl))
+        (f h tmph)
+        (mapo f tl tmptl)
+    ]
+;;
+
+(* let appo : ('a ilogic -> goal) -> 'a ilogic -> goal = fun f x -> f x *)
+(* let five : (int ilogic -> goal) -> goal = fun f -> f !!5 *)

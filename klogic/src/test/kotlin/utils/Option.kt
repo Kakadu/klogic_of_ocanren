@@ -70,7 +70,7 @@ data class Some<T : Term<T>>(val head: Term<T>) : LogicOption<T>() {
     }
 
     override fun toString(): String = head.toString()
-            
+
     override fun get(index: Int): Term<T> {
         require(index == 0) {
             "The $index should be 0, we always have a single element"

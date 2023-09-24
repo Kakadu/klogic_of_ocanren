@@ -140,7 +140,7 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
     ;;
 
     let pat_abstraction () =
-      of_func (fun ctx loc e k ->
+      of_func (fun _ctx _loc e k ->
         let rec helper acc e =
           match e.Typedtree.exp_desc with
           | Texp_function
@@ -265,20 +265,23 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
       (fun self inh expr ->
         let open Typedtree in
         let loc = expr.exp_loc in
-        let ast =
-          (* log "%d:  @[%a@]\n" __LINE__ MyPrinttyped.expr expr; *)
-          (* log "%d:  @[%a@]\n" __LINE__ Printtyp.type_expr expr.Typedtree.exp_type; *)
-          Tast_pattern.parse
-            (pat ())
-            loc
-            ~on_error:(fun _desc () -> Other expr)
-            expr
-            (fun ast () ->
-              match ast with
-              | _ -> ast)
-            ()
-        in
-        map_ast (fun e -> fst (self.expr self inh e)) ast, expr)
+        match expr.exp_desc with
+        | Texp_open (_, rhs) -> self.expr self inh rhs
+        | _ ->
+          let ast =
+            (* log "%d:  @[%a@]\n" __LINE__ MyPrinttyped.expr expr; *)
+            (* log "%d:  @[%a@]\n" __LINE__ Printtyp.type_expr expr.Typedtree.exp_type; *)
+            Tast_pattern.parse
+              (pat ())
+              loc
+              ~on_error:(fun _desc () -> Other expr)
+              expr
+              (fun ast () ->
+                match ast with
+                | _ -> ast)
+              ()
+          in
+          map_ast (fun e -> fst (self.expr self inh e)) ast, expr)
   ; stru_item = (fun _self _inh _si -> assert false)
   }
 ;;
@@ -548,7 +551,7 @@ let analyze_cmt _source_file out_file stru =
         arg_typ;
       fprintf ppf "@[<v 2>@[object: %s {@]@," typ;
       pp_print_list (pp_item info) ppf body;
-      fprintf ppf "@]}}"
+      fprintf ppf "@]}}\n"
   in
   Out_channel.with_file out_file ~f:(fun ch ->
     match translate_implementation stru with

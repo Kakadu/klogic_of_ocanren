@@ -225,7 +225,9 @@ let choice ps =
         | [] -> fail loc "no choices left "
         | h :: tl ->
           (match to_func h ctx loc e k with
-           | exception Expected _ -> helper tl
+           | exception Expected (_, _) ->
+             (* log "Got Expected %S" s; *)
+             helper tl
            | x -> x)
       in
       helper ps)
@@ -299,18 +301,18 @@ let path_pident (T fident) =
 let path xs =
   let cmp_names l r =
     let ans = String.equal l r in
-    let __ _ = printf "\t\tCompare names %s and %s:  %b\n%!" l r ans in
+    (* let _ = printf "\t\tCompare names %s and %s:  %b\n%!" l r ans in *)
     ans
   in
   let rec helper ps ctx loc x k =
-    let __ _ = Format.printf "path = %a\n%!" Path.print x in
+    (* let _ = Format.printf "path = %a\n%!" Path.print x in *)
     match x, ps with
     | Path.Pident id, [ id0 ] ->
       (* log "ident = %a, id0 = %s" Path.print x id0; *)
       if cmp_names (Ident.name id) id0
       then (
         let () = ctx.matched <- ctx.matched + 1 in
-        (* log "path succeeded"; *)
+        (* log "path %s succeeded" (String.concat ~sep:"." xs); *)
         k)
       else (* let () = log "AAA" in *)
         fail loc "path"
@@ -318,7 +320,7 @@ let path xs =
     | Path.Papply _, _ -> fail loc "path got Papply"
     | _ ->
       let msg = sprintf "path %s" (String.concat ~sep:"." xs) in
-      let __ _ = Format.printf "path failed: %s\n%!" msg in
+      (* let _ = Format.printf "path failed: %s\n%!" msg in *)
       fail loc msg
   in
   T (helper (List.rev xs))
@@ -776,6 +778,19 @@ let rld_overriden (T flident) (T fexpr) =
 
      let __ path = hack1 __ path *)
 let rec core_typ (T ftexpr) = T (fun ctx loc x k -> ftexpr ctx loc x.ctyp_type k)
+
+let rec typ_var (T fname) =
+  let rec helper ctx loc x k =
+    (* Format.printf "typ = %a\n%!" Printtyp.type_expr x; *)
+    match Types.get_desc x with
+    | Tvar (Some tag) ->
+      ctx.matched <- ctx.matched + 1;
+      k |> fname ctx loc tag
+    | Tlink arg -> helper ctx loc arg k
+    | _ -> fail loc "typ_var"
+  in
+  T helper
+;;
 
 let rec typ_constr (T fpath) (T fargs) =
   let rec helper ctx loc x k =
