@@ -235,6 +235,7 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
       |> map1 ~f:(fun n -> T_int n)
     ;;
 
+    let tunit () = texp_construct (lident (string "()")) drop nil |> map0 ~f:Tunit
     let tident () = texp_ident __ |> map1 ~f:(fun x -> Tident x)
 
     let pat () =
@@ -252,6 +253,7 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
         ; pat_conde ()
         ; pat_call ()
         ; tident ()
+        ; tunit ()
         ; pat_abstraction ()
         ]
     ;;
@@ -400,7 +402,10 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
         Tast_pattern.(
           parse
             (choice
-               [ tstr_value (__ ^:: nil) |> map1 ~f:on_rel_decl
+               [ tstr_value __
+                 |> map1 ~f:(fun vbs ->
+                      let _ = List.iter ~f:(fun x -> ignore (on_rel_decl x)) vbs in
+                      (), si)
                ; tstr_module
                    __
                    (tmod_functor
@@ -426,12 +431,12 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
           Fun.id
           ~on_error:(fun _ ->
           match si.str_desc with
-          | Tstr_value (_, [ vb ]) -> on_rel_decl vb
+          (*           | Tstr_value (_, [ vb ]) -> on_rel_decl vb
           | Tstr_value (_, (_ :: _ :: _ as vbs)) ->
             List.iter vbs ~f:(fun x ->
               let _, _ = on_rel_decl x in
               ());
-            (), si
+            (), si *)
           | Tstr_value (_, []) ->
             Printf.ksprintf failwith "Should not happen (%s %d)" __FILE__ __LINE__
           | Tstr_attribute
@@ -482,7 +487,7 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
               ; _
               } ->
             Inh_info.add_modtype inh txt sign;
-            log "%s %d" __FILE__ __LINE__;
+            (* log "%s %d" __FILE__ __LINE__; *)
             (), si
           (* | Tstr_module
               { mb_id = Some _

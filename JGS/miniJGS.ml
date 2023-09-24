@@ -15,10 +15,13 @@ import org.klogic.utils.terms.LogicList.Companion.logicListOf
 import org.klogic.utils.terms.Nil.nilLogicList
 import org.klogic.utils.terms.plus
 import utils.LogicInt
-import utils.LogicInt.Companion.toLogic
+import utils.LogicOption
+//import utils.None
 
 typealias Decl = LogicInt
 typealias JType = LogicInt
+
+fun <T: Term<T>> None(): LogicOption<T> = utils.None as LogicOption<T>
 
 fun  pause(f: () -> Goal): Goal = { st -> ThunkStream { f()(st) } }
 |}]
@@ -39,7 +42,7 @@ fun  pause(f: () -> Goal): Goal = { st -> ThunkStream { f()(st) } }
   , "Term<LogicList<LogicInt>>" )
 ; "jtype_injected", "Term<JType>"
 ; "decl_injected", "Term<Decl>"
-; "jtype_injected OCanren.Std.Option.injected", "Term<Option<JType>>"
+; "jtype_injected OCanren.Std.Option.injected", "Term<LogicOption<JType>>"
 ; "OCanren.goal", "Goal"
 ]]
 

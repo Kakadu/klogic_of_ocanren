@@ -24,6 +24,7 @@ type 'a ast =
   | T_list_cons of 'a * 'a
   | Tabstr of ((string * Types.type_expr) list * 'a) (** TODO: Types? *)
   | Tident of Path.t (** TODO: Do we need this? *)
+  | Tunit
   | Other of Typedtree.expression
 
 (** Relational value bindings *)
@@ -57,7 +58,7 @@ let map_ast f = function
   | T_list_cons (h, tl) -> T_list_cons (f h, f tl)
   | Tabstr (args, body) -> Tabstr (args, f body)
   | T_list_init xs -> T_list_init (List.map ~f xs)
-  | (Tident _ | Other _ | T_list_nil | T_int _) as rez -> rez
+  | (Tunit | Tident _ | Other _ | T_list_nil | T_int _) as rez -> rez
   | Unify (a, b) -> Unify (f a, f b)
 ;;
 
@@ -318,6 +319,10 @@ let%expect_test _ =
 ;; *)
 
 let pp_ast_as_kotlin inh_info =
+  let path_is_none path =
+    (* Format.eprintf "log[path_is_none]: %a\n%!" Path.print path; *)
+    String.equal (Format.asprintf "%a" Path.print path) "OCanren!.Std.none"
+  in
   let open Format in
   let rec helper ?(par = true) ppf = function
     | Pause e -> fprintf ppf "@[pause { %a@ }@]" nopar e
@@ -362,9 +367,14 @@ let pp_ast_as_kotlin inh_info =
     | Unify (l, r) ->
       (* TODO: if left argument is an empty list, swap the arguments to make Kotlin typecheck this *)
       fprintf ppf "%a `===` %a" default l default r
+    | Call_rel (path, [ Tunit ]) when path_is_none path -> fprintf ppf "None()"
     | Call_rel (p, args) ->
       fprintf ppf "@[%a(%a)@]" Printtyp.path p (pp_comma_list default) args
-    | Tapp (f, args) -> fprintf ppf "@[%a(%a)@]" default f (pp_comma_list default) args
+    | Tapp (Tident path, [ Tunit ]) when path_is_none path -> fprintf ppf "None()"
+    | Tapp (f, args) ->
+      Format.printf "Application %d\n%!" __LINE__;
+      (*  *)
+      fprintf ppf "@[%a(%a)@]" default f (pp_comma_list default) args
     | Tident p -> fprintf ppf "%s" (Path.name p)
     (* | Conde xs -> fprintf ppf "@[conde(%a)@]" (pp_comma_list helper) xs *)
     | Conde xs ->
@@ -392,6 +402,7 @@ let pp_ast_as_kotlin inh_info =
         if i <> 0 then fprintf ppf ", ";
         fprintf ppf " %s" name);
       fprintf ppf "-> %a }@]" nopar rhs
+    | Tunit -> fprintf ppf "@[/* Error TUnit */@]"
     | Other e -> fprintf ppf "@[{| Other %a |}@]" Pprintast.expression (MyUntype.expr e)
   and default ppf = helper ~par:true ppf
   and nopar ppf = helper ~par:false ppf in
@@ -442,7 +453,7 @@ let pp_rvb_as_kotlin inh_info ppf { Rvb.name; args; body } =
 (* pp_typ_as_kotlin *)
 let pp_modtype_as_kotlin info name sign ppf =
   let open Format in
-  printf "%s %d\n%!" __FILE__ __LINE__;
+  (* printf "%s %d\n%!" __FILE__ __LINE__; *)
   let printfn fmt = Format.kfprintf (fun fmt -> fprintf fmt "@,") ppf fmt in
   (* let printf fmt = Format.fprintf ppf fmt in *)
   fprintf ppf "// %s \n%!" name;

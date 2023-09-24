@@ -35,17 +35,24 @@ fun  pause(f: () -> Goal): Goal = { st -> ThunkStream { f()(st) } }
 fun zeroo(n: OlegTerm): Goal =
 n `===` nilLogicList()
 fun poso(n: OlegTerm): Goal =
-freshTypedVars { h: Term<LogicInt>, t: OlegTerm -> (n `===` (h + t)) }
+/* NOTE: fresh without delay */
+freshTypedVars { h : Term<LogicInt> ->
+freshTypedVars { t: OlegTerm -> (n `===` (h + t)) } }
 fun appendo(l: OlegTerm, s: OlegTerm, out: OlegTerm): Goal =
 conde(((l `===` nilLogicList()) and (s `===` out)),
-      freshTypedVars { a: Term<LogicInt>, d: OlegTerm, res: OlegTerm ->
+      /* NOTE: fresh without delay */
+      freshTypedVars { a : Term<LogicInt> -> /* NOTE: fresh without delay */
+      freshTypedVars { d : OlegTerm ->
+      freshTypedVars { res: OlegTerm ->
       and((a + d) `===` l,
           (a + res) `===` out,
           appendo(d, s, res))
-      })
+      } } })
 fun gt1o(n: OlegTerm): Goal =
-freshTypedVars { a: Term<LogicInt>, ad: Term<LogicInt>, dd: OlegTerm ->
-(n `===` (a + (ad + dd))) }
+/* NOTE: fresh without delay */
+freshTypedVars { a : Term<LogicInt> -> /* NOTE: fresh without delay */
+freshTypedVars { ad : Term<LogicInt> ->
+freshTypedVars { dd: OlegTerm -> (n `===` (a + (ad + dd))) } } }
 fun full_addero(b: Term<LogicInt>, x: Term<LogicInt>, y: Term<LogicInt>,
 r: Term<LogicInt>, c: Term<LogicInt>): Goal =
 conde(and(((0.toLogic() `===` b) and (0.toLogic() `===` x)),
@@ -97,10 +104,12 @@ conde(and(0.toLogic() `===` d,
           pause { addero(0.toLogic(), m, one, r) }),
       and(n `===` one,
           m `===` one,
-          freshTypedVars { a: Term<LogicInt>, c: Term<LogicInt> ->
+          /* NOTE: fresh without delay */
+          freshTypedVars { a : Term<LogicInt> ->
+          freshTypedVars { c: Term<LogicInt> ->
           and((a + (c + nilLogicList())) `===` r,
               full_addero(d, 1.toLogic(), 1.toLogic(), a, c))
-          }),
+          } }),
       ((n `===` one) and gen_addero(d, n, m, r)),
       and(m `===` one,
           gt1o(n),
@@ -110,9 +119,13 @@ conde(and(0.toLogic() `===` d,
 fun gen_addero(d: Term<LogicInt>, n: OlegTerm, m: OlegTerm,
 r: OlegTerm): Goal =
 /* NOTE: fresh without delay */
-freshTypedVars { a : Term<LogicInt>,  b : Term<LogicInt>,
- c : Term<LogicInt>,  e : Term<LogicInt>,  x : OlegTerm ->
-freshTypedVars { y: OlegTerm, z: OlegTerm ->
+freshTypedVars { a : Term<LogicInt> -> /* NOTE: fresh without delay */
+freshTypedVars { b : Term<LogicInt> -> /* NOTE: fresh without delay */
+freshTypedVars { c : Term<LogicInt> -> /* NOTE: fresh without delay */
+freshTypedVars { e : Term<LogicInt> -> /* NOTE: fresh without delay */
+freshTypedVars { x : OlegTerm -> /* NOTE: fresh without delay */
+freshTypedVars { y : OlegTerm ->
+freshTypedVars { z: OlegTerm ->
 and((a + x) `===` n,
     (b + y) `===` m,
     poso(y),
@@ -120,7 +133,7 @@ and((a + x) `===` n,
     poso(z),
     full_addero(d, a, b, c, e),
     addero(e, x, y, z))
-} }
+} } } } } } }
 fun pluso(n: OlegTerm, m: OlegTerm, k: OlegTerm): Goal =
 addero(0.toLogic(), n, m, k)
 fun minuso(n: OlegTerm, m: OlegTerm, k: OlegTerm): Goal =
@@ -128,15 +141,19 @@ pluso(m, k, n)
 fun bound_multo(q: OlegTerm, p: OlegTerm, n: OlegTerm, m: OlegTerm): Goal =
 conde(((q `===` zero) and poso(p)),
       /* NOTE: fresh without delay */
-      freshTypedVars { a0 : Term<LogicInt>,  a1 : Term<LogicInt>,
-       a2 : Term<LogicInt>,  a3 : Term<LogicInt>,  x : OlegTerm ->
-      freshTypedVars { y: OlegTerm, z: OlegTerm ->
+      freshTypedVars { a0 : Term<LogicInt> -> /* NOTE: fresh without delay */
+      freshTypedVars { a1 : Term<LogicInt> -> /* NOTE: fresh without delay */
+      freshTypedVars { a2 : Term<LogicInt> -> /* NOTE: fresh without delay */
+      freshTypedVars { a3 : Term<LogicInt> -> /* NOTE: fresh without delay */
+      freshTypedVars { x : OlegTerm -> /* NOTE: fresh without delay */
+      freshTypedVars { y : OlegTerm ->
+      freshTypedVars { z: OlegTerm ->
       and(q `===` (a0 + x),
           p `===` (a1 + y),
           conde((((n `===` zero) and (m `===` (a2 + z))) and bound_multo(x,
                                                              y, z, zero)),
                 ((n `===` (a3 + z)) and bound_multo(x, y, z, m))))
-      } })
+      } } } } } } })
 fun multo(n: OlegTerm, m: OlegTerm, p: OlegTerm): Goal =
 conde(((n `===` zero) and (p `===` zero)),
       and(poso(n),
@@ -148,28 +165,34 @@ conde(((n `===` zero) and (p `===` zero)),
       and(gt1o(n),
           m `===` one,
           n `===` p),
-      freshTypedVars { x: OlegTerm, z: OlegTerm ->
+      /* NOTE: fresh without delay */
+      freshTypedVars { x : OlegTerm ->
+      freshTypedVars { z: OlegTerm ->
       and(n `===` (0.toLogic() + x),
           poso(x),
           p `===` (0.toLogic() + z),
           poso(z),
           gt1o(m),
           multo(x, m, z))
-      },
-      freshTypedVars { x: OlegTerm, y: OlegTerm ->
+      } },
+      /* NOTE: fresh without delay */
+      freshTypedVars { x : OlegTerm ->
+      freshTypedVars { y: OlegTerm ->
       and(n `===` (1.toLogic() + x),
           poso(x),
           m `===` (0.toLogic() + y),
           poso(y),
           multo(m, n, p))
-      },
-      freshTypedVars { x: OlegTerm, y: OlegTerm ->
+      } },
+      /* NOTE: fresh without delay */
+      freshTypedVars { x : OlegTerm ->
+      freshTypedVars { y: OlegTerm ->
       and(n `===` (1.toLogic() + x),
           poso(x),
           m `===` (1.toLogic() + y),
           poso(y),
           odd_multo(x, n, m, p))
-      })
+      } })
 fun odd_multo(x: OlegTerm, n: OlegTerm, m: OlegTerm, p: OlegTerm): Goal =
 freshTypedVars { q: OlegTerm ->
 and(bound_multo(q, p, n, m),
@@ -179,25 +202,31 @@ and(bound_multo(q, p, n, m),
 fun eqlo(n: OlegTerm, m: OlegTerm): Goal =
 conde(((n `===` zero) and (m `===` zero)),
       ((n `===` one) and (m `===` one)),
-      freshTypedVars { a: Term<LogicInt>, x: OlegTerm, b: Term<LogicInt>,
-        y: OlegTerm ->
+      /* NOTE: fresh without delay */
+      freshTypedVars { a : Term<LogicInt> -> /* NOTE: fresh without delay */
+      freshTypedVars { x : OlegTerm -> /* NOTE: fresh without delay */
+      freshTypedVars { b : Term<LogicInt> ->
+      freshTypedVars { y: OlegTerm ->
       and((a + x) `===` n,
           poso(x),
           (b + y) `===` m,
           poso(y),
           eqlo(x, y))
-      })
+      } } } })
 fun ltlo(n: OlegTerm, m: OlegTerm): Goal =
 conde(((n `===` zero) and poso(m)),
       ((n `===` one) and gt1o(m)),
-      freshTypedVars { a: Term<LogicInt>, x: OlegTerm, b: Term<LogicInt>,
-        y: OlegTerm ->
+      /* NOTE: fresh without delay */
+      freshTypedVars { a : Term<LogicInt> -> /* NOTE: fresh without delay */
+      freshTypedVars { x : OlegTerm -> /* NOTE: fresh without delay */
+      freshTypedVars { b : Term<LogicInt> ->
+      freshTypedVars { y: OlegTerm ->
       and((a + x) `===` n,
           poso(x),
           (b + y) `===` m,
           poso(y),
           ltlo(x, y))
-      })
+      } } } })
 fun lelo(n: OlegTerm, m: OlegTerm): Goal =
 conde(eqlo(n, m),
       ltlo(n, m))
@@ -214,39 +243,51 @@ fun splito(n: OlegTerm, r: OlegTerm, l: OlegTerm, h: OlegTerm): Goal =
 conde(and(n `===` zero,
           h `===` zero,
           l `===` zero),
-      freshTypedVars { b: Term<LogicInt>, n_: OlegTerm ->
+      /* NOTE: fresh without delay */
+      freshTypedVars { b : Term<LogicInt> ->
+      freshTypedVars { n_: OlegTerm ->
       and(n `===` (0.toLogic() + (b + n_)),
           r `===` zero,
           h `===` (b + n_),
           l `===` zero)
-      },
+      } },
       freshTypedVars { n_: OlegTerm ->
       and(n `===` (1.toLogic() + n_),
           r `===` zero,
           n_ `===` h,
           l `===` one)
       },
-      freshTypedVars { b: Term<LogicInt>, n_: OlegTerm, a: Term<LogicInt>,
-        r_: OlegTerm ->
+      /* NOTE: fresh without delay */
+      freshTypedVars { b : Term<LogicInt> -> /* NOTE: fresh without delay */
+      freshTypedVars { n_ : OlegTerm -> /* NOTE: fresh without delay */
+      freshTypedVars { a : Term<LogicInt> ->
+      freshTypedVars { r_: OlegTerm ->
       and(n `===` (0.toLogic() + (b + n_)),
           (a + r_) `===` r,
           l `===` zero,
           splito((b + n_), r_, zero, h))
-      },
-      freshTypedVars { n_: OlegTerm, a: Term<LogicInt>, r_: OlegTerm ->
+      } } } },
+      /* NOTE: fresh without delay */
+      freshTypedVars { n_ : OlegTerm -> /* NOTE: fresh without delay */
+      freshTypedVars { a : Term<LogicInt> ->
+      freshTypedVars { r_: OlegTerm ->
       and(n `===` (1.toLogic() + n_),
           r `===` (a + r_),
           l `===` one,
           splito(n_, r_, zero, h))
-      },
-      freshTypedVars { b: Term<LogicInt>, n_: OlegTerm, a: Term<LogicInt>,
-        r_: OlegTerm, l_: OlegTerm ->
+      } } },
+      /* NOTE: fresh without delay */
+      freshTypedVars { b : Term<LogicInt> -> /* NOTE: fresh without delay */
+      freshTypedVars { n_ : OlegTerm -> /* NOTE: fresh without delay */
+      freshTypedVars { a : Term<LogicInt> -> /* NOTE: fresh without delay */
+      freshTypedVars { r_ : OlegTerm ->
+      freshTypedVars { l_: OlegTerm ->
       and(n `===` (b + n_),
           r `===` (a + r_),
           l `===` (b + l_),
           poso(l_),
           splito(n_, r_, l_, h))
-      })
+      } } } } })
 fun divo(n: OlegTerm, m: OlegTerm, q: OlegTerm, r: OlegTerm): Goal =
 conde(and(r `===` n,
           q `===` zero,
@@ -259,9 +300,14 @@ conde(and(r `===` n,
           lto(r, m),
           poso(q),
           /* NOTE: fresh without delay */
-          freshTypedVars { nh : OlegTerm,  nl : OlegTerm,  qh : OlegTerm,
-           ql : OlegTerm,  qlm : OlegTerm ->
-          freshTypedVars { qlmr: OlegTerm, rr: OlegTerm, rh: OlegTerm ->
+          freshTypedVars { nh : OlegTerm -> /* NOTE: fresh without delay */
+          freshTypedVars { nl : OlegTerm -> /* NOTE: fresh without delay */
+          freshTypedVars { qh : OlegTerm -> /* NOTE: fresh without delay */
+          freshTypedVars { ql : OlegTerm -> /* NOTE: fresh without delay */
+          freshTypedVars { qlm : OlegTerm -> /* NOTE: fresh without delay */
+          freshTypedVars { qlmr : OlegTerm -> /* NOTE: fresh without delay */
+          freshTypedVars { rr : OlegTerm ->
+          freshTypedVars { rh: OlegTerm ->
           and(splito(n, r, nl, nh),
               splito(q, r, ql, qh),
               conde(((((nh `===` zero) and (qh `===` zero)) and minuso(nl, r,
@@ -271,38 +317,45 @@ conde(and(r `===` n,
                                                              qlmr)) and 
                       minuso(qlmr, nl, rr)) and splito(rr, r, zero, rh)) and 
                     divo(nh, m, qh, rh))))
-          } }))
+          } } } } } } } }))
 fun repeated_mul(n: OlegTerm, q: OlegTerm, nq: OlegTerm): Goal =
 conde(and(poso(n),
           q `===` zero,
           nq `===` one),
       ((q `===` one) and (n `===` nq)),
-      (gt1o(q) and freshTypedVars { q1: OlegTerm, nq1: OlegTerm ->
-                   and(pluso(q1, one, q),
-                       repeated_mul(n, q1, nq1),
-                       multo(nq1, n, nq))
-                   }))
+      (gt1o(q) and /* NOTE: fresh without delay */
+      freshTypedVars { q1 : OlegTerm ->
+      freshTypedVars { nq1: OlegTerm ->
+      and(pluso(q1, one, q),
+          repeated_mul(n, q1, nq1),
+          multo(nq1, n, nq))
+      } }))
 fun exp2(n: OlegTerm, b: OlegTerm, q: OlegTerm): Goal =
 conde(((n `===` one) and (q `===` zero)),
       and(gt1o(n),
           q `===` one,
           freshTypedVars { s: OlegTerm -> splito(n, b, s, one) }),
-      freshTypedVars { q1: OlegTerm, b2: OlegTerm ->
+      /* NOTE: fresh without delay */
+      freshTypedVars { q1 : OlegTerm ->
+      freshTypedVars { b2: OlegTerm ->
       and(q `===` (0.toLogic() + q1),
           poso(q1),
           ltlo(b, n),
           appendo(b, (1.toLogic() + b), b2),
           exp2(n, b2, q1))
-      },
-      freshTypedVars { q1: OlegTerm, nh: OlegTerm, b2: OlegTerm,
-        s: OlegTerm ->
+      } },
+      /* NOTE: fresh without delay */
+      freshTypedVars { q1 : OlegTerm -> /* NOTE: fresh without delay */
+      freshTypedVars { nh : OlegTerm -> /* NOTE: fresh without delay */
+      freshTypedVars { b2 : OlegTerm ->
+      freshTypedVars { s: OlegTerm ->
       and(q `===` (1.toLogic() + q1),
           poso(q1),
           poso(nh),
           splito(n, b, s, nh),
           appendo(b, (1.toLogic() + b), b2),
           exp2(nh, b2, q1))
-      })
+      } } } })
 fun logo(n: OlegTerm, b: OlegTerm, q: OlegTerm, r: OlegTerm): Goal =
 conde(and(n `===` one,
           poso(b),
@@ -321,63 +374,76 @@ conde(and(n `===` one,
       and(b `===` zero,
           poso(q),
           r `===` n),
-      (((0.toLogic() + (1.toLogic() + nilLogicList())) `===` b) and freshTypedVars { 
-                                                                    a: Term<LogicInt>,
-                                                                    ad: Term<LogicInt>,
-                                                                    dd: OlegTerm ->
-                                                                    and(poso(dd),
-                                                                    n `===` 
-                                                                    (a + 
-                                                                    (ad + dd)),
-                                                                    exp2(n,
-                                                                    nilLogicList(),
-                                                                    q),
-                                                                    freshTypedVars { 
-                                                                    s: OlegTerm ->
-                                                                    splito(n,
-                                                                    dd, r, s)
-                                                                    }) 
-                                                                    }),
-      and(freshTypedVars { a: Term<LogicInt>, ad: Term<LogicInt>,
-            add: Term<LogicInt>, ddd: OlegTerm ->
+      (((0.toLogic() + (1.toLogic() + nilLogicList())) `===` b) and /* NOTE: fresh without delay */
+      freshTypedVars { a : Term<LogicInt> -> /* NOTE: fresh without delay */
+      freshTypedVars { ad : Term<LogicInt> ->
+      freshTypedVars { dd: OlegTerm ->
+      and(poso(dd),
+          n `===` (a + (ad + dd)),
+          exp2(n, nilLogicList(), q),
+          freshTypedVars { s: OlegTerm -> splito(n, dd, r, s) })
+      } } }),
+      and(/* NOTE: fresh without delay */
+          freshTypedVars { a : Term<LogicInt> ->
+          /* NOTE: fresh without delay */
+          freshTypedVars { ad : Term<LogicInt> ->
+          /* NOTE: fresh without delay */
+          freshTypedVars { add : Term<LogicInt> ->
+          freshTypedVars { ddd: OlegTerm ->
           conde(b `===` three,
                 b `===` (a + (ad + (add + ddd))))
-          },
+          } } } },
           ltlo(b, n),
           /* NOTE: fresh without delay */
-          freshTypedVars { bw1 : OlegTerm,  bw : OlegTerm,  nw : OlegTerm,
-           nw1 : OlegTerm,  ql1 : OlegTerm ->
-          freshTypedVars { ql: OlegTerm, s: OlegTerm ->
+          freshTypedVars { bw1 : OlegTerm -> /* NOTE: fresh without delay */
+          freshTypedVars { bw : OlegTerm -> /* NOTE: fresh without delay */
+          freshTypedVars { nw : OlegTerm -> /* NOTE: fresh without delay */
+          freshTypedVars { nw1 : OlegTerm -> /* NOTE: fresh without delay */
+          freshTypedVars { ql1 : OlegTerm -> /* NOTE: fresh without delay */
+          freshTypedVars { ql : OlegTerm ->
+          freshTypedVars { s: OlegTerm ->
           and(exp2(b, zero, bw1),
               pluso(bw1, one, bw),
               ltlo(q, n),
-              freshTypedVars { q1: OlegTerm, bwq1: OlegTerm ->
+              /* NOTE: fresh without delay */
+              freshTypedVars { q1 : OlegTerm ->
+              freshTypedVars { bwq1: OlegTerm ->
               and(pluso(q, one, q1),
                   multo(bw, q1, bwq1),
                   lto(nw1, bwq1))
-              },
+              } },
               exp2(n, zero, nw1),
               pluso(nw1, one, nw),
               divo(nw, bw, ql1, s),
               pluso(ql, one, ql1),
               lelo(ql, q),
-              freshTypedVars { bql: OlegTerm, qh: OlegTerm, s2: OlegTerm,
-                qdh: OlegTerm, qd: OlegTerm ->
+              /* NOTE: fresh without delay */
+              freshTypedVars { bql : OlegTerm ->
+              /* NOTE: fresh without delay */
+              freshTypedVars { qh : OlegTerm ->
+              /* NOTE: fresh without delay */
+              freshTypedVars { s2 : OlegTerm ->
+              /* NOTE: fresh without delay */
+              freshTypedVars { qdh : OlegTerm ->
+              freshTypedVars { qd: OlegTerm ->
               and(repeated_mul(b, ql, bql),
                   divo(nw, bw1, qh, s2),
                   pluso(ql, qdh, qh),
                   pluso(ql, qd, q),
                   leo(qd, qdh),
-                  freshTypedVars { bqd: OlegTerm, bq1: OlegTerm,
-                    bq: OlegTerm ->
+                  /* NOTE: fresh without delay */
+                  freshTypedVars { bqd : OlegTerm ->
+                  /* NOTE: fresh without delay */
+                  freshTypedVars { bq1 : OlegTerm ->
+                  freshTypedVars { bq: OlegTerm ->
                   and(repeated_mul(b, qd, bqd),
                       multo(bql, bqd, bq),
                       multo(b, bq, bq1),
                       pluso(bq, r, n),
                       lto(n, bq1))
-                  })
-              })
-          } }))
+                  } } })
+              } } } } })
+          } } } } } } }))
 fun expo(b: OlegTerm, q: OlegTerm, n: OlegTerm): Goal =
 logo(n, b, q, zero)
 // Put epilogue here 

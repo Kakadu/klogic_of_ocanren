@@ -32,6 +32,7 @@
   ./src/test/kotlin/utils/Utils.kt
   ./src/test/kotlin/utils/LogicInt.kt
   ./src/test/kotlin/utils/OlegNumbers.kt
+  ./src/test/kotlin/utils/Option.kt
   ;./gradlew.bat
   ;
   )
