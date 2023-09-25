@@ -72,7 +72,7 @@ and(q34(q37),
     conde(freshTypedVars { q38: Term<ID>, index: Term<PeanoLogic>,
             q39: Term<Jtype<ID>>, q40: Term<LogicOption<Jtype<ID>>> ->
           and(q37 `===` Targ.type_(Jtype.var(q38, index, q39, q40)),
-              List.HO.nth(subst, OCanren.===(index), q63))
+              List.HO.nth(subst, {  eta-> eta `===` index }, q63))
           },
           freshTypedVars { typ: Term<Jtype<ID>>, q48: Term<Jtype<ID>> ->
           and(q37 `===` Targ.type_(typ),

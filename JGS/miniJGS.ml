@@ -30,6 +30,7 @@ fun  pause(f: () -> Goal): Goal = { st -> ThunkStream { f()(st) } }
 |}]
 
 [@@@klogic.epilogue {|// Put epilogue here |}]
+[@@@klogic.ident.mangle []]
 
 [@@@klogic.type.mangle
 [ "int OCanren.ilogic OCanren.Std.List.injected", "Term<LogicList<LogicInt>>"
@@ -228,7 +229,7 @@ and substitute_arg :
        [ fresh
            (q38 index q39 q40)
            (q37 === type_ (var q38 index q39 q40))
-           (List.HO.nth subst (( === ) index) q63)
+           (List.HO.nth subst (fun eta -> eta === index) q63)
        ; fresh
            (typ q48)
            (q37 === type_ typ)
