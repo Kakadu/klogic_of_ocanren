@@ -965,6 +965,13 @@ let tsig_docattr (T f) =
       | _ -> fail loc "tsig_docattr")
 ;;
 
+let payload_pstr (T fstr) =
+  of_func (fun ctx loc subj k ->
+    match subj with
+    | Parsetree.PStr stru -> k |> fstr ctx loc stru
+    | _ -> fail loc __FUNCTION__)
+;;
+
 let parse_conde cases loc =
   let pats =
     match cases with

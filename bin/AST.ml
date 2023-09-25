@@ -94,13 +94,19 @@ module Inh_info = struct
 
   type t =
     { type_mangle_hints : (string, string) Hashtbl.t
+    ; expr_mangle_hints : (string, string) Hashtbl.t
     ; mutable rvbs : item list
     ; mutable preamble : string
     ; mutable epilogue : string
     }
 
   let create () =
-    { type_mangle_hints = Hashtbl.create 13; rvbs = []; preamble = ""; epilogue = "" }
+    { type_mangle_hints = Hashtbl.create 13
+    ; expr_mangle_hints = Hashtbl.create 13
+    ; rvbs = []
+    ; preamble = ""
+    ; epilogue = ""
+    }
   ;;
 
   let extend t item = t.rvbs <- item :: t.rvbs
@@ -112,12 +118,18 @@ module Inh_info = struct
   ;;
 
   let lookup_typ_exn t typ = Hashtbl.find t.type_mangle_hints typ
+  let lookup_expr_exn t typ = Hashtbl.find t.expr_mangle_hints typ
 
   let add_hints info hints =
     (* log "add %d hints" (List.length hints); *)
     List.iter hints ~f:(fun (key, data) ->
       (* log "adding a type hint %s -> %s%!" key data; *)
       Hashtbl.add_exn info.type_mangle_hints ~key ~data)
+  ;;
+
+  let add_expr_hints info hints =
+    List.iter hints ~f:(fun (key, data) ->
+      Hashtbl.add_exn info.expr_mangle_hints ~key ~data)
   ;;
 
   let iter_vbs { rvbs; _ } ~f = List.iter (List.rev rvbs) ~f
@@ -170,7 +182,7 @@ let rec pp_typ_as_kotlin inh_info =
           | `Ilogic_of_t (path, args) ->
             (* Format.eprintf "Path.name = %S\n%!" (Path.name path); *)
             (* Format.eprintf "Path = %a\n%!" Path.print path; *)
-            (* We assume here, that path is in the form PATH.t, so we need to scan arguments, 
+            (* We assume here, that path is in the form PATH.t, so we need to scan arguments,
               and find an argument, with toplevel type PATH.injected
               *)
             let expected_path = String.drop_suffix (Path.name path) 1 ^ "injected" in
@@ -503,7 +515,13 @@ let pp_ast_as_kotlin inh_info =
       fprintf ppf "%a `===` %a" default l default r
     | Call_rel (path, [ Tunit ]) when path_is_none path -> fprintf ppf "None()"
     | Call_rel (p, args) ->
-      fprintf ppf "@[%a(%a)@]" Printtyp.path p (pp_comma_list default) args
+      let kotlin_func =
+        let repr = Format.asprintf "%a" Printtyp.path p in
+        match Inh_info.lookup_expr_exn inh_info repr with
+        | exception Not_found -> repr
+        | s -> s
+      in
+      fprintf ppf "@[%s(%a)@]" kotlin_func (pp_comma_list default) args
     | Tapp (Tident path, [ Tunit ]) when path_is_none path -> fprintf ppf "None()"
     | Tapp (f, args) ->
       Format.printf "Application %d\n%!" __LINE__;
@@ -536,7 +554,7 @@ let pp_ast_as_kotlin inh_info =
         if i <> 0 then fprintf ppf ", ";
         fprintf ppf " %s" name);
       fprintf ppf "-> %a }@]" nopar rhs
-    | Tunit -> fprintf ppf "@[/* Error TUnit */@]"
+    | Tunit -> fprintf ppf "/* Unit */"
     | Other e -> fprintf ppf "@[{| Other %a |}@]" Pprintast.expression (MyUntype.expr e)
   and default ppf = helper ~par:true ppf
   and nopar ppf = helper ~par:false ppf in

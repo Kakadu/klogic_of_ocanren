@@ -268,6 +268,7 @@ val attribute
 
 val tstr_docattr : (string, 'a, 'b) t -> (structure_item, 'a, 'b) t
 val tsig_docattr : (string, 'a, 'b) t -> (signature_item, 'a, 'b) t
+val payload_pstr : (Parsetree.structure, 'a, 'b) t -> (Parsetree.payload, 'a, 'b) t
 
 val tmod_ascription
   :  (module_expr, 'a, 'b) t

@@ -30,7 +30,24 @@ fun  pause(f: () -> Goal): Goal = { st -> ThunkStream { f()(st) } }
 |}]
 
 [@@@klogic.epilogue {|// Put epilogue here |}]
-[@@@klogic.ident.mangle []]
+
+(*  *)
+[@@@klogic.ident.mangle
+[ "OCanren.Std.pair", "LogicPair"
+; "OCanren.Std.some", "Some"
+; "Targ.wildcard", "Wildcard"
+; "Targ.type_", "Type"
+; "Jtype.class_", "Class_"
+; "Jtype.array", "Array_"
+; "Jtype.var", "Var"
+; "Jtype.interface", "Interface"
+; "Jtype.intersect", "Intersect"
+; "Jtype.null", "Null"
+; "List.HO.nth", "List_HO_nth"
+; "List.HO.map", "List_HO_map"
+; "", ""
+]]
+(*  *)
 
 [@@@klogic.type.mangle
 [ "int OCanren.ilogic OCanren.Std.List.injected", "Term<LogicList<LogicInt>>"
@@ -155,6 +172,7 @@ module Jtype = struct
   let interface a b : _ injected = !!(Interface (a, b))
   let var id index upb lwb : _ injected = !!(Var { id; index; upb; lwb })
   let intersect a : _ injected = !!(Intersect a)
+  let null () : _ injected = !!Null
 end
 [@@skip_from_klogic]
 
@@ -186,7 +204,7 @@ let rec substitute_typ :
            (typ q4)
            (q3 === array typ)
            (q30 === array q4)
-           (substitute_typ subst (( === ) typ) q4)
+           (substitute_typ subst (fun eta -> typ === eta) q4)
        ; fresh
            (id args q8)
            (q3 === class_ id args)
@@ -211,7 +229,7 @@ let rec substitute_typ :
               (fun a b -> substitute_typ subst a b)
               (fun eta -> eta === typs)
               q17)
-       ; fresh () (q3 === !!Null) (q30 === !!Null)
+       ; fresh () (q3 === null ()) (q30 === null ())
        ])
 
 and substitute_arg :

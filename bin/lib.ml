@@ -347,7 +347,7 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
     helper 0 e.Typedtree.exp_type
   in
   (* Printf.printf "%s %d\n" __FILE__ __LINE__; *)
-  let on_type_mangle_spec inh_info payl =
+  let on_type_mangle_spec inh_info payl ~k =
     match payl with
     | Parsetree.PStr [ { pstr_desc = Pstr_eval (e, _); _ } ] ->
       let open Ppxlib.Ast_pattern in
@@ -380,7 +380,7 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
            | None -> List.rev acc
            | Some (item, rest) -> helper (item :: acc) rest)
       in
-      helper [] e |> Inh_info.add_hints inh_info
+      k (helper [] e)
     | _ -> ()
   in
   let open Tast_folder in
@@ -451,6 +451,14 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
                           ~arg_typ:param_type
                           new_inh_info;
                         (), si)
+                 ; tstr_attribute (attribute (string "klogic.ident.mangle") __)
+                   |> map1 ~f:(fun attr_payload ->
+                        print_endline "klogic.ident.mangle";
+                        on_type_mangle_spec
+                          inh
+                          attr_payload
+                          ~k:(Inh_info.add_expr_hints inh);
+                        (), si)
                  ])
               si.str_loc)
             si
@@ -504,7 +512,7 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
             | Tstr_attribute
                 { attr_name = { txt = "klogic.type.mangle"; _ }; attr_payload; _ } ->
               log "%s\n%!" "klogic.type.mangle";
-              on_type_mangle_spec inh attr_payload;
+              on_type_mangle_spec inh attr_payload ~k:(Inh_info.add_hints inh);
               (* TODO: specify mangling of names as an attribute *)
               (), si
             | Tstr_modtype
