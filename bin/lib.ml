@@ -95,12 +95,22 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
       |> map2 ~f:(fun x y -> Mplus (x, y))
     ;;
 
-    let pat_unify () : (Typedtree.expression, _ -> 'a, 'b) Tast_pattern.t =
+    let pat_standart_operator ~name ~mk
+      : (Typedtree.expression, _ -> 'a, 'b) Tast_pattern.t
+      =
       texp_apply2
-        (texp_ident (path [ "OCanren!"; "===" ] ||| path [ "OCanren"; "===" ]))
+        (texp_ident (path [ "OCanren!"; name ] ||| path [ "OCanren"; name ]))
         __
         __
-      |> map2 ~f:(fun x y -> Unify (x, y))
+      |> map2 ~f:mk
+    ;;
+
+    let pat_unify () : (Typedtree.expression, _ -> 'a, 'b) Tast_pattern.t =
+      pat_standart_operator ~name:"===" ~mk:(fun x y -> Unify (x, y))
+    ;;
+
+    let pat_diseq () : (Typedtree.expression, _ -> 'a, 'b) Tast_pattern.t =
+      pat_standart_operator ~name:"=/=" ~mk:(fun x y -> Diseq (x, y))
     ;;
 
     let _pat_bind () : (Typedtree.expression, _ -> 'a, 'b) Tast_pattern.t =
@@ -250,6 +260,7 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
           (* ; pat_st_abstr () *)
           (* ; pat_st_app () *)
         ; pat_unify ()
+        ; pat_diseq ()
         ; pat_conde ()
         ; pat_call ()
         ; tident ()
