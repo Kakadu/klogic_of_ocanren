@@ -15,6 +15,7 @@ type 'a ast =
   | New_scope of 'a
   | Bind of 'a * 'a
   | Fresh of (string * Types.type_expr) list * 'a
+  | Wildcard of string * Types.type_expr * 'a
   | Unify of 'a * 'a
   | Diseq of 'a * 'a
   | Call_rel of Path.t * 'a list
@@ -48,6 +49,7 @@ let map_ast f = function
   | St_abstr e -> St_abstr (f e)
   | St_app e -> St_app (f e)
   | Fresh (xs, e) -> Fresh (xs, f e)
+  | Wildcard (v, t, e) -> Wildcard (v, t, f e)
   | New_scope x -> New_scope (f x)
   | Conde xs -> Conde (List.map ~f xs)
   | Conj_multi xs -> Conj_multi (List.map ~f xs)
@@ -508,6 +510,8 @@ let pp_ast_as_kotlin inh_info =
         ppf
         xs;
       fprintf ppf " ->@]@ %a@ @[}@]@]" default e
+    | Wildcard (v, t, e) ->
+      fprintf ppf "@[wc {%s : %a ->@ %a}@]" v (pp_typ_as_kotlin inh_info) t default e
     | Unify (l, r) when par ->
       (* TODO: if left argument is an empty list, swap the arguments to make Kotlin typecheck this *)
       fprintf ppf "(%a `===` %a)" default l default r

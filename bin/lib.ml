@@ -213,6 +213,13 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
       |> map1 ~f:(function Call_fresh (pats, rhs) -> Fresh (pats, rhs))
     ;;
 
+    let pat_wildcard () : _ =
+      texp_apply1
+        (texp_ident (path [ "OCanren"; "wc" ]))
+        (texp_ascription (texp_lambda (tpat_var __) __) (__ @-> drop))
+      |> map3 ~f:(fun name rhs typ -> Wildcard (name, typ, rhs))
+    ;;
+
     let tnil () =
       texp_apply1
         (texp_ident
@@ -255,6 +262,7 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
         ; tint ()
         ; pat_pause ()
         ; pat_fresh ()
+        ; pat_wildcard ()
         ; pat_conj2 ()
         ; pat_conj_many ()
           (* ; pat_st_abstr () *)
