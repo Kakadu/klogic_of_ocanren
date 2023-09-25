@@ -846,7 +846,6 @@ let tmod_functor (T fparam) (T fme) =
       match str.mod_desc with
       | Tmod_functor (param, me) ->
         ctx.matched <- ctx.matched + 1;
-        log "asdfasd";
         k |> fparam ctx loc param |> fme ctx loc me
       | _ -> fail loc "tmod_functor")
 ;;
@@ -864,12 +863,11 @@ let tmod_structure (T fstru) =
 let tmod_ascription (T fme) (T ftyp) =
   T
     (fun ctx loc str k ->
-      log "%d" __LINE__;
       match str.mod_desc with
       (* | Tmod_constraint _ -> assert false *)
       (* | Tmod_functor _ -> failwith "herr" *)
       | Tmod_constraint (me, _, Tmodtype_explicit mt, _) ->
-        log "parsing ascription";
+        (* log "parsing ascription"; *)
         ctx.matched <- ctx.matched + 1;
         k |> fme ctx loc me |> ftyp ctx loc mt
       | _ -> fail loc "tmod_ascription")
@@ -892,7 +890,7 @@ let tstr_module (T fid) (T fexpr) =
     (fun ctx loc str k ->
       match str.str_desc with
       | Tstr_module { mb_id = Some name; mb_expr } ->
-        log "tstr_module %S" (Ident.name name);
+        (* log "tstr_module %S" (Ident.name name); *)
         ctx.matched <- ctx.matched + 1;
         k |> fid ctx loc name |> fexpr ctx loc mb_expr
       | _ -> fail loc "tstr_module")

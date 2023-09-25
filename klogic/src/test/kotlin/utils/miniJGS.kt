@@ -136,7 +136,7 @@ interface HIGH_ORDER {
 
 // CLASS_TABLE 
 interface CLASS_TABLE {
-  //
+  val HO : HIGH_ORDER
   }
 
 // VERIFIER 

@@ -659,14 +659,14 @@ let pp_modtype_as_kotlin info name sign ppf =
   (* printf "%s %d\n%!" __FILE__ __LINE__; *)
   let printfn fmt = Format.kfprintf (fun fmt -> fprintf fmt "@,") ppf fmt in
   (* let printf fmt = Format.fprintf ppf fmt in *)
-  fprintf ppf "// %s \n%!" name;
-  printfn "@[<v 2>@[interface %s {@]" name;
   let gensym =
     let c = ref 0 in
     fun () ->
       incr c;
       Printf.sprintf "v%d" !c
   in
+  fprintf ppf "// %s \n%!" name;
+  printfn "@[@[<v 2>@[interface %s {@]" name;
   List.iter sign.Typedtree.sig_items ~f:(fun sitem ->
     match sitem.sig_desc with
     | Tsig_value { val_name = { txt = name; _ }; val_val = { val_type; _ }; _ } ->
@@ -679,6 +679,8 @@ let pp_modtype_as_kotlin info name sign ppf =
         fprintf ppf "@[%s: %a@]" (gensym ()) (pp_typ_as_kotlin info) t);
       fprintf ppf "@ ): %a" (pp_typ_as_kotlin info) ret;
       printfn "@]"
+    | Tsig_module { md_id = Some id; md_type = { mty_desc = Tmty_ident (path, _) } } ->
+      printfn "@[val %s : %a@]" (Ident.name id) Printtyp.path path
     | _ -> printfn "@[//@]");
-  printfn "}@]\n"
+  printfn "@]@,}@]\n"
 ;;
