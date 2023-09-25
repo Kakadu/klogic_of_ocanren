@@ -153,13 +153,58 @@ let rec pp_typ_as_kotlin inh_info =
     (* Format.eprintf "Run helper on %S\n%!" (to_caml_string typ); *)
     (* Format.eprintf "%a\n" Printtyp.raw_type_expr typ; *)
     let sk =
+      let string_of_path p =
+        match Path.flatten p with
+        | `Ok (id, xs) -> String.concat ~sep:"." (Ident.name id :: xs)
+        | `Contains_apply -> assert false
+      in
       let open Format in
-      fun x (* print_endline "SK called"; *) () ->
+      fun x () ->
         let run x =
           match x with
           | `Logic_list arg -> fprintf ppf "LogicList<%a>" helper_no arg
+          | `Logic_option arg -> fprintf ppf "LogicOption<%a>" helper_no arg
+          | `Logic_nat -> fprintf ppf "PeanoLogic"
           | `Int_ilogic -> fprintf ppf " LogicInt "
           | `Ilogic_of_poly name -> fprintf ppf "%s" (ocaml_to_kotlin_tvar name)
+          | `Ilogic_of_t (path, args) ->
+            (* Format.eprintf "Path.name = %S\n%!" (Path.name path); *)
+            (* Format.eprintf "Path = %a\n%!" Path.print path; *)
+            (* We assume here, that path is in the form PATH.t, so we need to scan arguments, 
+              and find an argument, with toplevel type PATH.injected
+              *)
+            let expected_path = String.drop_suffix (Path.name path) 1 ^ "injected" in
+            (try
+               let arg =
+                 List.find args ~f:(fun t ->
+                   match Types.get_desc t with
+                   | Tconstr (path2, _, _)
+                     when String.equal expected_path (Path.name path2) -> true
+                   | _ -> false)
+               in
+               (* TODO(Kakadu): understand why false works and ~add doesn't *)
+               helper ~add:false ppf arg
+             with
+             | Not_found ->
+               (match Inh_info.lookup_typ_exn inh_info expected_path with
+                | s -> Format.fprintf ppf "%s" s
+                | exception Not_found -> Format.fprintf ppf "/* Error */"))
+          | `Constr_with_args (path, args) ->
+            let caml_repr = string_of_path path in
+            let () =
+              match Inh_info.lookup_typ_exn inh_info caml_repr with
+              | s -> Format.fprintf ppf "%s" s
+              | exception Not_found ->
+                Format.fprintf ppf "/* %a */Error" Printtyp.type_expr typ
+            in
+            (match args with
+             | [] -> ()
+             | _ ->
+               fprintf
+                 ppf
+                 "<%a>"
+                 (pp_print_list ~pp_sep:(fun ppf () -> fprintf ppf ", ") helper_no)
+                 args)
         in
         if add then fprintf ppf "Term<%a>" (fun _ -> run) x else run x
     in
@@ -176,7 +221,26 @@ let rec pp_typ_as_kotlin inh_info =
     in
     let pinj_list_t () =
       let open Tast_pattern in
-      path [ "OCanren"; "Std"; "List"; "t" ]
+      path [ "OCanren"; "Std"; "List"; "t" ] ||| path [ "OCanren!"; "Std"; "List"; "t" ]
+    in
+    let pinj_nat () =
+      let open Tast_pattern in
+      path [ "OCanren"; "Std"; "Nat"; "injected" ]
+      ||| path [ "OCanren"; "Std"; "Nat"; "groundi" ]
+    in
+    let pinj_nat_t () =
+      let open Tast_pattern in
+      path [ "OCanren"; "Std"; "Nat"; "t" ]
+    in
+    let pinj_option () =
+      let open Tast_pattern in
+      path [ "OCanren"; "Std"; "Option"; "injected" ]
+      ||| path [ "OCanren"; "Std"; "Nat"; "groundi" ]
+    in
+    let pinj_option_t () =
+      let open Tast_pattern in
+      path [ "OCanren"; "Std"; "Option"; "ground" ]
+      ||| path [ "OCanren"; "Std"; "Option"; "t" ]
     in
     Tast_pattern.(
       parse_conde
@@ -190,11 +254,23 @@ let rec pp_typ_as_kotlin inh_info =
             ; typ_constr (pinj_list ()) (__ ^:: nil)
             ]
           |> map1 ~f:(fun x -> `Logic_list x)
+        ; typ_constr
+            (pilogic ())
+            (typ_constr (pinj_nat_t ()) (typ_constr (pinj_nat ()) nil ^:: nil) ^:: nil)
+          |> map0 ~f:`Logic_nat
+        ; typ_constr (pilogic ()) (typ_constr (pinj_option_t ()) (__ ^:: nil) ^:: nil)
+          |> map1 ~f:(fun x -> `Logic_option x)
         ; typ_constr (pilogic ()) (typ_constr (path [ "int" ]) nil ^:: nil)
           |> map0 ~f:`Int_ilogic
         ; typ_constr (pilogic ()) (typ_var __ ^:: nil)
           |> map1 ~f:(fun name -> `Ilogic_of_poly name)
         ; typ_var __ |> map1 ~f:(fun name -> `Ilogic_of_poly name)
+        ; typ_constr (pilogic ()) (typ_constr __ (as__ drop) ^:: nil)
+          |> map2 ~f:(fun path args ->
+               if String.ends_with ~suffix:".t" (Path.name path)
+               then `Ilogic_of_t (path, args)
+               else fail Location.none "Fallthough in `Ilogic_of_t")
+        ; typ_constr __ __ |> map2 ~f:(fun cpath args -> `Constr_with_args (cpath, args))
         ])
       Location.none
       typ

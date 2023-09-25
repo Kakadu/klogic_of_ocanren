@@ -20,15 +20,77 @@ fun <T: Term<T>> None(): LogicOption<T> = utils.None as LogicOption<T>
 
 fun  pause(f: () -> Goal): Goal = { st -> ThunkStream { f()(st) } }
 
-// There are 1 relations
-fun <B : Term<B>, A : Term<A>> mapo(f: (Term<A>, Term<B>) -> Goal,
-xs: Term<LogicList<A>>, ys: Term<LogicList<B>>): Goal =
-conde(((xs `===` nilLogicList()) and (ys `===` nilLogicList())),
-      freshTypedVars { h: Term<A>, tl: Term<LogicList<A>>, tmph: Term<B>,
-        tmptl: Term<LogicList<B>> ->
-      and(xs `===` (h + tl),
-          ys `===` (tmph + tmptl),
-          f(h, tmph),
-          mapo(f, tl, tmptl))
-      })
+// There are 3 relations
+fun <ID : Term<ID>> dummy(typ: Term<Jtype<ID>>): Goal =
+conde(freshTypedVars { a: Term<Jtype<ID>> -> (typ `===` Jtype.array(a)) },
+      freshTypedVars { a: Term<ID>, b: Term<LogicList<Targ<Jtype<ID>>>> ->
+      (typ `===` Jtype.class_(a, b)) },
+      freshTypedVars { a: Term<ID>, b: Term<PeanoLogic>, c: Term<Jtype<ID>>,
+        d: Term<LogicOption<Jtype<ID>>> ->
+      (typ `===` Jtype.var(a, b, c, d)) })
+fun <ID : Term<ID>> substitute_typ(subst: (Term<LogicList<Targ<Jtype<ID>>>>) -> Term<Goal>,
+q0: (Term<Jtype<ID>>) -> Term<Goal>, q30: Term<Jtype<ID>>): Goal =
+freshTypedVars { q3: Term<Jtype<ID>> ->
+and(q0(q3),
+    conde(freshTypedVars { typ: Term<Jtype<ID>>, q4: Term<Jtype<ID>> ->
+          and(q3 `===` Jtype.array(typ),
+              q30 `===` Jtype.array(q4),
+              substitute_typ(subst, OCanren.===(typ), q4))
+          },
+          freshTypedVars { id: Term<ID>,
+            args: Term<LogicList<Targ<Jtype<ID>>>>,
+            q8: Term<LogicList<Targ<Jtype<ID>>>> ->
+          and(q3 `===` Jtype.class_(id, args),
+              q30 `===` Jtype.class_(id, q8),
+              List.HO.map({  a,  b-> substitute_arg(subst, a, b) },
+              {  eta-> eta `===` args }, q8))
+          },
+          freshTypedVars { id: Term<ID>,
+            args: Term<LogicList<Targ<Jtype<ID>>>>,
+            q13: Term<LogicList<Targ<Jtype<ID>>>> ->
+          and(q3 `===` Jtype.interface(id, args),
+              q30 `===` Jtype.interface(id, q13),
+              List.HO.map({  a,  b-> substitute_arg(subst, a, b) },
+              {  eta-> eta `===` args }, q13))
+          },
+          freshTypedVars { typs: Term<LogicList<Jtype<ID>>>,
+            q17: Term<LogicList<Jtype<ID>>> ->
+          and(q3 `===` Jtype.intersect(typs),
+              q30 `===` Jtype.intersect(q17),
+              List.HO.map({  a,  b-> substitute_typ(subst, a, b) },
+              {  eta-> eta `===` typs }, q17))
+          },
+          pause { and(q3 `===` OCanren.!!({| Other Null |}),
+                      q30 `===` OCanren.!!({| Other Null |}))
+          }))
+}
+fun <ID : Term<ID>> substitute_arg(subst: (Term<LogicList<Targ<Jtype<ID>>>>) -> Term<Goal>,
+q34: (Term<Targ<Jtype<ID>>>) -> Term<Goal>,
+q63: Term<Targ<Jtype<ID>>>): Goal =
+freshTypedVars { q37: Term<Targ> ->
+and(q34(q37),
+    conde(freshTypedVars { q38: Term<ID>, index: Term<PeanoLogic>,
+            q39: Term<Jtype<ID>>, q40: Term<LogicOption<Jtype<ID>>> ->
+          and(q37 `===` Targ.type_(Jtype.var(q38, index, q39, q40)),
+              List.HO.nth(subst, OCanren.===(index), q63))
+          },
+          freshTypedVars { typ: Term<Jtype<ID>>, q48: Term<Jtype<ID>> ->
+          and(q37 `===` Targ.type_(typ),
+              q63 `===` Targ.type_(q48),
+              substitute_typ(subst, {  eta-> typ `===` eta }, q48))
+          },
+          pause { and(q37 `===` Targ.wildcard(None()),
+                      q63 `===` Targ.wildcard(None()))
+          },
+          freshTypedVars { p: Term<Polarity>, typ: Term<Jtype<ID>>,
+            q58: Term<Polarity>, q59: Term<Jtype<ID>> ->
+          and(q37 `===` Targ.wildcard(OCanren.Std.some(OCanren.Std.pair(p,
+                                                       typ))),
+              q63 `===` Targ.wildcard(OCanren.Std.some(OCanren.Std.pair(q58,
+                                                       q59))),
+              p `===` q58,
+              OCanren.=/=(q37, Targ.wildcard(None())),
+              substitute_typ(subst, {  eta-> typ `===` eta }, q59))
+          }))
+}
 // Put epilogue here 

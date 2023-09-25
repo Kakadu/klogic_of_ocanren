@@ -1,5 +1,7 @@
 open OCanren
 
+[@@@ocaml.warning "-32-33"]
+
 type jtype_injected = int OCanren.ilogic
 type decl_injected = int OCanren.ilogic
 
@@ -33,18 +35,32 @@ fun  pause(f: () -> Goal): Goal = { st -> ThunkStream { f()(st) } }
 [ "int OCanren.ilogic OCanren.Std.List.injected", "Term<LogicList<LogicInt>>"
 ; "string OCanren.ilogic OCanren.Std.List.injected", "Term<LogicList<LogicString>>"
 ; "int OCanren__.Logic.ilogic", "Term<LogicInt>"
-; "int OCanren.ilogic", "Term<LogicInt>"
-; "string OCanren__.Logic.ilogic", "Term<LogicString>"
-; ( "(int OCanren__.Logic.ilogic, int OCanren__.Logic.ilogic \
+; "int OCanren.ilogic", "LogicInt"
+; "string OCanren__.Logic.ilogic", "LogicString"
+  (* ; ( "(int OCanren__.Logic.ilogic, int OCanren__.Logic.ilogic \
      OCanren.Std.List.injected)OCanren.Std.List.t OCanren__.Logic.ilogic"
   , "Term<LogicList<LogicInt>>" )
 ; ( "(int OCanren.ilogic, int OCanren.ilogic \
      OCanren.Std.List.injected)OCanren.Std.List.t OCanren__.Logic.ilogic"
-  , "Term<LogicList<LogicInt>>" )
-; "jtype_injected", "Term<JType>"
-; "decl_injected", "Term<Decl>"
+  , "Term<LogicList<LogicInt>>" ) *)
+; "jtype_injected", "JType"
+; "decl_injected", "Decl"
+; "Polarity.t ilogic", "Polarity"
 ; "jtype_injected OCanren.Std.Option.injected", "Term<LogicOption<JType>>"
 ; "OCanren.goal", "Goal"
+; "Targ.injected", "Targ"
+; "Jtype.injected", "Jtype"
+; "Polarity.injected", "Polarity"
+; "Polarity.t", "Polarity"
+; "OCanren.Std.Pair.injected", "LogicPair"
+; "OCanren.Std.Nat.injected", "PeanoLogicNumber"
+; "OCanren.Std.Option.injected", "LogicOption"
+  (* ; ( "('id OCanren.ilogic, 'id OCanren.ilogic Jtype.injected Targ.injected \
+     OCanren.Std.List.injected, OCanren.Std.Nat.injected, 'id OCanren.ilogic \
+     Jtype.injected, 'id OCanren.ilogic Jtype.injected OCanren.Std.Option.injected, 'id \
+     OCanren.ilogic Jtype.injected OCanren.Std.List.injected)Jtype.t \
+     OCanren__.Logic.ilogic"
+  , "FUCK" ) *)
 ]]
 
 (* let conso1 : int ilogic Std.List.injected -> goal =
@@ -77,7 +93,7 @@ module Stuff (Impl : CT) : STUFF = struct
  ;;
 end *)
 
-let rec mapo
+(* let rec mapo
   :  ('a ilogic -> 'b ilogic -> goal) -> 'a ilogic Std.List.injected
   -> 'b ilogic Std.List.injected -> goal
   =
@@ -91,7 +107,145 @@ let rec mapo
         (f h tmph)
         (mapo f tl tmptl)
     ]
-;;
+;; *)
 
 (* let appo : ('a ilogic -> goal) -> 'a ilogic -> goal = fun f x -> f x *)
 (* let five : (int ilogic -> goal) -> goal = fun f -> f !!5 *)
+
+module Polarity = struct
+  [%%distrib
+  type nonrec ground =
+    | Extends
+    | Super
+  [@@deriving gt ~options:{ show; fmt; gmap }]]
+end
+[@@skip_from_klogic]
+
+module Targ = struct
+  [%%distrib
+  type nonrec 'jtype ground =
+    | Type of 'jtype
+    | Wildcard of (Polarity.ground * 'jtype) Std.Option.ground
+  [@@deriving gt ~options:{ show; fmt; gmap }]]
+
+  let type_ t : _ ilogic injected = !!(Type t)
+  let wildcard t : _ injected = !!(Wildcard t)
+end
+[@@skip_from_klogic]
+
+module Jtype = struct
+  [%%distrib
+  type 'id ground =
+    | Array of 'id ground
+    | Class of 'id * 'id ground Targ.ground Std.List.ground
+    | Interface of 'id * 'id ground Targ.ground Std.List.ground
+    | Var of
+        { id : 'id
+        ; index : Std.Nat.ground
+        ; upb : 'id ground
+        ; lwb : 'id ground Std.Option.ground
+        }
+    | Null
+    | Intersect of 'id ground Std.List.ground
+  [@@deriving gt ~options:{ show; fmt; gmap }]]
+
+  let array a : _ injected = !!(Array a)
+  let class_ a b : _ injected = !!(Class (a, b))
+  let interface a b : _ injected = !!(Interface (a, b))
+  let var id index upb lwb : _ injected = !!(Var { id; index; upb; lwb })
+  let intersect a : _ injected = !!(Intersect a)
+end
+[@@skip_from_klogic]
+
+open Jtype
+open Targ
+
+let dummy : 'id ilogic Jtype.injected -> goal =
+ fun typ ->
+  conde
+    [ fresh a (typ === array a)
+    ; fresh (a b) (typ === class_ a b)
+    ; fresh (a b c d) (typ === var a b c d)
+    ]
+;;
+
+let rec substitute_typ :
+          'id.
+          ('id ilogic Jtype.injected Targ.injected Std.List.injected -> goal)
+          -> ('id ilogic Jtype.injected -> goal)
+          -> 'id ilogic Jtype.injected
+          -> OCanren.goal
+  =
+ fun subst q0 q30 ->
+  fresh
+    q3
+    (q0 q3)
+    (conde
+       [ fresh
+           (typ q4)
+           (q3 === array typ)
+           (q30 === array q4)
+           (substitute_typ subst (( === ) typ) q4)
+       ; fresh
+           (id args q8)
+           (q3 === class_ id args)
+           (q30 === class_ id q8)
+           (List.HO.map
+              (fun a b -> substitute_arg subst a b)
+              (fun eta -> eta === args)
+              q8)
+       ; fresh
+           (id args q13)
+           (q3 === interface id args)
+           (q30 === interface id q13)
+           (List.HO.map
+              (fun a b -> substitute_arg subst a b)
+              (fun eta -> eta === args)
+              q13)
+       ; fresh
+           (typs q17)
+           (q3 === intersect typs)
+           (q30 === intersect q17)
+           (List.HO.map
+              (fun a b -> substitute_typ subst a b)
+              (fun eta -> eta === typs)
+              q17)
+       ; fresh () (q3 === !!Null) (q30 === !!Null)
+       ])
+
+and substitute_arg :
+      'id.
+      ('id ilogic Jtype.injected Targ.injected Std.List.injected -> goal)
+      -> ('id ilogic Jtype.injected Targ.injected -> goal)
+      -> 'id ilogic Jtype.injected Targ.injected
+      -> goal
+  =
+ fun subst q34 q63 ->
+  fresh
+    q37
+    (q34 q37)
+    (conde
+       [ fresh
+           (q38 index q39 q40)
+           (q37 === type_ (var q38 index q39 q40))
+           (List.HO.nth subst (( === ) index) q63)
+       ; fresh
+           (typ q48)
+           (q37 === type_ typ)
+           (q63 === type_ q48)
+           (* (q37 =/= (type_ (var __ __ __ __))) *)
+           (substitute_typ subst (fun eta -> typ === eta) q48)
+       ; fresh () (q37 === wildcard (Std.none ())) (q63 === wildcard (Std.none ()))
+         (* (q37 =/= (type_ __)) *)
+         (* (q37 =/= (type_ (var __ __ __ __))) *)
+       ; fresh
+           (p typ q58 q59)
+           (q37 === wildcard (Std.some (Std.pair p typ)))
+           (q63 === wildcard (Std.some (Std.pair q58 q59)))
+           (p === q58)
+           (q37 =/= wildcard (Std.none ()))
+           (* (q37 =/= (type_ __)) *)
+           (* (q37 =/= (type_ (var __ __ __ __))) *)
+           (substitute_typ subst (fun eta -> typ === eta) q59)
+       ])
+;;

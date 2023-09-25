@@ -103,7 +103,7 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
       |> map2 ~f:(fun x y -> Unify (x, y))
     ;;
 
-    let pat_bind () : (Typedtree.expression, _ -> 'a, 'b) Tast_pattern.t =
+    let _pat_bind () : (Typedtree.expression, _ -> 'a, 'b) Tast_pattern.t =
       texp_apply2
         (texp_ident (path [ "OCanren!"; "bind" ] ||| path [ "OCanren"; "bind" ]))
         __
@@ -286,6 +286,26 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
   }
 ;;
 
+let do_skip_structure_item item =
+  let has_bad_attr xs =
+    (* log "%s on the list of %d size" __FUNCTION__ (List.length xs); *)
+    try
+      let _ =
+        List.find
+          ~f:(function
+            | { Parsetree.attr_name = { txt = "skip_from_klogic" }; _ } -> true
+            | _ -> false)
+          xs
+      in
+      true
+    with
+    | Not_found -> false
+  in
+  match item.Typedtree.str_desc with
+  | Tstr_module { mb_attributes = attrs } | Tstr_eval (_, attrs) -> has_bad_attr attrs
+  | _ -> false
+;;
+
 let translate fallback : (Inh_info.t, unit) Tast_folder.t =
   let extract_rel_arguments n e =
     let rec helper n acc e =
@@ -402,126 +422,110 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
           | { Typedtree.vb_pat = { pat_desc = Tpat_any; _ }; _ } -> (), si
           | _ -> assert false
         in
-        Tast_pattern.(
-          parse
-            (choice
-               [ tstr_value __
-                 |> map1 ~f:(fun vbs ->
-                      let _ = List.iter ~f:(fun x -> ignore (on_rel_decl x)) vbs in
-                      (), si)
-               ; tstr_module
-                   __
-                   (tmod_functor
-                      (tfun_param_named __ (tmodule_type_ident (lident __)))
-                      (tmod_ascription
-                         (tmod_structure __)
-                         (tmodule_type_ident (lident __))))
-                 |> map5
-                      ~f:(fun (name : Ident.t) param_name param_type mod_body rez_typ ->
-                      let new_inh_info = Inh_info.create () in
-                      let _, _ = self.stru self new_inh_info mod_body in
-                      Inh_info.add_functor
-                        inh
-                        ~name:(Ident.name name)
-                        ~typ:rez_typ
-                        ~arg_name:(Ident.name param_name)
-                        ~arg_typ:param_type
-                        new_inh_info;
-                      (), si)
-               ])
-            si.str_loc)
-          si
-          Fun.id
-          ~on_error:(fun _ ->
-          match si.str_desc with
-          (*           | Tstr_value (_, [ vb ]) -> on_rel_decl vb
+        if do_skip_structure_item si
+        then (), si
+        else
+          Tast_pattern.(
+            parse
+              (choice
+                 [ tstr_value __
+                   |> map1 ~f:(fun vbs ->
+                        let _ = List.iter ~f:(fun x -> ignore (on_rel_decl x)) vbs in
+                        (), si)
+                 ; tstr_module
+                     __
+                     (tmod_functor
+                        (tfun_param_named __ (tmodule_type_ident (lident __)))
+                        (tmod_ascription
+                           (tmod_structure __)
+                           (tmodule_type_ident (lident __))))
+                   |> map5
+                        ~f:(fun (name : Ident.t) param_name param_type mod_body rez_typ ->
+                        let new_inh_info = Inh_info.create () in
+                        let _, _ = self.stru self new_inh_info mod_body in
+                        Inh_info.add_functor
+                          inh
+                          ~name:(Ident.name name)
+                          ~typ:rez_typ
+                          ~arg_name:(Ident.name param_name)
+                          ~arg_typ:param_type
+                          new_inh_info;
+                        (), si)
+                 ])
+              si.str_loc)
+            si
+            Fun.id
+            ~on_error:(fun _ ->
+            match si.str_desc with
+            (*           | Tstr_value (_, [ vb ]) -> on_rel_decl vb
           | Tstr_value (_, (_ :: _ :: _ as vbs)) ->
             List.iter vbs ~f:(fun x ->
               let _, _ = on_rel_decl x in
               ());
             (), si *)
-          | Tstr_value (_, []) ->
-            Printf.ksprintf failwith "Should not happen (%s %d)" __FILE__ __LINE__
-          | Tstr_attribute
-              { attr_name = { txt = "klogic.preamble" | "klogic.prologue"; _ }
-              ; attr_payload =
-                  Parsetree.PStr
-                    [ { pstr_desc =
-                          Pstr_eval
-                            ( { pexp_desc =
-                                  Pexp_constant (Pconst_string (s, _, (None | Some "")))
-                              ; _
-                              }
-                            , _ )
-                      ; _
-                      }
-                    ]
-              ; _
-              } ->
-            Inh_info.add_preamble inh s;
-            (), si
-          | Tstr_attribute
-              { attr_name = { txt = "klogic.epilogue"; _ }
-              ; attr_payload =
-                  Parsetree.PStr
-                    [ { pstr_desc =
-                          Pstr_eval
-                            ( { pexp_desc =
-                                  Pexp_constant (Pconst_string (s, _, (None | Some "")))
-                              ; _
-                              }
-                            , _ )
-                      ; _
-                      }
-                    ]
-              ; _
-              } ->
-            Inh_info.add_epilogue inh s;
-            (), si
-          | Tstr_attribute
-              { attr_name = { txt = "klogic.type.mangle"; _ }; attr_payload; _ } ->
-            log "%s\n%!" "klogic.type.mangle";
-            on_type_mangle_spec inh attr_payload;
-            (* TODO: specify mangling of names as an attribute *)
-            (), si
-          | Tstr_modtype
-              { mtd_type = Some { mty_desc = Tmty_signature sign; _ }
-              ; mtd_name = { txt; _ }
-              ; _
-              } ->
-            Inh_info.add_modtype inh txt sign;
-            (* log "%s %d" __FILE__ __LINE__; *)
-            (), si
-          (* | Tstr_module
-              { mb_id = Some _
-              ; mb_expr =
-                  { mod_desc =
-                      Tmod_functor
-                        ( Named
-                            ( Some name
-                            , _
-                            , { mty_desc = Tmty_ident (_, { txt = typlid }); _ } )
-                        , { mod_desc = Tmod_structure mod_body; _ } )
-                  ; _
-                  }
-              ; _
-              } ->
-            let new_inh_info = Inh_info.create () in
-            let _, _ = self.stru self new_inh_info mod_body in
-            Inh_info.add_functor inh (Ident.name name) new_inh_info;
-            (), si *)
-          | Tstr_attribute _ | Tstr_type _ | Tstr_open _ -> (), si
-          | _ ->
-            Format.eprintf
-              "%a\n%!"
-              Pprintast.structure_item
-              (MyUntype.untype_stru_item si);
-            Printf.ksprintf
-              failwith
-              "Not implemented in 'folder' (%s %d)"
-              __FILE__
-              __LINE__
-          (* self.stru_item self inh si *)))
+            | Tstr_value (_, []) ->
+              Printf.ksprintf failwith "Should not happen (%s %d)" __FILE__ __LINE__
+            | Tstr_attribute
+                { attr_name = { txt = "klogic.preamble" | "klogic.prologue"; _ }
+                ; attr_payload =
+                    Parsetree.PStr
+                      [ { pstr_desc =
+                            Pstr_eval
+                              ( { pexp_desc =
+                                    Pexp_constant (Pconst_string (s, _, (None | Some "")))
+                                ; _
+                                }
+                              , _ )
+                        ; _
+                        }
+                      ]
+                ; _
+                } ->
+              Inh_info.add_preamble inh s;
+              (), si
+            | Tstr_attribute
+                { attr_name = { txt = "klogic.epilogue"; _ }
+                ; attr_payload =
+                    Parsetree.PStr
+                      [ { pstr_desc =
+                            Pstr_eval
+                              ( { pexp_desc =
+                                    Pexp_constant (Pconst_string (s, _, (None | Some "")))
+                                ; _
+                                }
+                              , _ )
+                        ; _
+                        }
+                      ]
+                ; _
+                } ->
+              Inh_info.add_epilogue inh s;
+              (), si
+            | Tstr_attribute
+                { attr_name = { txt = "klogic.type.mangle"; _ }; attr_payload; _ } ->
+              log "%s\n%!" "klogic.type.mangle";
+              on_type_mangle_spec inh attr_payload;
+              (* TODO: specify mangling of names as an attribute *)
+              (), si
+            | Tstr_modtype
+                { mtd_type = Some { mty_desc = Tmty_signature sign; _ }
+                ; mtd_name = { txt; _ }
+                ; _
+                } ->
+              Inh_info.add_modtype inh txt sign;
+              (* log "%s %d" __FILE__ __LINE__; *)
+              (), si
+            | Tstr_attribute _ | Tstr_type _ | Tstr_open _ -> (), si
+            | _ ->
+              Format.eprintf
+                "%a\n%!"
+                Pprintast.structure_item
+                (MyUntype.untype_stru_item si);
+              Printf.ksprintf
+                failwith
+                "Not implemented in 'folder' (%s %d)"
+                __FILE__
+                __LINE__))
   }
 ;;
 
