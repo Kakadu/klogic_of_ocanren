@@ -20,7 +20,7 @@ fun <T: Term<T>> None(): LogicOption<T> = utils.None as LogicOption<T>
 
 fun  pause(f: () -> Goal): Goal = { st -> ThunkStream { f()(st) } }
 
-// There are 3 relations
+// There are 7 relations
 fun <ID : Term<ID>> dummy(typ: Term<Jtype<ID>>): Goal =
 conde(freshTypedVars { a: Term<Jtype<ID>> -> (typ `===` Array_(a)) },
       freshTypedVars { a: Term<ID>, b: Term<LogicList<Targ<Jtype<ID>>>> ->
@@ -77,18 +77,78 @@ and(q34(q37),
           freshTypedVars { typ: Term<Jtype<ID>>, q48: Term<Jtype<ID>> ->
           and(q37 `===` Type(typ),
               q63 `===` Type(q48),
+              wc {__JGS_miniJGS_ml_c31 : Term<ID> ->
+              wc {__JGS_miniJGS_ml_c34 : Term<PeanoLogic> ->
+              wc {__JGS_miniJGS_ml_c37 : Term<Jtype<ID>> ->
+              wc {__JGS_miniJGS_ml_c40 : Term<LogicOption<Jtype<ID>>> ->
+              (q37 `!==` Type(Var(__JGS_miniJGS_ml_c31, __JGS_miniJGS_ml_c34,
+                              __JGS_miniJGS_ml_c37, __JGS_miniJGS_ml_c40)))}}}},
               substitute_typ(subst, {  eta-> typ `===` eta }, q48))
           },
           pause { and(q37 `===` Wildcard(None()),
-                      q63 `===` Wildcard(None()))
+                      q63 `===` Wildcard(None()),
+                      wc {__JGS_miniJGS_ml_c26 : Term<Jtype<ID>> ->
+                      (q37 `!==` Type(__JGS_miniJGS_ml_c26))},
+                      wc {__JGS_miniJGS_ml_c31 : Term<ID> ->
+                      wc {__JGS_miniJGS_ml_c34 : Term<PeanoLogic> ->
+                      wc {__JGS_miniJGS_ml_c37 : Term<Jtype<ID>> ->
+                      wc {__JGS_miniJGS_ml_c40 : Term<LogicOption<Jtype<ID>>> ->
+                      (q37 `!==` Type(Var(__JGS_miniJGS_ml_c31,
+                                      __JGS_miniJGS_ml_c34,
+                                      __JGS_miniJGS_ml_c37,
+                                      __JGS_miniJGS_ml_c40)))}}}})
           },
           freshTypedVars { p: Term<Polarity>, typ: Term<Jtype<ID>>,
             q58: Term<Polarity>, q59: Term<Jtype<ID>> ->
           and(q37 `===` Wildcard(Some(LogicPair(p, typ))),
               q63 `===` Wildcard(Some(LogicPair(q58, q59))),
               p `===` q58,
-              OCanren.=/=(q37, Wildcard(None())),
+              q37 `!==` Wildcard(None()),
+              wc {__JGS_miniJGS_ml_c26 : Term<Jtype<ID>> ->
+              (q37 `!==` Type(__JGS_miniJGS_ml_c26))},
+              wc {__JGS_miniJGS_ml_c31 : Term<ID> ->
+              wc {__JGS_miniJGS_ml_c34 : Term<PeanoLogic> ->
+              wc {__JGS_miniJGS_ml_c37 : Term<Jtype<ID>> ->
+              wc {__JGS_miniJGS_ml_c40 : Term<LogicOption<Jtype<ID>>> ->
+              (q37 `!==` Type(Var(__JGS_miniJGS_ml_c31, __JGS_miniJGS_ml_c34,
+                              __JGS_miniJGS_ml_c37, __JGS_miniJGS_ml_c40)))}}}},
               substitute_typ(subst, {  eta-> typ `===` eta }, q59))
           }))
 }
+// HIGH_ORDER 
+interface HIGH_ORDER {
+  // decl_by_id
+  fun decl_by_id(v1: (Term< LogicInt >) -> Term<Goal>, v2: Term<Decl>
+  ): Term<Goal>
+  // get_superclass
+  fun get_superclass(v3: (Term< LogicInt >) -> Term<Goal>,
+  v4: (Term< LogicInt >) -> Term<Goal>,
+  v5: Term<LogicOption<Jtype< LogicInt >>> ): Term<Goal>
+  // object_t
+  fun object_t(v6: Term<JType> ): Term<Goal>
+  // cloneable_t
+  fun cloneable_t(v7: Term<JType> ): Term<Goal>
+  // serializable_t
+  fun serializable_t(v8: Term<JType> ): Term<Goal>
+  // new_var
+  fun new_var(v9: Term< LogicInt > ): Term<Goal>
+  }
+
+// CLASS_TABLE 
+interface CLASS_TABLE {
+  //
+  }
+
+// VERIFIER 
+interface VERIFIER {
+  // appo
+  fun appo(v1: (Term<A>) -> Term<Goal>, v2: Term<A> ): Term<Goal>
+  }
+
+// functor
+private val Verifier : (CLASS_TABLE) -> VERIFIER = { CT: CLASS_TABLE ->
+object: VERIFIER {
+  fun <A : Term<A>> appo(f: (Term<A>) -> Term<Goal>, x: Term<A>): Goal =
+  f(x)
 // Put epilogue here 
+}}

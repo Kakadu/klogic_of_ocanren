@@ -127,7 +127,7 @@ end *)
     ]
 ;; *)
 
-(* let appo : ('a ilogic -> goal) -> 'a ilogic -> goal = fun f x -> f x *)
+(* *)
 (* let five : (int ilogic -> goal) -> goal = fun f -> f !!5 *)
 
 module Polarity = struct
@@ -271,3 +271,36 @@ and substitute_arg :
            (substitute_typ subst (fun eta -> typ === eta) q59)
        ])
 ;;
+
+module type HIGH_ORDER = sig
+  val decl_by_id : (int ilogic -> OCanren.goal) -> decl_injected -> OCanren.goal
+
+  val get_superclass
+    :  (int ilogic -> OCanren.goal)
+    -> (int ilogic -> OCanren.goal)
+    -> int ilogic Jtype.injected Std.Option.injected
+    -> OCanren.goal
+
+  val object_t : jtype_injected -> OCanren.goal
+  val cloneable_t : jtype_injected -> OCanren.goal
+  val serializable_t : jtype_injected -> OCanren.goal
+  val new_var : int ilogic -> OCanren.goal
+end
+
+module type CLASS_TABLE = sig
+  module HO : HIGH_ORDER
+
+  (* val ( <-< )
+      :  (jtype_injected -> Option.HO.goal)
+      -> (jtype_injected -> Option.HO.goal)
+      -> bool ilogic
+      -> OCanren.goal *)
+end
+
+module type VERIFIER = sig
+  val appo : ('a ilogic -> goal) -> 'a ilogic -> goal
+end
+
+module Verifier (CT : CLASS_TABLE) : VERIFIER = struct
+  let appo : ('a ilogic -> goal) -> 'a ilogic -> goal = fun f x -> f x
+end
