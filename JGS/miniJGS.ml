@@ -291,10 +291,10 @@ module type CLASS_TABLE = sig
   module HO : HIGH_ORDER
 
   (* val ( <-< )
-      :  (jtype_injected -> Option.HO.goal)
-      -> (jtype_injected -> Option.HO.goal)
-      -> bool ilogic
-      -> OCanren.goal *)
+    :  (jtype_injected -> OCanren.goal)
+    -> (jtype_injected -> OCanren.goal)
+    -> bool ilogic
+    -> OCanren.goal *)
 end
 
 module type VERIFIER = sig
@@ -304,3 +304,24 @@ end
 module Verifier (CT : CLASS_TABLE) : VERIFIER = struct
   let appo : ('a ilogic -> goal) -> 'a ilogic -> goal = fun f x -> f x
 end
+
+(* let rec ( <=< )
+  :  (int ilogic -> int ilogic -> int ilogic) -> (int ilogic -> int ilogic -> int ilogic)
+  -> int ilogic -> int ilogic -> goal
+  =
+ fun ( #%< ) ( #$% ) x y ->
+  conde
+    [ x #%< y === x #$% y
+    ; ( <=< ) (fun ( &?& ) ( ~*^ ) -> ( &?& ) #%< ( ~*^ )) ( #$% ) x y
+    ]
+;;
+
+module type Test = sig
+  val ( %%% ) : int ilogic -> int ilogic
+end
+
+module type STUFF = sig end
+
+module Stuff (CT : Test) : STUFF = struct
+  let eval : int ilogic -> goal = fun x -> x === CT.( %%% ) x
+end *)
