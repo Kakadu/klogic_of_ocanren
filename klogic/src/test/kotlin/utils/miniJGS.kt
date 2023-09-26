@@ -8,6 +8,9 @@ import org.klogic.utils.terms.LogicList
 import org.klogic.utils.terms.LogicList.Companion.logicListOf
 import org.klogic.utils.terms.Nil.nilLogicList
 import org.klogic.utils.terms.plus
+import org.klogic.utils.terms.PeanoLogicNumber
+import org.klogic.utils.terms.NextNaturalNumber
+import org.klogic.utils.terms.ZeroNaturalNumber
 import utils.LogicInt
 import utils.LogicOption
 //import utils.None
@@ -20,16 +23,46 @@ fun <T: Term<T>> None(): LogicOption<T> = utils.None as LogicOption<T>
 
 fun  pause(f: () -> Goal): Goal = { st -> ThunkStream { f()(st) } }
 
-// There are 7 relations
+// There are 9 relations
+fun <B : Term<B>, A : Term<A>> list_ho_map(f: ((Term<A>) -> Goal, Term<B>) -> Goal,
+lst: (Term<LogicList<A>>) -> Goal, ys: Term<LogicList<B>>): Goal =
+freshTypedVars { xs: Term<LogicList<A>> ->
+and(lst(xs),
+    conde(((xs `===` nilLogicList()) and (ys `===` nilLogicList())),
+          freshTypedVars { h: Term<A>, tl: Term<LogicList<A>>, tmph: Term<B>,
+            tmptl: Term<LogicList<B>> ->
+          and(xs `===` (h + tl),
+              ys `===` (tmph + tmptl),
+              f({  eta-> eta `===` h }, tmph),
+              list_ho_map(f, {  eta-> eta `===` tl }, tmptl))
+          }))
+}
+fun <B : Term<B>> list_ho_nth(hoxs: (Term<LogicList<B>>) -> Goal,
+hon: (Term<PeanoLogicNumber>) -> Goal, rez: Term<B>): Goal =
+freshTypedVars { xs: Term<LogicList<B>>, n: Term<PeanoLogicNumber/**/> ->
+and(hoxs(xs),
+    hon(n),
+    conde(freshTypedVars { tl: Term<LogicList<B>> ->
+          and(n `===` ZeroNaturalNumber,
+              xs `===` (rez + tl))
+          },
+          freshTypedVars { prev: Term<PeanoLogicNumber/**/>, h: Term<B>,
+            tl: Term<LogicList<B>> ->
+          and(n `===` NextNaturalNumber(prev),
+              xs `===` (h + tl),
+              list_ho_nth({  eta-> eta `===` tl }, {  eta-> eta `===` prev },
+              rez))
+          }))
+}
 fun <ID : Term<ID>> dummy(typ: Term<Jtype<ID>>): Goal =
 conde(freshTypedVars { a: Term<Jtype<ID>> -> (typ `===` Array_(a)) },
       freshTypedVars { a: Term<ID>, b: Term<LogicList<Targ<Jtype<ID>>>> ->
       (typ `===` Class_(a, b)) },
-      freshTypedVars { a: Term<ID>, b: Term<PeanoLogic>, c: Term<Jtype<ID>>,
-        d: Term<LogicOption<Jtype<ID>>> ->
+      freshTypedVars { a: Term<ID>, b: Term<PeanoLogicNumber/**/>,
+        c: Term<Jtype<ID>>, d: Term<LogicOption<Jtype<ID>>> ->
       (typ `===` Var(a, b, c, d)) })
-fun <ID : Term<ID>> substitute_typ(subst: (Term<LogicList<Targ<Jtype<ID>>>>) -> Term<Goal>,
-q0: (Term<Jtype<ID>>) -> Term<Goal>, q30: Term<Jtype<ID>>): Goal =
+fun <ID : Term<ID>> substitute_typ(subst: (Term<LogicList<Targ<Jtype<ID>>>>) -> Goal,
+q0: (Term<Jtype<ID>>) -> Goal, q30: Term<Jtype<ID>>): Goal =
 freshTypedVars { q3: Term<Jtype<ID>> ->
 and(q0(q3),
     conde(freshTypedVars { typ: Term<Jtype<ID>>, q4: Term<Jtype<ID>> ->
@@ -42,7 +75,8 @@ and(q0(q3),
             q8: Term<LogicList<Targ<Jtype<ID>>>> ->
           and(q3 `===` Class_(id, args),
               q30 `===` Class_(id, q8),
-              List_HO_map({  a,  b-> substitute_arg(subst, a, b) },
+              list_ho_map({ (a: (Term<Targ<Jtype<ID>>>) -> Goal, b: Term<Targ<Jtype<ID>>>) ->
+                  substitute_arg(subst, a, b) },
               {  eta-> eta `===` args }, q8))
           },
           freshTypedVars { id: Term<ID>,
@@ -50,35 +84,35 @@ and(q0(q3),
             q13: Term<LogicList<Targ<Jtype<ID>>>> ->
           and(q3 `===` Interface(id, args),
               q30 `===` Interface(id, q13),
-              List_HO_map({  a,  b-> substitute_arg(subst, a, b) },
+              list_ho_map({  (a: (Term<Targ<Jtype<ID>>>) -> Goal, b) ->
+                    substitute_arg(subst, a, b) },
               {  eta-> eta `===` args }, q13))
           },
           freshTypedVars { typs: Term<LogicList<Jtype<ID>>>,
             q17: Term<LogicList<Jtype<ID>>> ->
           and(q3 `===` Intersect(typs),
               q30 `===` Intersect(q17),
-              List_HO_map({  a,  b-> substitute_typ(subst, a, b) },
+              list_ho_map({  a,  b-> substitute_typ(subst, a, b) },
               {  eta-> eta `===` typs }, q17))
           },
           pause { and(q3 `===` Null(/* Unit */),
                       q30 `===` Null(/* Unit */))
           }))
 }
-fun <ID : Term<ID>> substitute_arg(subst: (Term<LogicList<Targ<Jtype<ID>>>>) -> Term<Goal>,
-q34: (Term<Targ<Jtype<ID>>>) -> Term<Goal>,
-q63: Term<Targ<Jtype<ID>>>): Goal =
+fun <ID : Term<ID>> substitute_arg(subst: (Term<LogicList<Targ<Jtype<ID>>>>) -> Goal,
+q34: (Term<Targ<Jtype<ID>>>) -> Goal, q63: Term<Targ<Jtype<ID>>>): Goal =
 freshTypedVars { q37: Term<Targ> ->
 and(q34(q37),
-    conde(freshTypedVars { q38: Term<ID>, index: Term<PeanoLogic>,
+    conde(freshTypedVars { q38: Term<ID>, index: Term<PeanoLogicNumber/**/>,
             q39: Term<Jtype<ID>>, q40: Term<LogicOption<Jtype<ID>>> ->
           and(q37 `===` Type(Var(q38, index, q39, q40)),
-              List_HO_nth(subst, {  eta-> eta `===` index }, q63))
+              list_ho_nth(subst, {  eta-> eta `===` index }, q63))
           },
           freshTypedVars { typ: Term<Jtype<ID>>, q48: Term<Jtype<ID>> ->
           and(q37 `===` Type(typ),
               q63 `===` Type(q48),
               wc {__JGS_miniJGS_ml_c31 : Term<ID> ->
-              wc {__JGS_miniJGS_ml_c34 : Term<PeanoLogic> ->
+              wc {__JGS_miniJGS_ml_c34 : Term<PeanoLogicNumber/**/> ->
               wc {__JGS_miniJGS_ml_c37 : Term<Jtype<ID>> ->
               wc {__JGS_miniJGS_ml_c40 : Term<LogicOption<Jtype<ID>>> ->
               (q37 `!==` Type(Var(__JGS_miniJGS_ml_c31, __JGS_miniJGS_ml_c34,
@@ -90,7 +124,7 @@ and(q34(q37),
                       wc {__JGS_miniJGS_ml_c26 : Term<Jtype<ID>> ->
                       (q37 `!==` Type(__JGS_miniJGS_ml_c26))},
                       wc {__JGS_miniJGS_ml_c31 : Term<ID> ->
-                      wc {__JGS_miniJGS_ml_c34 : Term<PeanoLogic> ->
+                      wc {__JGS_miniJGS_ml_c34 : Term<PeanoLogicNumber/**/> ->
                       wc {__JGS_miniJGS_ml_c37 : Term<Jtype<ID>> ->
                       wc {__JGS_miniJGS_ml_c40 : Term<LogicOption<Jtype<ID>>> ->
                       (q37 `!==` Type(Var(__JGS_miniJGS_ml_c31,
@@ -107,7 +141,7 @@ and(q34(q37),
               wc {__JGS_miniJGS_ml_c26 : Term<Jtype<ID>> ->
               (q37 `!==` Type(__JGS_miniJGS_ml_c26))},
               wc {__JGS_miniJGS_ml_c31 : Term<ID> ->
-              wc {__JGS_miniJGS_ml_c34 : Term<PeanoLogic> ->
+              wc {__JGS_miniJGS_ml_c34 : Term<PeanoLogicNumber/**/> ->
               wc {__JGS_miniJGS_ml_c37 : Term<Jtype<ID>> ->
               wc {__JGS_miniJGS_ml_c40 : Term<LogicOption<Jtype<ID>>> ->
               (q37 `!==` Type(Var(__JGS_miniJGS_ml_c31, __JGS_miniJGS_ml_c34,
@@ -115,40 +149,39 @@ and(q34(q37),
               substitute_typ(subst, {  eta-> typ `===` eta }, q59))
           }))
 }
-// HIGH_ORDER 
+// HIGH_ORDER
 interface HIGH_ORDER {
   // decl_by_id
-  fun decl_by_id(v1: (Term< LogicInt >) -> Term<Goal>, v2: Term<Decl>
-  ): Term<Goal>
+  fun decl_by_id(v1: (Term< LogicInt >) -> Goal, v2: Term<Decl> ): Goal
   // get_superclass
-  fun get_superclass(v3: (Term< LogicInt >) -> Term<Goal>,
-  v4: (Term< LogicInt >) -> Term<Goal>,
-  v5: Term<LogicOption<Jtype< LogicInt >>> ): Term<Goal>
+  fun get_superclass(v3: (Term< LogicInt >) -> Goal,
+  v4: (Term< LogicInt >) -> Goal, v5: Term<LogicOption<Jtype< LogicInt >>>
+  ): Goal
   // object_t
-  fun object_t(v6: Term<JType> ): Term<Goal>
+  fun object_t(v6: Term<JType> ): Goal
   // cloneable_t
-  fun cloneable_t(v7: Term<JType> ): Term<Goal>
+  fun cloneable_t(v7: Term<JType> ): Goal
   // serializable_t
-  fun serializable_t(v8: Term<JType> ): Term<Goal>
+  fun serializable_t(v8: Term<JType> ): Goal
   // new_var
-  fun new_var(v9: Term< LogicInt > ): Term<Goal>
+  fun new_var(v9: Term< LogicInt > ): Goal
   }
 
-// CLASS_TABLE 
+// CLASS_TABLE
 interface CLASS_TABLE {
   val HO : HIGH_ORDER
   }
 
-// VERIFIER 
+// VERIFIER
 interface VERIFIER {
   // appo
-  fun appo(v1: (Term<A>) -> Term<Goal>, v2: Term<A> ): Term<Goal>
+  fun appo(v1: (Term<A>) -> Goal, v2: Term<A> ): Goal
   }
 
 // functor
 private val Verifier : (CLASS_TABLE) -> VERIFIER = { CT: CLASS_TABLE ->
 object: VERIFIER {
-  fun <A : Term<A>> appo(f: (Term<A>) -> Term<Goal>, x: Term<A>): Goal =
+  fun <A : Term<A>> appo(f: (Term<A>) -> Goal, x: Term<A>): Goal =
   f(x)
-// Put epilogue here 
+// Put epilogue here
 }}

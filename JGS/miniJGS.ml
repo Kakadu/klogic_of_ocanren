@@ -16,6 +16,9 @@ import org.klogic.utils.terms.LogicList
 import org.klogic.utils.terms.LogicList.Companion.logicListOf
 import org.klogic.utils.terms.Nil.nilLogicList
 import org.klogic.utils.terms.plus
+import org.klogic.utils.terms.PeanoLogicNumber
+import org.klogic.utils.terms.NextNaturalNumber
+import org.klogic.utils.terms.ZeroNaturalNumber
 import utils.LogicInt
 import utils.LogicOption
 //import utils.None
@@ -43,8 +46,10 @@ fun  pause(f: () -> Goal): Goal = { st -> ThunkStream { f()(st) } }
 ; "Jtype.interface", "Interface"
 ; "Jtype.intersect", "Intersect"
 ; "Jtype.null", "Null"
-; "List.HO.nth", "List_HO_nth"
-; "List.HO.map", "List_HO_map"
+; "List.HO.nth", "list_ho_nth"
+; "List.HO.map", "list_ho_map"
+; "OCanren.Std.Nat.zero", "ZeroNaturalNumber"
+; "OCanren.Std.Nat.succ", "NextNaturalNumber"
 ; "", ""
 ]]
 (*  *)
@@ -111,24 +116,44 @@ module Stuff (Impl : CT) : STUFF = struct
  ;;
 end *)
 
-(* let rec mapo
-  :  ('a ilogic -> 'b ilogic -> goal) -> 'a ilogic Std.List.injected
+let rec list_ho_map
+  :  (('a ilogic -> goal) -> 'b ilogic -> goal) -> ('a ilogic Std.List.injected -> goal)
   -> 'b ilogic Std.List.injected -> goal
   =
- fun f xs ys ->
-  conde
-    [ xs === Std.nil () &&& (ys === Std.nil ())
-    ; fresh
-        (h tl tmph tmptl)
-        (xs === Std.List.cons h tl)
-        (ys === Std.(tmph % tmptl))
-        (f h tmph)
-        (mapo f tl tmptl)
-    ]
-;; *)
+ fun f lst ys ->
+  fresh
+    xs
+    (lst xs)
+    (conde
+       [ xs === Std.nil () &&& (ys === Std.nil ())
+       ; fresh
+           (h tl tmph tmptl)
+           (xs === Std.List.cons h tl)
+           (ys === Std.(tmph % tmptl))
+           (f (fun eta -> eta === h) tmph)
+           (list_ho_map f (fun eta -> eta === tl) tmptl)
+       ])
+;;
 
-(* *)
-(* let five : (int ilogic -> goal) -> goal = fun f -> f !!5 *)
+let rec list_ho_nth
+  :  ('b ilogic Std.List.injected -> goal) -> (Std.Nat.injected -> goal) -> 'b ilogic
+  -> goal
+  =
+ fun hoxs hon rez ->
+  fresh
+    (xs n)
+    (hoxs xs)
+    (hon n)
+    (conde
+       [ fresh tl (n === Std.Nat.zero) (xs === Std.List.cons rez tl)
+       ; fresh
+           (prev h tl)
+           (n === Std.Nat.succ prev)
+           (xs === Std.List.cons h tl)
+           (list_ho_nth (fun eta -> eta === tl) (fun eta -> eta === prev) rez)
+         (* ; xs === Std.nil () &&& failure *)
+       ])
+;;
 
 module Polarity = struct
   [%%distrib
@@ -181,6 +206,7 @@ open Targ
 
 let dummy : 'id ilogic Jtype.injected -> goal =
  fun typ ->
+  (* typ === typ *)
   conde
     [ fresh a (typ === array a)
     ; fresh (a b) (typ === class_ a b)

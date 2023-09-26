@@ -808,15 +808,29 @@ let rec typ_constr (T fpath) (T fargs) =
 let typ_arrow (T l) (T r) =
   let rec helper ctx loc x k =
     match Types.get_desc x with
-    | Tlink _ ->
-      Printf.eprintf "Not implemented\n%!";
-      assert false
+    | Tlink e -> helper ctx loc e k
     | Tarrow (_, tl, tr, _) ->
       ctx.matched <- ctx.matched + 1;
       k |> l ctx loc tl |> r ctx loc tr
     | _ -> fail loc "typ_arrow"
   in
   T helper
+;;
+
+let typ_arrows (T fargs) (T frhs) =
+  let rec helper acc ctx loc x k =
+    match Types.get_desc x with
+    | Tlink e -> helper acc ctx loc e k
+    | Tarrow (_, tl, tr, _) ->
+      ctx.matched <- ctx.matched + 1;
+      helper (tl :: acc) ctx loc tr k
+    | _ when List.length acc = 0 -> fail loc "typ_arrows"
+    | _ -> k |> fargs ctx loc (List.rev acc) |> frhs ctx loc x
+  in
+  T
+    (fun ctx loc x k ->
+      (* log "%s got type @[%a@]" __FUNCTION__ Printtyp.type_expr x; *)
+      helper [] ctx loc x k)
 ;;
 
 let ( @-> ) = typ_arrow

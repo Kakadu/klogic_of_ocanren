@@ -167,7 +167,6 @@ let rec pp_typ_as_kotlin inh_info =
   in
   let rec helper ~add ppf (typ : Types.type_expr) =
     (* Format.eprintf "Run helper on %S\n%!" (to_caml_string typ); *)
-    (* Format.eprintf "%a\n" Printtyp.raw_type_expr typ; *)
     let sk =
       let string_of_path p =
         match Path.flatten p with
@@ -180,7 +179,7 @@ let rec pp_typ_as_kotlin inh_info =
           match x with
           | `Logic_list arg -> fprintf ppf "LogicList<%a>" helper_no arg
           | `Logic_option arg -> fprintf ppf "LogicOption<%a>" helper_no arg
-          | `Logic_nat -> fprintf ppf "PeanoLogic"
+          | `Logic_nat -> fprintf ppf "PeanoLogicNumber/**/"
           | `Int_ilogic -> fprintf ppf " LogicInt "
           | `Ilogic_of_poly name -> fprintf ppf "%s" (ocaml_to_kotlin_tvar name)
           | `Ilogic_of_t (path, args) ->
@@ -205,7 +204,14 @@ let rec pp_typ_as_kotlin inh_info =
                (match Inh_info.lookup_typ_exn inh_info expected_path with
                 | s -> Format.fprintf ppf "%s" s
                 | exception Not_found -> Format.fprintf ppf "/* Error */"))
+          | `Goal -> fprintf ppf "Goal"
           | `Constr_with_args (path, args) ->
+            (* let __ _ =
+              Format.eprintf
+                "Constr_with_args (%s, _)\t add=%b\n%!"
+                (string_of_path path)
+                add
+            in *)
             let caml_repr = string_of_path path in
             let () =
               match Inh_info.lookup_typ_exn inh_info caml_repr with
@@ -221,8 +227,30 @@ let rec pp_typ_as_kotlin inh_info =
                  "<%a>"
                  (pp_print_list ~pp_sep:(fun ppf () -> fprintf ppf ", ") helper_no)
                  args)
+          | `Function (args, rez) ->
+            (* eprintf "rez = @[%a@]\n!" Printtyp.type_expr rez; *)
+            (* let argslen = List.length args in *)
+            (* eprintf "argslen = %d\n%!" argslen; *)
+            (* assert (List.length args = 2 || List.length args = 3); *)
+            fprintf ppf "@[@[(";
+            List.iteri args ~f:(fun i ->
+              if i <> 0 then fprintf ppf ", ";
+              helper ~add:true ppf);
+            fprintf ppf ")@] -> %a@]" (helper ~add:true) rez
+          (* assert false *)
         in
-        if add then fprintf ppf "Term<%a>" (fun _ -> run) x else run x
+        let need_add_term =
+          match x with
+          | `Function _ | `Goal ->
+            (* eprintf "%s %d\n%!" __FILE__ __LINE__; *)
+            false
+          | `Constr_with_args (path, _)
+            when String.equal (string_of_path path) "OCanren!.goal" ->
+            (* eprintf "%s %d\n%!" __FILE__ __LINE__; *)
+            false
+          | _ -> true
+        in
+        if add && need_add_term then fprintf ppf "Term<%a>" (fun _ -> run) x else run x
     in
     let pilogic () =
       let open Tast_pattern in
@@ -270,6 +298,8 @@ let rec pp_typ_as_kotlin inh_info =
             ; typ_constr (pinj_list ()) (__ ^:: nil)
             ]
           |> map1 ~f:(fun x -> `Logic_list x)
+        ; typ_arrows __ __ |> map2 ~f:(fun args rez -> `Function (args, rez))
+        ; typ_constr (path [ "OCanren"; "goal" ]) nil |> map0 ~f:`Goal
         ; typ_constr
             (pilogic ())
             (typ_constr (pinj_nat_t ()) (typ_constr (pinj_nat ()) nil ^:: nil) ^:: nil)
@@ -528,7 +558,8 @@ let pp_ast_as_kotlin inh_info =
     | Call_rel (path, [ Tunit ]) when path_is_none path -> fprintf ppf "None()"
     | Call_rel (p, args) ->
       let kotlin_func =
-        let repr = Format.asprintf "%a" Printtyp.path p in
+        (* let repr = Format.asprintf "%a" Printtyp.path p in *)
+        let repr = Path.name p in
         match Inh_info.lookup_expr_exn inh_info repr with
         | exception Not_found -> repr
         | s -> s
@@ -539,7 +570,14 @@ let pp_ast_as_kotlin inh_info =
       Format.printf "Application %d\n%!" __LINE__;
       (*  *)
       fprintf ppf "@[%a(%a)@]" default f (pp_comma_list default) args
-    | Tident p -> fprintf ppf "%s" (Path.name p)
+    | Tident p ->
+      let repr = Path.name p in
+      fprintf
+        ppf
+        "%s"
+        (match Inh_info.lookup_expr_exn inh_info repr with
+         | exception Not_found -> repr
+         | s -> s)
     (* | Conde xs -> fprintf ppf "@[conde(%a)@]" (pp_comma_list helper) xs *)
     | Conde xs ->
       fprintf ppf "@[<v 6>conde(";

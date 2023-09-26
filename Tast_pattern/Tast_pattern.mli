@@ -247,6 +247,11 @@ val ( @-> )
   -> (Types.type_expr, 'b, 'c) t
   -> (Types.type_expr, 'a, 'c) t
 
+val typ_arrows
+  :  (Types.type_expr list, 'a, 'b) t
+  -> (Types.type_expr, 'b, 'c) t
+  -> (Types.type_expr, 'a, 'c) t
+
 val core_typ : (Types.type_expr, 'a, 'b) t -> (core_type, 'a, 'b) t
 
 (* Structure *)
