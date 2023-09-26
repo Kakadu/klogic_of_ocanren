@@ -518,6 +518,56 @@ let%expect_test _ =
   helper
 ;; *)
 
+type char_representation =
+  | Common of char
+  | Special of string
+
+let print_ident ppf s =
+  let mangle_ident_char = function
+    | '%' -> Special "percent"
+    | '<' -> Special "less"
+    | '#' -> Special "number"
+    | '!' -> Special "exclamation"
+    | '?' -> Special "question"
+    | '~' -> Special "tilde"
+    | ':' -> Special "colon"
+    | '.' -> Special "dot"
+    | '$' -> Special "dollar"
+    | '&' -> Special "and"
+    | '*' -> Special "asterisk"
+    | '+' -> Special "plus"
+    | '-' -> Special "minus"
+    | '/' -> Special "slash"
+    | '=' -> Special "equal"
+    | '>' -> Special "greater"
+    | '@' -> Special "at"
+    | '^' -> Special "hat"
+    | '|' -> Special "pipe"
+    | c -> Common c
+  in
+  let rec concat_chars ppf =
+    let open Format in
+    function
+    | [ Special s ] -> fprintf ppf "%s" s
+    | [ Common c ] -> fprintf ppf "%c" c
+    | x1 :: (x2 :: _ as xs) ->
+      (match x1, x2 with
+       | Common c, Common _ -> fprintf ppf "%c%a" c concat_chars xs
+       | Common c, Special _ -> fprintf ppf "%c_%a" c concat_chars xs
+       | Special s, _ -> fprintf ppf "%s_%a" s concat_chars xs)
+    | [] -> eprintf "Empty identifier %s %d" __FILE__ __LINE__
+  in
+  concat_chars ppf @@ List.map ~f:mangle_ident_char @@ List.of_seq @@ String.to_seq s
+;;
+
+let rec print_path ppf =
+  let open Format in
+  function
+  | Path.Pident i -> fprintf ppf "%a" print_ident @@ Ident.name i
+  | Pdot (p, s) -> fprintf ppf "%a.%a" print_path p print_ident s
+  | Papply (p1, p2) -> fprintf ppf "%a(%a)" print_path p1 print_path p2
+;;
+
 let pp_ast_as_kotlin inh_info =
   let path_is_none path =
     (* Format.eprintf "log[path_is_none]: %a\n%!" Path.print path; *)
@@ -581,7 +631,7 @@ let pp_ast_as_kotlin inh_info =
         (* let repr = Format.asprintf "%a" Printtyp.path p in *)
         let repr = Path.name p in
         match Inh_info.lookup_expr_exn inh_info repr with
-        | exception Not_found -> repr
+        | exception Not_found -> Format.asprintf "%a" print_path p
         | s -> s
       in
       fprintf ppf "@[%s(%a)@]" kotlin_func (pp_comma_list default) args
@@ -592,12 +642,10 @@ let pp_ast_as_kotlin inh_info =
       fprintf ppf "@[%a(%a)@]" default f (pp_comma_list default) args
     | Tident p ->
       let repr = Path.name p in
-      fprintf
-        ppf
-        "%s"
-        (match Inh_info.lookup_expr_exn inh_info repr with
-         | exception Not_found -> repr
-         | s -> s)
+      (match Inh_info.lookup_expr_exn inh_info repr with
+       | exception Not_found -> fprintf ppf "%a" print_ident repr
+       | s -> fprintf ppf "%s" s)
+    (* | Tident p -> fprintf ppf "%a" print_ident @@ Path.name p *)
     (* | Conde xs -> fprintf ppf "@[conde(%a)@]" (pp_comma_list helper) xs *)
     | Conde xs ->
       fprintf ppf "@[<v 6>conde(";
@@ -624,7 +672,7 @@ let pp_ast_as_kotlin inh_info =
       fprintf ppf "@[{ ";
       List.iteri names ~f:(fun i (name, typ) ->
         if i <> 0 then fprintf ppf ", ";
-        fprintf ppf "@[%s: %a@]" name (pp_typ_as_kotlin inh_info) typ);
+        fprintf ppf "@[%a: %a@]" print_ident name (pp_typ_as_kotlin inh_info) typ);
       fprintf ppf " -> %a }@]" nopar rhs
     | Tunit -> fprintf ppf "/* Unit */"
     | Other e -> fprintf ppf "@[{| Other %a |}@]" Pprintast.expression (MyUntype.expr e)
@@ -682,7 +730,8 @@ let pp_rvb_as_kotlin ?(override = true) inh_info ppf { Rvb.name; args; body } =
   let pp_args ppf =
     pp_print_list
       ~pp_sep:(fun ppf () -> fprintf ppf ",@ ")
-      (fun ppf (name, typ) -> fprintf ppf "%s: %a" name (pp_typ_as_kotlin inh_info) typ)
+      (fun ppf (name, typ) ->
+        fprintf ppf "%a: %a" print_ident name (pp_typ_as_kotlin inh_info) typ)
       ppf
   in
   let tvars =
@@ -693,7 +742,7 @@ let pp_rvb_as_kotlin ?(override = true) inh_info ppf { Rvb.name; args; body } =
   in
   fprintf
     ppf
-    "@[%sfun %s %s(%a): Goal =@]@,@[%a@]\n%!"
+    "@[%sfun %s %a(%a): Goal =@]@,@[%a@]\n%!"
     (if override then "override " else "")
     (if S.is_empty tvars
      then ""
@@ -707,6 +756,7 @@ let pp_rvb_as_kotlin ?(override = true) inh_info ppf { Rvb.name; args; body } =
            []
        in
        "<" ^ String.concat ~sep:", " names ^ ">"))
+    print_ident
     name
     pp_args
     args
@@ -730,7 +780,7 @@ let pp_modtype_as_kotlin info name sign ppf =
     match sitem.sig_desc with
     | Tsig_value { val_name = { txt = name; _ }; val_val = { val_type; _ }; _ } ->
       let args, ret = unparse_arrows val_type in
-      printfn "@[// %s@]" name;
+      printfn "@[// %a@]" print_ident name;
       (* TODO: generate varnames *)
       let tvars =
         List.fold_left
@@ -739,7 +789,7 @@ let pp_modtype_as_kotlin info name sign ppf =
           args
       in
       printfn
-        "@[fun%s %s("
+        "@[fun%s %a("
         (if S.is_empty tvars
          then ""
          else (
@@ -752,6 +802,7 @@ let pp_modtype_as_kotlin info name sign ppf =
                []
            in
            "<" ^ String.concat ~sep:", " names ^ ">"))
+        print_ident
         name;
       List.iteri args ~f:(fun i t ->
         if i <> 0 then fprintf ppf ",@ ";
