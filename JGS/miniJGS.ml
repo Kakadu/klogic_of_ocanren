@@ -243,7 +243,7 @@ let rec substitute_typ :
               (fun a b -> substitute_arg subst a b)
               (fun eta -> eta === args)
               q8)
-         (* ; fresh
+       ; fresh
            (id args q13)
            (q3 === interface id args)
            (q30 === interface id q13)
@@ -259,7 +259,7 @@ let rec substitute_typ :
               (fun a b -> substitute_typ subst a b)
               (fun eta -> eta === typs)
               q17)
-       ; fresh () (q3 === null ()) (q30 === null ()) *)
+       ; fresh () (q3 === null ()) (q30 === null ())
        ])
 
 and substitute_arg :
@@ -284,7 +284,7 @@ and substitute_arg :
            (q63 === type_ q48)
            (* (q37 =/= type_ (var __ __ __ __)) *)
            (substitute_typ subst (fun eta -> typ === eta) q48)
-         (* ; fresh
+       ; fresh
            ()
            (q37 === wildcard (Std.none ()))
            (q63 === wildcard (Std.none ()))
@@ -297,8 +297,8 @@ and substitute_arg :
            (p === q58)
            (q37 =/= wildcard (Std.none ()))
            (q37 =/= type_ __)
-           (q37 =/= type_ (var __ __ __ __))
-           (substitute_typ subst (fun eta -> typ === eta) q59) *)
+           (* (q37 =/= type_ (var __ __ __ __)) *)
+           (substitute_typ subst (fun eta -> typ === eta) q59)
        ])
 ;;
 

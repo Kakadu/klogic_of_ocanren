@@ -74,10 +74,10 @@ sealed class Jtype<ID : Term<ID>>
     : CustomTerm<Jtype<ID>> {
 }
 
-object Null_ : Jtype<Nothing>() {
+class Null_() : Jtype<Nothing>() {
     override val subtreesToUnify: Array<*> = emptyArray<Any?>()
     override fun constructFromSubtrees(subtrees: Iterable<*>): CustomTerm<Jtype<Nothing>> = this
-    override fun toString(): String = "Extends"
+    override fun toString(): String = "Null_"
 }
 
 data class TypeArrayProto<ID : Term<ID>>(val typ: Term<Jtype<ID>>) : Jtype<ID>() {
@@ -98,23 +98,22 @@ data class TypeArrayProto<ID : Term<ID>>(val typ: Term<Jtype<ID>>) : Jtype<ID>()
     }
 }
 
-data class TypeIntersect<ID : Term<ID>>(val left: Term<Jtype<ID>>, val right: Term<Jtype<ID>>) :
+data class Intersect<ID : Term<ID>>(val args: Term<LogicList<Jtype<ID>>>) :
     Jtype<ID>() {
     override val subtreesToUnify: Array<Term<*>>
-        get() = arrayOf(left, right)
+        get() = arrayOf(args)
 
     override fun constructFromSubtrees(subtrees: Iterable<*>): CustomTerm<Jtype<ID>> {
         // We use by-hand iteration here to avoid losing performance.
         val iterator = subtrees.iterator()
-        val left = iterator.next()
-        val right = iterator.next()
+        val args = iterator.next()
 
         require(!iterator.hasNext()) {
             "Expected only head and tail for constructing Cons but got more elements"
         }
 
         @Suppress("UNCHECKED_CAST")
-        return TypeIntersect(left as Term<Jtype<ID>>, right as Term<Jtype<ID>>)
+        return Intersect(args as Term<LogicList<Jtype<ID>>>)
     }
 }
 
@@ -188,8 +187,7 @@ data class Var<ID : Term<ID>>(
     }
 }
 
-fun Null() = Null_
-typealias Intersect<ID> = TypeIntersect<ID>
+fun <ID : Term<ID>> Null() = Null_()
 typealias Array_<ID> = TypeArrayProto<ID>
 typealias Class_<ID> = TypeClass_<ID>
 typealias Interface<ID> = TypeInterface<ID>
