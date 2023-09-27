@@ -162,7 +162,7 @@ let rec pp_typ_as_kotlin inh_info =
   let textual ppf typ ~fk =
     let caml_repr = to_caml_string typ in
     match Inh_info.lookup_typ_exn inh_info caml_repr with
-    | s -> Format.fprintf ppf "%s" s
+    | s -> Format.fprintf ppf "%s/*%d*/" s __LINE__
     | exception Not_found -> fk ()
   in
   let rec helper ~add ppf (typ : Types.type_expr) =
@@ -175,15 +175,35 @@ let rec pp_typ_as_kotlin inh_info =
       in
       let open Format in
       fun x () ->
+        let pp_args args =
+          match args with
+          | [] -> ()
+          | _ ->
+            fprintf
+              ppf
+              "<%a>"
+              (pp_print_list ~pp_sep:(fun ppf () -> fprintf ppf ", ") helper_no)
+              args
+        in
         let run x =
           match x with
           | `Logic_list arg -> fprintf ppf "LogicList<%a>" helper_no arg
           | `Logic_option arg -> fprintf ppf "LogicOption<%a>" helper_no arg
-          | `Logic_nat -> fprintf ppf "PeanoLogicNumber/**/"
-          | `Int_ilogic -> fprintf ppf " LogicInt "
+          | `Ilogic_of_t (path, _)
+            when String.equal "Peano.HO.Std.Nat.t" (string_of_path path) ->
+            fprintf ppf "PeanoLogicNumber"
+          | `Ilogic_of_t (path, [ arg; _ ])
+            when String.equal "OCanren.Std.List.t" (string_of_path path) ->
+            fprintf ppf "LogicList<%a>" helper_no arg
+          | `Logic_nat -> fprintf ppf "PeanoLogicNumber"
+          | `Int_ilogic -> fprintf ppf "LogicInt"
           | `Ilogic_of_poly name -> fprintf ppf "%s" (ocaml_to_kotlin_tvar name)
+          | `Ilogic_of_t (path, arg1 :: _)
+            when String.equal "Targ.t" (string_of_path path)
+                 (* TODO(Kakadu): Elimintate dirty hack! *) ->
+            Format.fprintf ppf "Jarg<%a>" (helper ~add:false) arg1
           | `Ilogic_of_t (path, args) ->
-            (* Format.eprintf "Path.name = %S\n%!" (Path.name path); *)
+            (* Format.eprintf "Ilogic_of_t: Path.name = %S\n%!" (Path.name path); *)
             (* Format.eprintf "Path = %a\n%!" Path.print path; *)
             (* We assume here, that path is in the form PATH.t, so we need to scan arguments,
               and find an argument, with toplevel type PATH.injected
@@ -202,8 +222,11 @@ let rec pp_typ_as_kotlin inh_info =
              with
              | Not_found ->
                (match Inh_info.lookup_typ_exn inh_info expected_path with
-                | s -> Format.fprintf ppf "%s" s
-                | exception Not_found -> Format.fprintf ppf "/* Error */"))
+                | s ->
+                  Format.fprintf ppf "%s/*%d*/" s __LINE__;
+                  pp_args args
+                | exception Not_found ->
+                  Format.fprintf ppf "/* Error path = %s */" (Path.name path)))
           | `Goal -> fprintf ppf "Goal"
           | `Constr_with_args (path, args) ->
             (* let __ _ =
@@ -215,18 +238,15 @@ let rec pp_typ_as_kotlin inh_info =
             let caml_repr = string_of_path path in
             let () =
               match Inh_info.lookup_typ_exn inh_info caml_repr with
-              | s -> Format.fprintf ppf "%s" s
+              | s ->
+                (* Format.fprintf ppf "%s/*%d (argc=%d)*/" s __LINE__ (List.length args); *)
+                Format.fprintf ppf "%s" s
               | exception Not_found ->
                 Format.fprintf ppf "/* %a */Error" Printtyp.type_expr typ
             in
-            (match args with
-             | [] -> ()
-             | _ ->
-               fprintf
-                 ppf
-                 "<%a>"
-                 (pp_print_list ~pp_sep:(fun ppf () -> fprintf ppf ", ") helper_no)
-                 args)
+            pp_args args
+          (* | `Function ([ arg1 ], rez) ->
+            fprintf ppf "@[ %a -> %a @]" (helper ~add:true) arg1 (helper ~add:true) rez *)
           | `Function (args, rez) ->
             (* eprintf "rez = @[%a@]\n!" Printtyp.type_expr rez; *)
             (* let argslen = List.length args in *)
@@ -326,7 +346,7 @@ let rec pp_typ_as_kotlin inh_info =
           match unparse_arrows typ with
           | [], rest ->
             textual ppf rest ~fk:(fun () ->
-              Format.fprintf ppf " /*%s*/" (to_caml_string rest))
+              Format.fprintf ppf " /*%s 111 */" (to_caml_string rest))
           | args, rest ->
             Format.fprintf ppf "(";
             List.iteri args ~f:(fun i typ ->
@@ -598,12 +618,14 @@ let pp_ast_as_kotlin inh_info =
       fprintf ppf "@[%a@]" (pp_print_list ~pp_sep:pp_print_space helper) ls
     | T_list_nil -> fprintf ppf "nilLogicList()"
     | T_list_cons (h, tl) -> fprintf ppf "@[(%a + %a)@]" default h default tl
+    | Tabstr ([ (name, typ) ], rhs) ->
+      fprintf ppf "@[{ %s: %a -> %a }@]" name (pp_typ_as_kotlin inh_info) typ nopar rhs
     | Tabstr (names, rhs) ->
       fprintf ppf "@[{ ";
-      List.iteri names ~f:(fun i (name, _typ) ->
+      List.iteri names ~f:(fun i (name, typ) ->
         if i <> 0 then fprintf ppf ", ";
-        fprintf ppf " %s" name);
-      fprintf ppf "-> %a }@]" nopar rhs
+        fprintf ppf "@[%s: %a@]" name (pp_typ_as_kotlin inh_info) typ);
+      fprintf ppf " -> %a }@]" nopar rhs
     | Tunit -> fprintf ppf "/* Unit */"
     | Other e -> fprintf ppf "@[{| Other %a |}@]" Pprintast.expression (MyUntype.expr e)
   and default ppf = helper ~par:true ppf
