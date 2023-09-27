@@ -564,10 +564,10 @@ let translate_implementation stru =
 ;;
 
 let analyze_cmt _source_file out_file stru =
-  let rec pp_item info ppf =
+  let rec pp_item ~toplevel info ppf =
     let open Format in
     function
-    | Inh_info.RVB rvb -> pp_rvb_as_kotlin info ppf rvb
+    | Inh_info.RVB rvb -> pp_rvb_as_kotlin ~override:(not toplevel) info ppf rvb
     | Plain_kotlin s -> Format.fprintf ppf "%s" s
     | MT_as_interface (name, sign) -> pp_modtype_as_kotlin info name sign ppf
     | Functor1 { name; typ; arg_name; arg_typ; body } ->
@@ -581,7 +581,7 @@ let analyze_cmt _source_file out_file stru =
         arg_name
         arg_typ;
       fprintf ppf "@[<v 2>@[object: %s {@]@," typ;
-      pp_print_list (pp_item info) ppf body;
+      pp_print_list (pp_item ~toplevel:false info) ppf body;
       fprintf ppf "@]}}\n"
   in
   Out_channel.with_file out_file ~f:(fun ch ->
@@ -590,7 +590,7 @@ let analyze_cmt _source_file out_file stru =
       Printf.fprintf ch "%s\n" (Inh_info.preamble info);
       Printf.fprintf ch "// There are %d relations\n" (List.length info.Inh_info.rvbs);
       let ppf = Format.formatter_of_out_channel ch in
-      Inh_info.iter_vbs info ~f:(pp_item info ppf);
+      Inh_info.iter_vbs info ~f:(pp_item ~toplevel:true info ppf);
       Printf.fprintf ch "%s\n" (Inh_info.epilogue info);
       Format.pp_print_flush ppf ();
       flush ch

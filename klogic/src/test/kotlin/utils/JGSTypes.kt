@@ -3,6 +3,7 @@ package utils.JGS
 import org.klogic.core.CustomTerm
 import org.klogic.core.Term
 import org.klogic.utils.terms.LogicList
+import org.klogic.utils.terms.LogicPair
 import org.klogic.utils.terms.PeanoLogicNumber
 import utils.LogicOption
 
@@ -47,13 +48,13 @@ data class Type<ID : Term<ID>>(val typ: Term<ID>) : Jarg<ID >() {
     }
 }
 
-data class ArgWildcardProto<ID : Term<ID> >(val typ: Term<ID>) :
-    Jarg<ID >() {
+data class ArgWildcardProto<JTYP : Term<JTYP> >(val typ: Term<LogicOption<LogicPair<Polarity, JTYP>>>) :
+    Jarg<JTYP >() {
     override val subtreesToUnify: Array<Term<*>>
         get() = arrayOf(typ)
 
     override fun constructFromSubtrees(subtrees: Iterable<*>)
-            : CustomTerm<Jarg<ID >> {
+            : CustomTerm<Jarg<JTYP >> {
         // We use by-hand iteration here to avoid losing performance.
         val iterator = subtrees.iterator()
         val head = iterator.next()
@@ -63,7 +64,7 @@ data class ArgWildcardProto<ID : Term<ID> >(val typ: Term<ID>) :
         }
 
         @Suppress("UNCHECKED_CAST")
-        return ArgWildcardProto(head as Term<ID>)
+        return ArgWildcardProto(head as  Term<LogicOption<LogicPair<Polarity, JTYP>>>)
     }
 }
 

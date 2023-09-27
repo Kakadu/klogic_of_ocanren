@@ -677,7 +677,7 @@ let collect_type_variables : _ =
   fun texpr -> helper S.empty texpr
 ;;
 
-let pp_rvb_as_kotlin inh_info ppf { Rvb.name; args; body } =
+let pp_rvb_as_kotlin ?(override = true) inh_info ppf { Rvb.name; args; body } =
   let open Format in
   let pp_args ppf =
     pp_print_list
@@ -693,7 +693,8 @@ let pp_rvb_as_kotlin inh_info ppf { Rvb.name; args; body } =
   in
   fprintf
     ppf
-    "@[fun %s %s(%a): Goal =@]@,@[%a@]\n%!"
+    "@[%sfun %s %s(%a): Goal =@]@,@[%a@]\n%!"
+    (if override then "override " else "")
     (if S.is_empty tvars
      then ""
      else (
@@ -716,9 +717,7 @@ let pp_rvb_as_kotlin inh_info ppf { Rvb.name; args; body } =
 (* pp_typ_as_kotlin *)
 let pp_modtype_as_kotlin info name sign ppf =
   let open Format in
-  (* printf "%s %d\n%!" __FILE__ __LINE__; *)
   let printfn fmt = Format.kfprintf (fun fmt -> fprintf fmt "@,") ppf fmt in
-  (* let printf fmt = Format.fprintf ppf fmt in *)
   let gensym =
     let c = ref 0 in
     fun () ->
@@ -733,7 +732,27 @@ let pp_modtype_as_kotlin info name sign ppf =
       let args, ret = unparse_arrows val_type in
       printfn "@[// %s@]" name;
       (* TODO: generate varnames *)
-      printfn "@[fun %s(" name;
+      let tvars =
+        List.fold_left
+          ~f:(fun acc typ -> S.union acc (collect_type_variables typ))
+          ~init:S.empty
+          args
+      in
+      printfn
+        "@[fun%s %s("
+        (if S.is_empty tvars
+         then ""
+         else (
+           let names =
+             S.fold
+               (fun s acc ->
+                 let mangled = ocaml_to_kotlin_tvar s in
+                 sprintf "%s : Term<%s>" mangled mangled :: acc)
+               tvars
+               []
+           in
+           "<" ^ String.concat ~sep:", " names ^ ">"))
+        name;
       List.iteri args ~f:(fun i t ->
         if i <> 0 then fprintf ppf ",@ ";
         fprintf ppf "@[%s: %a@]" (gensym ()) (pp_typ_as_kotlin info) t);
