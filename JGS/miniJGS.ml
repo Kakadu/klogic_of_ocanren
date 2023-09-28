@@ -186,7 +186,7 @@ let rec list_ho_nth
        ])
 ;;
 
-(* let rec list_ho_fold_left2 f acc l1 l2 q223 =
+let rec list_ho_fold_left2 f acc l1 l2 q223 =
   fresh
     (q209 q205 q206)
     (q209 === Std.pair q205 q206)
@@ -208,7 +208,7 @@ let rec list_ho_nth
               q223)
        ; failure
        ])
-;; *)
+;;
 
 module Polarity = struct
   [%%distrib
@@ -353,6 +353,50 @@ and substitute_arg :
        ])
 ;;
 
+module Cdecl = struct
+  [%%ocanren_inject
+  type nonrec 'id cdecl =
+    { params : 'id Jtype.ground Std.List.ground
+    ; super : 'id Jtype.ground
+    ; supers : 'id Jtype.ground Std.List.ground
+    }
+  [@@deriving gt ~options:{ show; fmt; gmap }]]
+end
+
+module Idecl = struct
+  [%%distrib
+  type nonrec 'id idecl =
+    { params : 'id Jtype.ground Std.List.ground
+    ; supers : 'id Jtype.ground Std.List.ground
+    }
+  [@@deriving gt ~options:{ show; fmt; gmap }]]
+end
+
+module Decl = struct
+  [%%distrib
+  type nonrec 'id decl =
+    | C of 'id Cdecl.ground
+    | I of 'id Idecl.ground
+  [@@deriving gt ~options:{ show; fmt; gmap }]]
+end
+
+module CC_subst = struct
+  [%%distrib
+  type nonrec 'id ground =
+    | CC_inter of 'id Jtype.ground * 'id Jtype.ground
+    | CC_subst of 'id Jtype.ground
+  [@@deriving gt ~options:{ show; fmt; gmap }]]
+end
+
+module CC_type = struct
+  [%%distrib
+  type nonrec 'id capture_conversion_type =
+    | CC_type of 'id Jtype.ground
+    | CC_var of
+        GT.int * Std.Nat.ground * 'id CC_subst.ground * 'id Jtype.ground Std.Option.ground
+  [@@deriving gt ~options:{ show; fmt; gmap }]]
+end
+
 module type HIGH_ORDER = sig
   val decl_by_id : (int ilogic -> OCanren.goal) -> decl_injected -> OCanren.goal
 
@@ -384,8 +428,10 @@ end
 
 module Verifier (CT : CLASS_TABLE) : VERIFIER = struct
   let appo : ('a ilogic -> goal) -> 'a ilogic -> goal = fun f x -> f x
-  (*
+
   open Polarity
+  open CC_type
+  open CC_subst
 
   let rec ( <=< ) ( <-< ) ta tb q97 =
     fresh
@@ -578,7 +624,10 @@ module Verifier (CT : CLASS_TABLE) : VERIFIER = struct
                        ; q211 === !!(Some !!(Interface (q213, targs_b')))
                        ])
                     (targs_b q217)
-                    (list_ho_map (substitute_arg targs_a) (( === ) targs_b') q218)
+                    (List.HO.map
+                       (substitute_arg (Obj.magic targs_a))
+                       (( === ) targs_b')
+                       q218)
                     (conde
                        [ fresh () (q217 === q218) (q235 === !!true)
                        ; fresh () (q235 === !!false) (q217 =/= q218)
@@ -801,7 +850,7 @@ module Verifier (CT : CLASS_TABLE) : VERIFIER = struct
                    ])
             ; fresh
                 (ta q310 q352 q353)
-                (ta_val === !!(Array ta))
+                (ta_val === Jtype.array ta)
                 (ta === q352)
                 (CT.HO.object_t q353)
                 (conde
@@ -848,13 +897,13 @@ module Verifier (CT : CLASS_TABLE) : VERIFIER = struct
                               (conde
                                  [ fresh
                                      tb
-                                     (tb_val === !!(Array tb))
+                                     (tb_val === Jtype.array tb)
                                      (( -<- ) (( === ) ta) (( === ) tb) res)
                                  ; fresh
                                      q323
                                      (tb_val === q323)
                                      (res === !!false)
-                                     (tb_val =/= !!(Array __))
+                                     (tb_val =/= Jtype.array __)
                                  ])
                           ])
                    ; fresh
@@ -863,13 +912,13 @@ module Verifier (CT : CLASS_TABLE) : VERIFIER = struct
                        (conde
                           [ fresh
                               tb
-                              (tb_val === !!(Array tb))
+                              (tb_val === Jtype.array tb)
                               (( -<- ) (( === ) ta) (( === ) tb) res)
                           ; fresh
                               q315
                               (tb_val === q315)
                               (res === !!false)
-                              (tb_val =/= !!(Array __))
+                              (tb_val =/= Jtype.array __)
                           ])
                    ])
             ; fresh
@@ -893,7 +942,6 @@ module Verifier (CT : CLASS_TABLE) : VERIFIER = struct
                    ])
             ]))
   ;;
-  *)
 end
 
 (* let rec ( <=< )
