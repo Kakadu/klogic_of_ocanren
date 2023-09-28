@@ -301,7 +301,7 @@ let rec pp_typ_as_kotlin inh_info =
     let pinj_option () =
       let open Tast_pattern in
       path [ "OCanren"; "Std"; "Option"; "injected" ]
-      ||| path [ "OCanren"; "Std"; "Nat"; "groundi" ]
+      ||| path [ "OCanren"; "Std"; "Option"; "groundi" ]
     in
     let pinj_option_t () =
       let open Tast_pattern in
@@ -647,7 +647,7 @@ let pp_ast_as_kotlin inh_info =
     | Tident p ->
       let repr = Path.name p in
       (match Inh_info.lookup_expr_exn inh_info repr with
-       | exception Not_found -> fprintf ppf "%a" print_ident repr
+       | exception Not_found -> fprintf ppf "%a" print_path p
        | s -> fprintf ppf "%s" s)
     (* | Tident p -> fprintf ppf "%a" print_ident @@ Path.name p *)
     (* | Conde xs -> fprintf ppf "@[conde(%a)@]" (pp_comma_list helper) xs *)
