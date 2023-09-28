@@ -99,6 +99,9 @@ and(q0(q3),
               list_ho_map({ a: (Term<Jtype<ID>>) -> Goal, b: Term<Jtype<ID>> -> 
                           substitute_typ(subst, a, b) },
               { eta: Term<LogicList<Jtype<ID>>> -> eta `===` typs }, q17))
+          },
+          pause { and(q3 `===` Null(/* Unit */),
+                      q30 `===` Null(/* Unit */))
           }))
 }
 fun <ID : Term<ID>> substitute_arg(subst: (Term<LogicList<Jarg<Jtype<ID>>>>) -> Goal,

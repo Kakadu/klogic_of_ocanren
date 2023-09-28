@@ -75,11 +75,15 @@ sealed class Jtype<ID : Term<ID>>
     : CustomTerm<Jtype<ID>> {
 }
 
-class Null_() : Jtype<Nothing>() {
+object Null : Jtype<Nothing>() {
     override val subtreesToUnify: Array<*> = emptyArray<Any?>()
     override fun constructFromSubtrees(subtrees: Iterable<*>): CustomTerm<Jtype<Nothing>> = this
     override fun toString(): String = "Null_"
+
+    @Suppress("UNCHECKED_CAST")
+    operator fun <ID : Term<ID>> invoke(): Jtype<ID> = this as Jtype<ID>
 }
+//fun <ID : Term<ID>> Null() = Null_()
 
 data class TypeArrayProto<ID : Term<ID>>(val typ: Term<Jtype<ID>>) : Jtype<ID>() {
     override val subtreesToUnify: Array<Term<*>>
@@ -188,7 +192,7 @@ data class Var<ID : Term<ID>>(
     }
 }
 
-fun <ID : Term<ID>> Null() = Null_()
+
 typealias Array_<ID> = TypeArrayProto<ID>
 typealias Class_<ID> = TypeClass_<ID>
 typealias Interface<ID> = TypeInterface<ID>
