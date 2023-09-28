@@ -186,7 +186,12 @@ let rec list_ho_nth
        ])
 ;;
 
-let rec list_ho_fold_left2 f acc l1 l2 q223 =
+let rec list_ho_fold_left2
+  :  (('a -> goal) -> ('b ilogic -> goal) -> ('c ilogic -> goal) -> 'a -> goal)
+  -> ('a -> goal) -> ('b ilogic Std.List.injected -> goal)
+  -> ('c ilogic Std.List.injected -> goal) -> 'a -> goal
+  =
+ fun f acc l1 l2 q223 ->
   fresh
     (q209 q205 q206)
     (q209 === Std.pair q205 q206)
@@ -362,6 +367,7 @@ module Cdecl = struct
     }
   [@@deriving gt ~options:{ show; fmt; gmap }]]
 end
+[@@skip_from_klogic]
 
 module Idecl = struct
   [%%distrib
@@ -371,6 +377,7 @@ module Idecl = struct
     }
   [@@deriving gt ~options:{ show; fmt; gmap }]]
 end
+[@@skip_from_klogic]
 
 module Decl = struct
   [%%distrib
@@ -379,6 +386,7 @@ module Decl = struct
     | I of 'id Idecl.ground
   [@@deriving gt ~options:{ show; fmt; gmap }]]
 end
+[@@skip_from_klogic]
 
 module CC_subst = struct
   [%%distrib
@@ -387,6 +395,7 @@ module CC_subst = struct
     | CC_subst of 'id Jtype.ground
   [@@deriving gt ~options:{ show; fmt; gmap }]]
 end
+[@@skip_from_klogic]
 
 module CC_type = struct
   [%%distrib
@@ -396,6 +405,7 @@ module CC_type = struct
         GT.int * Std.Nat.ground * 'id CC_subst.ground * 'id Jtype.ground Std.Option.ground
   [@@deriving gt ~options:{ show; fmt; gmap }]]
 end
+[@@skip_from_klogic]
 
 module type HIGH_ORDER = sig
   val decl_by_id : (int ilogic -> OCanren.goal) -> decl_injected -> OCanren.goal
@@ -432,7 +442,7 @@ module Verifier (CT : CLASS_TABLE) : VERIFIER = struct
   open Polarity
   open CC_type
   open CC_subst
-
+  (*
   let rec ( <=< ) ( <-< ) ta tb q97 =
     fresh
       (q71 q67 q68)
@@ -942,6 +952,7 @@ module Verifier (CT : CLASS_TABLE) : VERIFIER = struct
                    ])
             ]))
   ;;
+  \*)
 end
 
 (* let rec ( <=< )

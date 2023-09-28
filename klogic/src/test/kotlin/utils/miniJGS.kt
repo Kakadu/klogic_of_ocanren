@@ -30,7 +30,7 @@ fun  pause(f: () -> Goal): Goal = { st -> ThunkStream { f()(st) } }
 @Suppress("UNUSED_PARAMETER")
 fun <A: Term<A>> wc(f : (Term<A>) -> Goal ) : Goal = success
 
-// There are 8 relations
+// There are 9 relations
 fun <B : Term<B>, A : Term<A>> list_ho_map(f: ((Term<A>) -> Goal, Term<B>) -> Goal,
 lst: (Term<LogicList<A>>) -> Goal, ys: Term<LogicList<B>>): Goal =
 freshTypedVars { xs: Term<LogicList<A>> ->
@@ -61,6 +61,43 @@ and(hoxs(xs),
               list_ho_nth({ eta: Term<LogicList<B>> -> eta `===` tl },
               { eta: Term<PeanoLogicNumber> -> eta `===` prev }, rez))
           }))
+}
+fun <C : Term<C>, B : Term<B>, A : Term<A>> list_ho_fold_left2(f: ((Term<A>) -> Goal, 
+                                                                  (Term<B>) -> Goal, 
+                                                                  (Term<C>) -> Goal, Term<A>) -> Goal,
+acc: (Term<A>) -> Goal, l1: (Term<LogicList<B>>) -> Goal,
+l2: (Term<LogicList<C>>) -> Goal, q223: Term<A>): Goal =
+freshTypedVars { q209: Term</* (('b OCanren.ilogic,
+                                 'b OCanren.ilogic OCanren.Std.List.injected)
+                                OCanren.Std.List.t OCanren__.Logic.ilogic *
+                                ('c OCanren.ilogic,
+                                 'c OCanren.ilogic OCanren.Std.List.injected)
+                                OCanren.Std.List.t OCanren__.Logic.ilogic)
+                               OCanren__.Logic.ilogic */Error< /*('b OCanren.ilogic, 'b OCanren.ilogic OCanren.Std.List.injected)OCanren.Std.List.t OCanren__.Logic.ilogic *('c OCanren.ilogic, 'c OCanren.ilogic OCanren.Std.List.injected)OCanren.Std.List.t OCanren__.Logic.ilogic 111 */>>,
+  q205: Term<LogicList<B>>, q206: Term<LogicList<C>> ->
+and(q209 `===` LogicPair(q205, q206),
+    l1(q205),
+    l2(q206),
+    conde(((q209 `===` LogicPair(OCanren.exclamation_exclamation({| Other 
+                                                                 OCanren.Std.List.Nil |}),
+                       OCanren.exclamation_exclamation({| Other OCanren.Std.List.Nil |}))) and 
+          acc(q223)),
+          freshTypedVars { hd1: Term<B>, tl1: Term<LogicList<B>>,
+            hd2: Term<C>, tl2: Term<LogicList<C>> ->
+          and(q209 `===` LogicPair(OCanren.exclamation_exclamation({| Other 
+                                                                   OCanren.Std.List.Cons
+                                                                    (hd1,
+                                                                    tl1) |}),
+                         OCanren.exclamation_exclamation({| Other OCanren.Std.List.Cons
+                                                                    (hd2,
+                                                                    tl2) |})),
+              list_ho_fold_left2(f,
+              f(acc, { q210: Term<B> -> hd1 `===` q210 },
+              { q212: Term<C> -> hd2 `===` q212 }),
+              { q211: Term<LogicList<B>> -> tl1 `===` q211 },
+              { q213: Term<LogicList<C>> -> tl2 `===` q213 }, q223))
+          },
+          OCanren_dot_failure))
 }
 fun <ID : Term<ID>> substitute_typ(subst: (Term<LogicList<Jarg<Jtype<ID>>>>) -> Goal,
 q0: (Term<Jtype<ID>>) -> Goal, q30: Term<Jtype<ID>>): Goal =

@@ -708,6 +708,7 @@ module S = Set.Make (String)
 
 let collect_type_variables : _ =
   let rec helper acc desc =
+    (* Format.printf "%s: %a\n%!" __FUNCTION__ Printtyp.type_expr desc; *)
     Tast_pattern.(
       parse
       @@ choice
@@ -718,6 +719,11 @@ let collect_type_variables : _ =
       Location.none
       desc
       ~on_error:(fun _ ->
+        let __ () =
+          match Types.get_desc desc with
+          | Types.Tvar None -> Printf.eprintf "%d\n" __LINE__
+          | _ -> Printf.eprintf "end\n"
+        in
         Format.eprintf "Unsupported case: '%a'\n%!" Printtyp.type_expr desc;
         assert false)
       (fun acc -> acc)
