@@ -14,15 +14,12 @@ type decl_injected = int OCanren.ilogic
 package utils.JGS
 
 import org.klogic.core.*
-import org.klogic.utils.terms.LogicList
+import org.klogic.utils.terms.*
+import org.klogic.utils.terms.LogicBool.Companion.toLogicBool
 import org.klogic.utils.terms.LogicList.Companion.logicListOf
 import org.klogic.utils.terms.Nil.nilLogicList
-import org.klogic.utils.terms.plus
-import org.klogic.utils.terms.PeanoLogicNumber
-import org.klogic.utils.terms.NextNaturalNumber
-import org.klogic.utils.terms.ZeroNaturalNumber
-import org.klogic.utils.terms.LogicPair
 import utils.LogicInt
+import utils.LogicInt.Companion.toLogic
 import utils.Some
 import utils.None
 import utils.LogicOption
@@ -66,6 +63,7 @@ fun <A: Term<A>> wc(f : (Term<A>) -> Goal ) : Goal = success
 ; "string OCanren.ilogic OCanren.Std.List.injected", "Term<LogicList<LogicString>>"
 ; "int OCanren__.Logic.ilogic", "Term<LogicInt>"
 ; "int OCanren.ilogic", "LogicInt"
+; "bool OCanren.ilogic", "LogicBool"
 ; "string OCanren__.Logic.ilogic", "LogicString"
   (* ; ( "(int OCanren__.Logic.ilogic, int OCanren__.Logic.ilogic \
      OCanren.Std.List.injected)OCanren.Std.List.t OCanren__.Logic.ilogic"
@@ -975,3 +973,6 @@ module type STUFF = sig end
 module Stuff (CT : Test) : STUFF = struct
   let eval : int ilogic -> goal = fun x -> x === CT.( %%% ) x
 end *)
+
+let test_int : int ilogic -> goal = fun x -> conde [ x === !!1; x === !!2 ]
+let test_bool : bool ilogic -> goal = fun x -> conde [ x === !!true; x === !!false ]

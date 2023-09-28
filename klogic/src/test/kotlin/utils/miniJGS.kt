@@ -6,15 +6,12 @@
 package utils.JGS
 
 import org.klogic.core.*
-import org.klogic.utils.terms.LogicList
+import org.klogic.utils.terms.*
+import org.klogic.utils.terms.LogicBool.Companion.toLogicBool
 import org.klogic.utils.terms.LogicList.Companion.logicListOf
 import org.klogic.utils.terms.Nil.nilLogicList
-import org.klogic.utils.terms.plus
-import org.klogic.utils.terms.PeanoLogicNumber
-import org.klogic.utils.terms.NextNaturalNumber
-import org.klogic.utils.terms.ZeroNaturalNumber
-import org.klogic.utils.terms.LogicPair
 import utils.LogicInt
+import utils.LogicInt.Companion.toLogic
 import utils.Some
 import utils.None
 import utils.LogicOption
@@ -30,7 +27,7 @@ fun  pause(f: () -> Goal): Goal = { st -> ThunkStream { f()(st) } }
 @Suppress("UNUSED_PARAMETER")
 fun <A: Term<A>> wc(f : (Term<A>) -> Goal ) : Goal = success
 
-// There are 9 relations
+// There are 11 relations
 fun <B : Term<B>, A : Term<A>> list_ho_map(f: ((Term<A>) -> Goal, Term<B>) -> Goal,
 lst: (Term<LogicList<A>>) -> Goal, ys: Term<LogicList<B>>): Goal =
 freshTypedVars { xs: Term<LogicList<A>> ->
@@ -170,8 +167,8 @@ and(q34(q37),
                                       __JGS_miniJGS_ml_c37,
                                       __JGS_miniJGS_ml_c40)))}}}})
           },
-          freshTypedVars { p: Term<Polarity/*226*/>, typ: Term<Jtype<ID>>,
-            q58: Term<Polarity/*226*/>, q59: Term<Jtype<ID>> ->
+          freshTypedVars { p: Term<Polarity/*228*/>, typ: Term<Jtype<ID>>,
+            q58: Term<Polarity/*228*/>, q59: Term<Jtype<ID>> ->
           and(q37 `===` Wildcard(Some(LogicPair(p, typ))),
               q63 `===` Wildcard(Some(LogicPair(q58, q59))),
               p `===` q58,
@@ -216,5 +213,11 @@ private val Verifier : (CLASS_TABLE) -> VERIFIER = { CT: CLASS_TABLE ->
 object: VERIFIER {
   override fun <A : Term<A>> appo(f: (Term<A>) -> Goal, x: Term<A>): Goal =
   f(x)
-// Put epilogue here 
 }}
+fun  test_int(x: Term<LogicInt>): Goal =
+conde(x `===` 1.toLogic(),
+      x `===` 2.toLogic())
+fun  test_bool(x: Term<LogicBool>): Goal =
+conde(x `===` true.toLogicBool(),
+      x `===` false.toLogicBool())
+// Put epilogue here 

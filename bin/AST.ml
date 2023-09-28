@@ -21,6 +21,7 @@ type 'a ast =
   | Call_rel of Path.t * 'a list
   | Tapp of 'a * 'a list (** Application of terms. Is similar to Call_rel *)
   | T_int of int
+  | T_bool of bool
   | T_list_init of 'a list
   | T_list_nil
   | T_list_cons of 'a * 'a
@@ -61,7 +62,7 @@ let map_ast f = function
   | T_list_cons (h, tl) -> T_list_cons (f h, f tl)
   | Tabstr (args, body) -> Tabstr (args, f body)
   | T_list_init xs -> T_list_init (List.map ~f xs)
-  | (Tunit | Tident _ | Other _ | T_list_nil | T_int _) as rez -> rez
+  | (Tunit | Tident _ | Other _ | T_list_nil | T_int _ | T_bool _) as rez -> rez
   | Unify (a, b) -> Unify (f a, f b)
   | Diseq (a, b) -> Diseq (f a, f b)
 ;;
@@ -197,6 +198,7 @@ let rec pp_typ_as_kotlin inh_info =
             fprintf ppf "LogicList<%a>" helper_no arg
           | `Logic_nat -> fprintf ppf "PeanoLogicNumber"
           | `Int_ilogic -> fprintf ppf "LogicInt"
+          | `Bool_ilogic -> fprintf ppf "LogicBool"
           | `Ilogic_of_poly name -> fprintf ppf "%s" (ocaml_to_kotlin_tvar name)
           | `Ilogic_of_t (path, arg1 :: _)
             when String.equal "Targ.t" (string_of_path path)
@@ -328,6 +330,8 @@ let rec pp_typ_as_kotlin inh_info =
           |> map1 ~f:(fun x -> `Logic_option x)
         ; typ_constr (pilogic ()) (typ_constr (path [ "int" ]) nil ^:: nil)
           |> map0 ~f:`Int_ilogic
+        ; typ_constr (pilogic ()) (typ_constr (path [ "bool" ]) nil ^:: nil)
+          |> map0 ~f:`Bool_ilogic
         ; typ_constr (pilogic ()) (typ_var __ ^:: nil)
           |> map1 ~f:(fun name -> `Ilogic_of_poly name)
         ; typ_var __ |> map1 ~f:(fun name -> `Ilogic_of_poly name)
@@ -662,6 +666,7 @@ let pp_ast_as_kotlin inh_info =
       fprintf ppf ")@]"
     | Infix_conj2 (l, r) -> fprintf ppf "@[(%a and %a)@]" default l default r
     | T_int n -> fprintf ppf "%d.toLogic()" n
+    | T_bool n -> fprintf ppf "%b.toLogicBool()" n
     | T_list_init ls ->
       fprintf ppf "@[%a@]" (pp_print_list ~pp_sep:pp_print_space helper) ls
     | T_list_nil -> fprintf ppf "nilLogicList()"
