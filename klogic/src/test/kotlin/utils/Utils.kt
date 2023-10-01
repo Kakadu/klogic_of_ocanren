@@ -24,13 +24,14 @@ object UnificationsController {
     }
 }
 
+context(RelationalContext)
 infix fun <T : Term<T>> Term<T>.debugUnify(other: Term<T>): Goal = { state: State ->
     if (System.getenv("SILENT_UNIFICATIONS") == null)
         System.out.printf("%s %s ", this, other)
     UnificationsController.onUnification()
 
     val rez = (this unify other)(state)
-    if  (rez.msplit() != null)
+    if (rez.msplit() != null)
         System.out.printf("\n")
     else System.out.printf(" _|_\n")
     rez
@@ -46,20 +47,25 @@ private var variableIndex: Int = 10
 
 fun <T : Term<T>> freshTypedVar(): Var<T> = (variableIndex++).createTypedVar()
 
+context(RelationalContext)
 fun <T1 : Term<T1>> freshTypedVars(f: (Term<T1>) -> Goal): Goal = { st: State ->
     val first = freshTypedVar<T1>()
 
     delay { f(first) }(st)
 }
 
-fun <T1 : Term<T1>, T2 : Term<T2>> freshTypedVars(f: (Term<T1>, Term<T2>) -> Goal): Goal = { st: State ->
+context(RelationalContext)
+fun <T1 : Term<T1>, T2 : Term<T2>> freshTypedVars(
+        f: (Term<T1>, Term<T2>) -> Goal): Goal = { st: State ->
     val first = freshTypedVar<T1>()
     val second = freshTypedVar<T2>()
 
     delay { f(first, second) }(st)
 }
 
-fun <T1 : Term<T1>, T2 : Term<T2>, T3 : Term<T3>> freshTypedVars(f: (Term<T1>, Term<T2>, Term<T3>) -> Goal): Goal = { st: State ->
+context(RelationalContext)
+fun <T1 : Term<T1>, T2 : Term<T2>, T3 : Term<T3>> freshTypedVars(
+        f: (Term<T1>, Term<T2>, Term<T3>) -> Goal): Goal = { st: State ->
     val first = freshTypedVar<T1>()
     val second = freshTypedVar<T2>()
     val third = freshTypedVar<T3>()
@@ -67,7 +73,9 @@ fun <T1 : Term<T1>, T2 : Term<T2>, T3 : Term<T3>> freshTypedVars(f: (Term<T1>, T
     delay { f(first, second, third) }(st)
 }
 
-fun <T1 : Term<T1>, T2 : Term<T2>, T3 : Term<T3>, T4 : Term<T4>> freshTypedVars(f: (Term<T1>, Term<T2>, Term<T3>, Term<T4>) -> Goal): Goal = { st: State ->
+context(RelationalContext)
+fun <T1 : Term<T1>, T2 : Term<T2>, T3 : Term<T3>, T4 : Term<T4>> freshTypedVars(
+        f: (Term<T1>, Term<T2>, Term<T3>, Term<T4>) -> Goal): Goal = { st: State ->
     val first = freshTypedVar<T1>()
     val second = freshTypedVar<T2>()
     val third = freshTypedVar<T3>()
@@ -76,7 +84,9 @@ fun <T1 : Term<T1>, T2 : Term<T2>, T3 : Term<T3>, T4 : Term<T4>> freshTypedVars(
     delay { f(first, second, third, fourth) }(st)
 }
 
-fun <T1 : Term<T1>, T2 : Term<T2>, T3 : Term<T3>, T4 : Term<T4>, T5 : Term<T5>> freshTypedVars(f: (Term<T1>, Term<T2>, Term<T3>, Term<T4>, Term<T5>) -> Goal): Goal = { st: State ->
+context(RelationalContext)
+fun <T1 : Term<T1>, T2 : Term<T2>, T3 : Term<T3>, T4 : Term<T4>, T5 : Term<T5>> freshTypedVars(
+        f: (Term<T1>, Term<T2>, Term<T3>, Term<T4>, Term<T5>) -> Goal): Goal = { st: State ->
     val first = freshTypedVar<T1>()
     val second = freshTypedVar<T2>()
     val third = freshTypedVar<T3>()
@@ -86,7 +96,9 @@ fun <T1 : Term<T1>, T2 : Term<T2>, T3 : Term<T3>, T4 : Term<T4>, T5 : Term<T5>> 
     delay { f(first, second, third, fourth, fifth) }(st)
 }
 
-fun <T1 : Term<T1>, T2 : Term<T2>, T3 : Term<T3>, T4 : Term<T4>, T5 : Term<T5>, T6 : Term<T6>> freshTypedVars(f: (Term<T1>, Term<T2>, Term<T3>, Term<T4>, Term<T5>, Term<T6>) -> Goal): Goal = { st: State ->
+context(RelationalContext)
+fun <T1 : Term<T1>, T2 : Term<T2>, T3 : Term<T3>, T4 : Term<T4>, T5 : Term<T5>, T6 : Term<T6>> freshTypedVars(
+        f: (Term<T1>, Term<T2>, Term<T3>, Term<T4>, Term<T5>, Term<T6>) -> Goal): Goal = { st: State ->
     val first = freshTypedVar<T1>()
     val second = freshTypedVar<T2>()
     val third = freshTypedVar<T3>()
@@ -97,7 +109,9 @@ fun <T1 : Term<T1>, T2 : Term<T2>, T3 : Term<T3>, T4 : Term<T4>, T5 : Term<T5>, 
     delay { f(first, second, third, fourth, fifth, sixth) }(st)
 }
 
-fun <T1 : Term<T1>, T2 : Term<T2>, T3 : Term<T3>, T4 : Term<T4>, T5 : Term<T5>, T6 : Term<T6>, T7 : Term<T7>> freshTypedVars(f: (Term<T1>, Term<T2>, Term<T3>, Term<T4>, Term<T5>, Term<T6>, Term<T7>) -> Goal): Goal = { st: State ->
+context(RelationalContext)
+fun <T1 : Term<T1>, T2 : Term<T2>, T3 : Term<T3>, T4 : Term<T4>, T5 : Term<T5>, T6 : Term<T6>, T7 : Term<T7>> freshTypedVars(
+        f: (Term<T1>, Term<T2>, Term<T3>, Term<T4>, Term<T5>, Term<T6>, Term<T7>) -> Goal): Goal = { st: State ->
     val first = freshTypedVar<T1>()
     val second = freshTypedVar<T2>()
     val third = freshTypedVar<T3>()
@@ -109,7 +123,9 @@ fun <T1 : Term<T1>, T2 : Term<T2>, T3 : Term<T3>, T4 : Term<T4>, T5 : Term<T5>, 
     delay { f(first, second, third, fourth, fifth, sixth, seventh) }(st)
 }
 
-fun <T1 : Term<T1>, T2 : Term<T2>, T3 : Term<T3>, T4 : Term<T4>, T5 : Term<T5>, T6 : Term<T6>, T7 : Term<T7>, T8 : Term<T8>> freshTypedVars(f: (Term<T1>, Term<T2>, Term<T3>, Term<T4>, Term<T5>, Term<T6>, Term<T7>, Term<T8>) -> Goal): Goal = { st: State ->
+context(RelationalContext)
+fun <T1 : Term<T1>, T2 : Term<T2>, T3 : Term<T3>, T4 : Term<T4>, T5 : Term<T5>, T6 : Term<T6>, T7 : Term<T7>, T8 : Term<T8>> freshTypedVars(
+        f: (Term<T1>, Term<T2>, Term<T3>, Term<T4>, Term<T5>, Term<T6>, Term<T7>, Term<T8>) -> Goal): Goal = { st: State ->
     val first = freshTypedVar<T1>()
     val second = freshTypedVar<T2>()
     val third = freshTypedVar<T3>()
@@ -122,42 +138,44 @@ fun <T1 : Term<T1>, T2 : Term<T2>, T3 : Term<T3>, T4 : Term<T4>, T5 : Term<T5>, 
     delay { f(first, second, third, fourth, fifth, sixth, seventh, eighth) }(st)
 }
 
+context(RelationalContext)
 fun <T : Term<T>> appendo(a: ListTerm<T>, b: ListTerm<T>, ab: ListTerm<T>): Goal = { state ->
     System.out.printf("appendo: %s %s %s\n", a, b, ab)
 
     conde(
-        and(
-            (a debugUnify nilLogicList()),
-            (b debugUnify ab)
-        ),
-        freshTypedVars<T, LogicList<T>, LogicList<T>> { head, tail, rest ->
             and(
-                (a debugUnify head + tail),
-                (ab debugUnify head + rest),
-                appendo(tail, b, rest)
-            )
-        }
+                    (a debugUnify nilLogicList()),
+                    (b debugUnify ab)
+            ),
+            freshTypedVars<T, LogicList<T>, LogicList<T>> { head, tail, rest ->
+                and(
+                        (a debugUnify head + tail),
+                        (ab debugUnify head + rest),
+                        appendo(tail, b, rest)
+                )
+            }
     )(state)
 }
 
+context(RelationalContext)
 fun <T : Term<T>> reverso(a: ListTerm<T>, b: ListTerm<T>): Goal = { state ->
     System.out.printf("reverso: %s %s\n", a, b)
 
     conde(
-        and(
-            (a debugUnify nilLogicList()),
-            (a debugUnify b)
-        ),
-        freshTypedVars<T, LogicList<T>, LogicList<T>> { h, t, rest ->
             and(
-                (a debugUnify h + t),
-                reverso(t, rest),
-                appendo(
-                    rest,
-                    h.toLogicList(),
-                    b
+                    (a debugUnify nilLogicList()),
+                    (a debugUnify b)
+            ),
+            freshTypedVars<T, LogicList<T>, LogicList<T>> { h, t, rest ->
+                and(
+                        (a debugUnify h + t),
+                        reverso(t, rest),
+                        appendo(
+                                rest,
+                                h.toLogicList(),
+                                b
+                        )
                 )
-            )
-        }
+            }
     )(state)
 }

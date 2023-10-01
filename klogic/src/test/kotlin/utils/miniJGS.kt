@@ -21,11 +21,14 @@ import utils.LogicOption
 @Suppress("UNCHECKED_CAST")
 fun <T: Term<T>> None(): LogicOption<T> = utils.None as LogicOption<T>
 
+context(RelationalContext)
 fun  pause(f: () -> Goal): Goal = { st -> ThunkStream { f()(st) } }
-@Suppress("UNUSED_PARAMETER")
+
+context(RelationalContext)
 fun <A: Term<A>> wc(f : (Term<A>) -> Goal ) : Goal = success
 
 // There are 12 relations
+context(RelationalContext)
 fun <B : Term<B>, A : Term<A>> mapo(f: (Term<A>, Term<B>) -> Goal,
 l: Term<LogicList<A>>, res: Term<LogicList<B>>): Goal =
 conde(pause { and(l `===` nilLogicList(),
@@ -37,6 +40,7 @@ conde(pause { and(l `===` nilLogicList(),
           f(l_hd, res_hd),
           mapo(f, l_tl, res_tl))
       })
+context(RelationalContext)
 fun <B : Term<B>, A : Term<A>> mapio_helper(f: (Term<PeanoLogicNumber>, Term<A>, Term<B>) -> Goal,
 i: Term<PeanoLogicNumber>, l: Term<LogicList<A>>,
 res: Term<LogicList<B>>): Goal =
@@ -49,9 +53,11 @@ conde(pause { and(l `===` nilLogicList(),
           f(i, l_hd, res_hd),
           mapio_helper(f, NextNaturalNumber(i), l_tl, res_tl))
       })
+context(RelationalContext)
 fun <B : Term<B>, A : Term<A>> mapio(f: (Term<PeanoLogicNumber>, Term<A>, Term<B>) -> Goal,
 l: Term<LogicList<A>>, res: Term<LogicList<B>>): Goal =
 mapio_helper(f, ZeroNaturalNumber, l, res)
+context(RelationalContext)
 fun <A : Term<A>> memo(e: Term<A>, l: Term<LogicList<A>>,
 res: Term<LogicBool>): Goal =
 conde(pause { and(l `===` nilLogicList(),
@@ -63,6 +69,7 @@ conde(pause { and(l `===` nilLogicList(),
                 pause { and(hd `!==` e,
                             memo(e, tl, res)) }))
       })
+context(RelationalContext)
 fun <A : Term<A>> ntho(l: Term<LogicList<A>>, n: Term<PeanoLogicNumber>,
 rez: Term<A>): Goal =
 freshTypedVars { hd: Term<A>, tl: Term<LogicList<A>> ->
@@ -74,6 +81,7 @@ and(l `===` (hd + tl),
               ntho(tl, prev, rez))
           }))
 }
+context(RelationalContext)
 fun <A : Term<A>> for_allo(p: (Term<A>, Term<LogicBool>) -> Goal,
 l: Term<LogicList<A>>, res: Term<LogicBool>): Goal =
 conde(pause { and(l `===` nilLogicList(),
@@ -89,6 +97,7 @@ conde(pause { and(l `===` nilLogicList(),
                             res `===` false.toLogicBool())
                 }))
       })
+context(RelationalContext)
 fun <C : Term<C>, B : Term<B>, A : Term<A>> fold_left2o(f: (Term<A>, Term<B>, Term<C>, Term<A>) -> Goal,
 acc: Term<A>, l1: Term<LogicList<B>>, l2: Term<LogicList<C>>,
 res: Term<A>): Goal =
@@ -103,6 +112,7 @@ conde(pause { and(l1 `===` nilLogicList(),
           f(acc, hd1, hd2, new_acc),
           fold_left2o(f, new_acc, tl1, tl2, res))
       })
+context(RelationalContext)
 fun <ID : Term<ID>> substitute_typ(subst: Term<LogicList<Jarg<Jtype<ID>>>>,
 typ: Term<Jtype<ID>>, res: Term<Jtype<ID>>): Goal =
 conde(freshTypedVars { param: Term<Jtype<ID>>, new_param: Term<Jtype<ID>> ->
@@ -136,6 +146,7 @@ conde(freshTypedVars { param: Term<Jtype<ID>>, new_param: Term<Jtype<ID>> ->
       },
       pause { and(typ `===` Null(),
                   res `===` Null()) })
+context(RelationalContext)
 fun <ID : Term<ID>> substitute_arg(subst: Term<LogicList<Jarg<Jtype<ID>>>>,
 targ: Term<Jarg<Jtype<ID>>>, res: Term<Jarg<Jtype<ID>>>): Goal =
 conde(freshTypedVars { index: Term<PeanoLogicNumber> ->
@@ -222,6 +233,7 @@ interface VERIFIER {
 // functor
 private val Verifier : (CLASSTABLE) -> VERIFIER = { CT: CLASSTABLE ->
 object: VERIFIER {
+  context(RelationalContext)
   override fun  params(id: Term<LogicInt>,
   p: Term<LogicList<Jtype<LogicInt>>>): Goal =
   freshTypedVars { decl: Term<Decl<LogicInt>> ->
@@ -236,7 +248,7 @@ object: VERIFIER {
             freshTypedVars { __JGS_miniJGS_ml_c58 : Term<LogicList<Jtype<LogicInt>>> ->
             (decl `===` I(p, __JGS_miniJGS_ml_c58)) }))
   }
-
+context(RelationalContext)
 override fun  raw_helper(id: Term<LogicInt>, i: Term<PeanoLogicNumber>,
 targ: Term<Jarg<Jtype<LogicInt>>>,
 cc_targ: Term<ClosureConversionType<LogicInt>>): Goal =
@@ -268,7 +280,7 @@ conde(freshTypedVars { t: Term<Jtype<LogicInt>> ->
           params(id, params_val),
           ntho(params_val, i, t2))
       })
-
+context(RelationalContext)
 override fun  subst_helper(raw_element: Term<ClosureConversionType<LogicInt>>,
 targ: Term<Jarg<Jtype<LogicInt>>>): Goal =
 conde(freshTypedVars { t: Term<Jtype<LogicInt>> ->
@@ -284,7 +296,7 @@ conde(freshTypedVars { t: Term<Jtype<LogicInt>> ->
                              __JGS_miniJGS_ml_c42)) } },
           targ `===` Type(Var(id, i, Null(), None())))
       })
-
+context(RelationalContext)
 override fun  targs_helper(subst: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
 cc_typ: Term<ClosureConversionType<LogicInt>>,
 res: Term<Jarg<Jtype<LogicInt>>>): Goal =
@@ -319,7 +331,7 @@ conde(freshTypedVars { t: Term<Jtype<LogicInt>>,
                             (new_p `!==` Intersect(__JGS_miniJGS_ml_c38))})
                 }))
       } })
-
+context(RelationalContext)
 override fun  targs_pred(less_minus_less: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,
 targ: Term<Jarg<Jtype<LogicInt>>>, res: Term<LogicBool>): Goal =
 conde(freshTypedVars { upb: Term<Jtype<LogicInt>>,
@@ -342,12 +354,12 @@ conde(freshTypedVars { upb: Term<Jtype<LogicInt>>,
                                    __JGS_miniJGS_ml_c61,
                                    Some(__JGS_miniJGS_ml_c74))))}}}})
       })
-
+context(RelationalContext)
 override fun  capture_conversion(_subtyping: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,
 _id: Term<LogicInt>, targs: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
 res: Term<LogicOption<LogicList<Jarg<Jtype<LogicInt>>>>>): Goal =
 res `===` Some(targs)
-
+context(RelationalContext)
 override fun  less_equal_less(_subtyping: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,
 type_a: Term<Jarg<Jtype<LogicInt>>>, type_b: Term<Jarg<Jtype<LogicInt>>>,
 res: Term<LogicBool>): Goal =
@@ -355,7 +367,7 @@ conde(pause { and(type_a `===` type_b,
                   res `===` true.toLogicBool()) },
       pause { and(type_a `!==` type_b,
                   res `===` false.toLogicBool()) })
-
+context(RelationalContext)
 override fun  class_int_sub(less_minus_less: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,
 id_a: Term<LogicInt>, targs_a: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
 id_b: Term<LogicInt>, targs_b: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
@@ -399,7 +411,7 @@ conde(pause { and(id_a `===` id_b,
                             res `===` false.toLogicBool())
                 }))
       })
-
+context(RelationalContext)
 override fun  minus_less_minus(less_minus_less: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,
 type_a: Term<Jtype<LogicInt>>, type_b: Term<Jtype<LogicInt>>,
 res: Term<LogicBool>): Goal =
