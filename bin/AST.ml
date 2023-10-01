@@ -231,13 +231,13 @@ let rec pp_typ_as_kotlin inh_info =
                (* TODO(Kakadu): understand why false works and ~add doesn't *)
                helper ~add:false ppf arg
              with
-             | Not_found ->
-               (match Inh_info.lookup_typ_exn inh_info expected_path with
-                | s ->
-                  Format.fprintf ppf "%s/*%d*/" s __LINE__;
-                  pp_args args
-                | exception Not_found ->
-                  Format.fprintf ppf "/* Error path = %s */" (Path.name path)))
+            | Not_found ->
+              (match Inh_info.lookup_typ_exn inh_info expected_path with
+              | s ->
+                Format.fprintf ppf "%s/*%d*/" s __LINE__;
+                pp_args args
+              | exception Not_found ->
+                Format.fprintf ppf "/* Error path = %s */" (Path.name path)))
           | `Goal -> fprintf ppf "Goal"
           | `Constr_with_args (path, args) ->
             (* let __ _ =
@@ -326,7 +326,7 @@ let rec pp_typ_as_kotlin inh_info =
                 (typ_constr
                    (pinj_list_t ())
                    (__ ^:: typ_constr (pinj_list ()) (drop ^:: nil) ^:: nil)
-                 ^:: nil)
+                ^:: nil)
             ; typ_constr (pinj_list ()) (__ ^:: nil)
             ]
           |> map1 ~f:(fun x -> `Logic_list x)
@@ -566,9 +566,9 @@ let print_ident ppf s =
     | [ Common c ] -> fprintf ppf "%c" c
     | x1 :: (x2 :: _ as xs) ->
       (match x1, x2 with
-       | Common c, Common _ -> fprintf ppf "%c%a" c concat_chars xs
-       | Common c, Special _ -> fprintf ppf "%c_%a" c concat_chars xs
-       | Special s, _ -> fprintf ppf "%s_%a" s concat_chars xs)
+      | Common c, Common _ -> fprintf ppf "%c%a" c concat_chars xs
+      | Common c, Special _ -> fprintf ppf "%c_%a" c concat_chars xs
+      | Special s, _ -> fprintf ppf "%s_%a" s concat_chars xs)
     | [] -> eprintf "Empty identifier %s %d" __FILE__ __LINE__
   in
   concat_chars ppf @@ List.map ~f:mangle_ident_char @@ List.of_seq @@ String.to_seq s
@@ -657,8 +657,8 @@ let pp_ast_as_kotlin inh_info =
     | Tident p ->
       let repr = Path.name p in
       (match Inh_info.lookup_expr_exn inh_info repr with
-       | exception Not_found -> fprintf ppf "%a" print_path p
-       | s -> fprintf ppf "%s" s)
+      | exception Not_found -> fprintf ppf "%a" print_path p
+      | s -> fprintf ppf "%s" s)
     (* | Tident p -> fprintf ppf "%a" print_ident @@ Path.name p *)
     (* | Conde xs -> fprintf ppf "@[conde(%a)@]" (pp_comma_list helper) xs *)
     | Conde xs ->

@@ -68,7 +68,7 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
            none
            (* (texp_function (case tpat_unit none __ ^:: nil)) *)
            __
-         ^:: nil)
+        ^:: nil)
       |> map1 ~f:(fun x -> St_abstr x)
     ;;
 
@@ -89,8 +89,8 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
       |> map2 ~f:(fun x y -> Mplus (x, y))
     ;;
 
-    let pat_standart_operator ~name ~mk
-      : (Typedtree.expression, _ -> 'a, 'b) Tast_pattern.t
+    let pat_standart_operator ~name ~mk :
+      (Typedtree.expression, _ -> 'a, 'b) Tast_pattern.t
       =
       texp_apply2
         (texp_ident (path [ "OCanren!"; name ] ||| path [ "OCanren"; name ]))
@@ -150,12 +150,12 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
           | Texp_function
               { cases = [ { c_lhs = { pat_desc = Tpat_var (_, { txt }) }; c_rhs } ] } ->
             (match Types.get_desc e.exp_type with
-             | Tarrow (_, tl, _tr, _) -> helper ((txt, tl) :: acc) c_rhs
-             | _ -> fail e.exp_loc "pat_abstraction")
+            | Tarrow (_, tl, _tr, _) -> helper ((txt, tl) :: acc) c_rhs
+            | _ -> fail e.exp_loc "pat_abstraction")
           | _ ->
             (match acc with
-             | [] -> fail e.exp_loc "pat_abstraction"
-             | _ -> List.rev acc, e)
+            | [] -> fail e.exp_loc "pat_abstraction"
+            | _ -> List.rev acc, e)
         in
         k (Tabstr (helper [] e)))
     ;;
@@ -343,16 +343,16 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
   in
   let expr_is_a_goal (e : Typedtree.expression) =
     let rec helper acc : Types.type_expr -> _ =
-      fun e ->
+     fun e ->
       Tast_pattern.parse
         Tast_pattern.(
           typ_arrow drop __
           |> map1 ~f:(fun x -> `Arr x)
           ||| (typ_constr (path [ "OCanren"; "goal" ]) nil
-               ||| typ_arrow
-                     (typ_constr (path [ "OCanren"; "State"; "t" ]) nil)
-                     (typ_constr (path [ "OCanren"; "Stream"; "t" ]) drop)
-               |> map0 ~f:`Goal))
+              ||| typ_arrow
+                    (typ_constr (path [ "OCanren"; "State"; "t" ]) nil)
+                    (typ_constr (path [ "OCanren"; "Stream"; "t" ]) drop)
+              |> map0 ~f:`Goal))
         Location.none
         e
         (fun x ->
@@ -376,19 +376,19 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
         (* log "run helper on %a, acc.length = %d" Pprintast.expression e (List.length acc); *)
         parse
           (pexp_construct (lident (string "[]")) drop
-           |> map0 ~f:None
-           ||| (pexp_construct
-                  (lident (string "::"))
-                  (some
-                     (pexp_tuple
-                        (pexp_tuple
-                           (pexp_constant (pconst_string __ drop none)
-                            ^:: pexp_constant (pconst_string __ drop none)
-                            ^:: nil)
-                         ^:: __
-                         ^:: nil)))
-                |> map2 ~f:(fun a b -> a, b)
-                |> map2 ~f:(fun p tl -> Some (p, tl))))
+          |> map0 ~f:None
+          ||| (pexp_construct
+                 (lident (string "::"))
+                 (some
+                    (pexp_tuple
+                       (pexp_tuple
+                          (pexp_constant (pconst_string __ drop none)
+                          ^:: pexp_constant (pconst_string __ drop none)
+                          ^:: nil)
+                       ^:: __
+                       ^:: nil)))
+              |> map2 ~f:(fun a b -> a, b)
+              |> map2 ~f:(fun p tl -> Some (p, tl))))
           e.Parsetree.pexp_loc
           e
           ~on_error:(fun () ->
@@ -398,8 +398,8 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
               e;
             assert false)
           (function
-            | None -> List.rev acc
-            | Some (item, rest) -> helper (item :: acc) rest)
+             | None -> List.rev acc
+             | Some (item, rest) -> helper (item :: acc) rest)
       in
       k (helper [] e)
     | _ -> ()
@@ -419,27 +419,27 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
           | { Typedtree.vb_pat = { pat_desc = Tpat_var (_, { txt = name; _ }); _ }; _ } as
             vb ->
             (match expr_is_a_goal vb.vb_expr with
-             | None ->
-               Format.eprintf "Not a goal: %s\n%!" name;
-               (), si
-             | Some argcount ->
-               (* we need extract arguments and run on expression *)
-               let iter_expr = translate_expr Tast_folder.default in
-               let args, body = extract_rel_arguments argcount vb.vb_expr in
-               let rez, _ = iter_expr.expr iter_expr () body in
-               let () =
-                 match AST.simplify_ast rez with
-                 (* | Error -> Format.eprintf "an error in value_binding name = %s\n%!" name *)
-                 | rez ->
-                   let rvb = Rvb.mk name args rez in
-                   Inh_info.add_rvb inh rvb;
-                   Format.printf "\027[m@[%a\027[m\n" (pp_rvb_as_kotlin inh) rvb
-                 (* Format.printf
+            | None ->
+              Format.eprintf "Not a goal: %s\n%!" name;
+              (), si
+            | Some argcount ->
+              (* we need extract arguments and run on expression *)
+              let iter_expr = translate_expr Tast_folder.default in
+              let args, body = extract_rel_arguments argcount vb.vb_expr in
+              let rez, _ = iter_expr.expr iter_expr () body in
+              let () =
+                match AST.simplify_ast rez with
+                (* | Error -> Format.eprintf "an error in value_binding name = %s\n%!" name *)
+                | rez ->
+                  let rvb = Rvb.mk name args rez in
+                  Inh_info.add_rvb inh rvb;
+                  Format.printf "\027[m@[%a\027[m\n" (pp_rvb_as_kotlin inh) rvb
+                (* Format.printf
                      "\027[31m@[<v 2>%a@]@ %!\027[m"
                      (AST.Fold_syntax_macro.pp inh)
                      AST.Fold_syntax_macro.(upper @@ transform rez) *)
-               in
-               (), si)
+              in
+              (), si)
           | { Typedtree.vb_pat = { pat_desc = Tpat_any; _ }; _ } -> (), si
           | _ -> assert false
         in
