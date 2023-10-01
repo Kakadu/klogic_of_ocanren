@@ -1,8 +1,8 @@
 open Stdppx
 (*
-type 'a term =
+   type 'a term =
 
-  | Tother of Typedtree.expression *)
+   | Tother of Typedtree.expression *)
 
 type 'a ast =
   | Pause of 'a
@@ -119,7 +119,7 @@ module Inh_info = struct
   let add_modtype t ident types = t.rvbs <- MT_as_interface (ident, types) :: t.rvbs
 
   let add_functor t other_info ~name ~typ ~arg_name ~arg_typ =
-    extend t (Functor1 { name; typ; arg_name; arg_typ; body = other_info.rvbs })
+    extend t (Functor1 { name; typ; arg_name; arg_typ; body = List.rev other_info.rvbs })
   ;;
 
   let lookup_typ_exn t typ = Hashtbl.find t.type_mangle_hints typ
@@ -188,6 +188,7 @@ let rec pp_typ_as_kotlin inh_info =
         in
         let run x =
           match x with
+          | `Unit -> ()
           | `Logic_list arg -> fprintf ppf "LogicList<%a>" helper_no arg
           | `Logic_option arg -> fprintf ppf "LogicOption<%a>" helper_no arg
           | `Ilogic_of_t (path, _)
@@ -204,12 +205,20 @@ let rec pp_typ_as_kotlin inh_info =
             when String.equal "Targ.t" (string_of_path path)
                  (* TODO(Kakadu): Elimintate dirty hack! *) ->
             Format.fprintf ppf "Jarg<%a>" (helper ~add:false) arg1
+          | `Ilogic_of_t (path, arg1 :: _)
+            when String.equal "CC_subst.t" (string_of_path path)
+                 (* TODO(Kakadu): Elimintate dirty hack! *) ->
+            Format.fprintf ppf "ClosureConversion<%a>" (helper ~add:false) arg1
+          | `Ilogic_of_t (path, [ arg1; _; _ ])
+            when String.equal "Decl.t" (string_of_path path)
+                 (* TODO(Kakadu): Elimintate dirty hack! *) ->
+            Format.fprintf ppf "Decl<%a>" (helper ~add:false) arg1
           | `Ilogic_of_t (path, args) ->
             (* Format.eprintf "Ilogic_of_t: Path.name = %S\n%!" (Path.name path); *)
             (* Format.eprintf "Path = %a\n%!" Path.print path; *)
             (* We assume here, that path is in the form PATH.t, so we need to scan arguments,
-              and find an argument, with toplevel type PATH.injected
-              *)
+               and find an argument, with toplevel type PATH.injected
+            *)
             let expected_path = String.drop_suffix (Path.name path) 1 ^ "injected" in
             (try
                let arg =
@@ -232,11 +241,11 @@ let rec pp_typ_as_kotlin inh_info =
           | `Goal -> fprintf ppf "Goal"
           | `Constr_with_args (path, args) ->
             (* let __ _ =
-              Format.eprintf
-                "Constr_with_args (%s, _)\t add=%b\n%!"
-                (string_of_path path)
-                add
-            in *)
+               Format.eprintf
+               "Constr_with_args (%s, _)\t add=%b\n%!"
+               (string_of_path path)
+               add
+               in *)
             let caml_repr = string_of_path path in
             let () =
               match Inh_info.lookup_typ_exn inh_info caml_repr with
@@ -248,7 +257,7 @@ let rec pp_typ_as_kotlin inh_info =
             in
             pp_args args
           (* | `Function ([ arg1 ], rez) ->
-            fprintf ppf "@[ %a -> %a @]" (helper ~add:true) arg1 (helper ~add:true) rez *)
+             fprintf ppf "@[ %a -> %a @]" (helper ~add:true) arg1 (helper ~add:true) rez *)
           | `Function (args, rez) ->
             (* eprintf "rez = @[%a@]\n!" Printtyp.type_expr rez; *)
             (* let argslen = List.length args in *)
@@ -263,7 +272,7 @@ let rec pp_typ_as_kotlin inh_info =
         in
         let need_add_term =
           match x with
-          | `Function _ | `Goal ->
+          | `Function _ | `Goal | `Unit ->
             (* eprintf "%s %d\n%!" __FILE__ __LINE__; *)
             false
           | `Constr_with_args (path, _)
@@ -310,7 +319,8 @@ let rec pp_typ_as_kotlin inh_info =
     in
     Tast_pattern.(
       parse_conde
-        [ choice
+        [ typ_constr (path [ "unit" ]) nil |> map0 ~f:`Unit
+        ; choice
             [ typ_constr
                 (pilogic ())
                 (typ_constr
@@ -337,9 +347,9 @@ let rec pp_typ_as_kotlin inh_info =
         ; typ_var __ |> map1 ~f:(fun name -> `Ilogic_of_poly name)
         ; typ_constr (pilogic ()) (typ_constr __ (as__ drop) ^:: nil)
           |> map2 ~f:(fun path args ->
-               if String.ends_with ~suffix:".t" (Path.name path)
-               then `Ilogic_of_t (path, args)
-               else fail Location.none "Fallthough in `Ilogic_of_t")
+            if String.ends_with ~suffix:".t" (Path.name path)
+            then `Ilogic_of_t (path, args)
+            else fail Location.none "Fallthough in `Ilogic_of_t")
         ; typ_constr __ __ |> map2 ~f:(fun cpath args -> `Constr_with_args (cpath, args))
         ])
       Location.none
@@ -364,7 +374,7 @@ let rec pp_typ_as_kotlin inh_info =
 ;;
 
 (*
-module Fold_syntax_macro = struct
+   module Fold_syntax_macro = struct
   type 'a t =
     | Conde of 'a t list
     | Conj2 of 'a t * 'a t
@@ -588,7 +598,7 @@ let pp_ast_as_kotlin inh_info =
     | Bind (l, r) ->
       fprintf ppf "@[<v 2>(@[(%a)@]@,@[bind@]@,@[(%a)@])@]" default l default r
     (* | Fresh (xs, e) ->
-         fprintf ppf "@[<v>";
+       fprintf ppf "@[<v>";
         List.iter xs ~f:(fun (name, typ) ->
           fprintf
             ppf
@@ -679,7 +689,7 @@ let pp_ast_as_kotlin inh_info =
         if i <> 0 then fprintf ppf ", ";
         fprintf ppf "@[%a: %a@]" print_ident name (pp_typ_as_kotlin inh_info) typ);
       fprintf ppf " -> %a }@]" nopar rhs
-    | Tunit -> fprintf ppf "/* Unit */"
+    | Tunit -> fprintf ppf "" (* fprintf ppf "/* Unit */" *)
     | Other e -> fprintf ppf "@[{| Other %a |}@]" Pprintast.expression (MyUntype.expr e)
   and default ppf = helper ~par:true ppf
   and nopar ppf = helper ~par:false ppf in
@@ -791,6 +801,11 @@ let pp_modtype_as_kotlin info name sign ppf =
     match sitem.sig_desc with
     | Tsig_value { val_name = { txt = name; _ }; val_val = { val_type; _ }; _ } ->
       let args, ret = unparse_arrows val_type in
+      let args =
+        match args with
+        | [ t ] when String.equal (Format.asprintf "%a" Printtyp.type_expr t) "unit" -> []
+        | _ -> args
+      in
       printfn "@[// %a@]" print_ident name;
       (* TODO: generate varnames *)
       let tvars =

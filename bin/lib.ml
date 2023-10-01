@@ -8,10 +8,10 @@ let log fmt =
 ;;
 
 (*
-let parse_term fself =
-  Tast_pattern.(
-    parse_conde
-      [ texp_apply1
+   let parse_term fself =
+   Tast_pattern.(
+   parse_conde
+   [ texp_apply1
           (texp_ident
              (choice
                 [ path [ "OCanren!"; "Std"; "nil" ]
@@ -42,13 +42,7 @@ let parse_term fself =
              Format.printf "Other parsed: @[%a@]\n%!" MyPrinttyped.expr x;
              Other x)
       ])
-;; *)
-
-(* let translate_term =
-  let open Typedtree in
-  let rec helper e = parse_term e.exp_loc e Fun.id in
-  helper
-;; *)
+   ;; *)
 
 let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
   let open struct
@@ -130,15 +124,15 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
     let pat_conde () : _ =
       texp_apply1 (texp_ident (path [ "OCanren"; "conde" ])) (texp_list __)
       |> map1 ~f:(fun xs ->
-           (* log "conde constructed with %d args" (List.length xs); *)
-           Conde xs)
+        (* log "conde constructed with %d args" (List.length xs); *)
+        Conde xs)
     ;;
 
     let pat_conj_many () : _ =
       texp_apply1 (texp_ident (path [ "OCanren"; "?&" ])) (texp_list __)
       |> map1 ~f:(fun xs ->
-           (* log "conde constructed with %d args" (List.length xs); *)
-           Conj_multi xs)
+        (* log "conde constructed with %d args" (List.length xs); *)
+        Conj_multi xs)
     ;;
 
     let pat_conj2 () : _ =
@@ -176,22 +170,22 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
             (texp_ident (path [ "OCanren"; "Fresh"; "one" ]))
             (texp_ascription (__ ** __) (__ @-> drop))
           |> map3 ~f:(fun name rhs typ ->
-               (* log "%d: %a\n" __LINE__ Printtyp.type_expr typ; *)
-               Call_fresh ([ name, typ ], rhs))
+            (* log "%d: %a\n" __LINE__ Printtyp.type_expr typ; *)
+            Call_fresh ([ name, typ ], rhs))
         ; texp_apply1
             (texp_ident (path [ "OCanren"; "Fresh"; "two" ]))
             (texp_ascription (__ ** __ ** __) (as__ (__ @-> __ @-> drop)))
           |> map6 ~f:(fun name1 name2 rhs _typ typ1 typ2 ->
-               (* log "%d: %a\n" __LINE__ Printtyp.type_expr typ; *)
-               Call_fresh ([ name1, typ1; name2, typ2 ], rhs))
+            (* log "%d: %a\n" __LINE__ Printtyp.type_expr typ; *)
+            Call_fresh ([ name1, typ1; name2, typ2 ], rhs))
         ; texp_apply1
             (texp_ident (path [ "OCanren"; "Fresh"; "three" ]))
             (texp_ascription
                (__ ** __ ** __ ** __ |> pack3)
                (as__ (__ @-> __ @-> __ @-> drop |> pack3)))
           |> map4 ~f:(fun (name1, name2, name3) rhs _typ (typ1, typ2, typ3) ->
-               (* log "%d: %a\n" __LINE__ Printtyp.type_expr typ; *)
-               Call_fresh ([ name1, typ1; name2, typ2; name3, typ3 ], rhs))
+            (* log "%d: %a\n" __LINE__ Printtyp.type_expr typ; *)
+            Call_fresh ([ name1, typ1; name2, typ2; name3, typ3 ], rhs))
           (*  *)
         ; (let ( ** ) lhs rhs = texp_lambda (tpat_var lhs) rhs in
            texp_apply1
@@ -200,7 +194,7 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
                 (__ ** __ ** __ ** __ ** __ |> pack4)
                 (__ @-> __ @-> __ @-> __ @-> drop |> pack4))
            |> map3 ~f:(fun (name1, name2, name3, name4) rhs (t1, t2, t3, t4) ->
-                Call_fresh ([ name1, t1; name2, t2; name3, t3; name4, t4 ], rhs)))
+             Call_fresh ([ name1, t1; name2, t2; name3, t3; name4, t4 ], rhs)))
         ; (let ( ** ) lhs rhs = texp_lambda (tpat_var lhs) rhs in
            texp_apply1
              (texp_ident (path [ "OCanren"; "Fresh"; "five" ]))
@@ -208,7 +202,7 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
                 (__ ** __ ** __ ** __ ** __ ** __ |> pack5)
                 (__ @-> __ @-> __ @-> __ @-> __ @-> drop |> pack5))
            |> map3 ~f:(fun (name1, name2, name3, name4, name5) rhs (t1, t2, t3, t4, t5) ->
-                Call_fresh ([ name1, t1; name2, t2; name3, t3; name4, t4; name5, t5 ], rhs)))
+             Call_fresh ([ name1, t1; name2, t2; name3, t3; name4, t4; name5, t5 ], rhs)))
         ]
       |> map1 ~f:(function Call_fresh (pats, rhs) -> Fresh (pats, rhs))
     ;;
@@ -349,7 +343,7 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
   in
   let expr_is_a_goal (e : Typedtree.expression) =
     let rec helper acc : Types.type_expr -> _ =
-     fun e ->
+      fun e ->
       Tast_pattern.parse
         Tast_pattern.(
           typ_arrow drop __
@@ -404,8 +398,8 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
               e;
             assert false)
           (function
-           | None -> List.rev acc
-           | Some (item, rest) -> helper (item :: acc) rest)
+            | None -> List.rev acc
+            | Some (item, rest) -> helper (item :: acc) rest)
       in
       k (helper [] e)
     | _ -> ()
@@ -457,8 +451,8 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
               (choice
                  [ tstr_value __
                    |> map1 ~f:(fun vbs ->
-                        let _ = List.iter ~f:(fun x -> ignore (on_rel_decl x)) vbs in
-                        (), si)
+                     let _ = List.iter ~f:(fun x -> ignore (on_rel_decl x)) vbs in
+                     (), si)
                  ; tstr_module
                      __
                      (tmod_functor
@@ -468,99 +462,98 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
                            (tmodule_type_ident (lident __))))
                    |> map5
                         ~f:(fun (name : Ident.t) param_name param_type mod_body rez_typ ->
-                        let new_inh_info = Inh_info.create () in
-                        let _, _ = self.stru self new_inh_info mod_body in
-                        Inh_info.add_functor
-                          inh
-                          ~name:(Ident.name name)
-                          ~typ:rez_typ
-                          ~arg_name:(Ident.name param_name)
-                          ~arg_typ:param_type
-                          new_inh_info;
-                        (), si)
+                          let new_inh_info = Inh_info.create () in
+                          let _, _ = self.stru self new_inh_info mod_body in
+                          Inh_info.add_functor
+                            inh
+                            ~name:(Ident.name name)
+                            ~typ:rez_typ
+                            ~arg_name:(Ident.name param_name)
+                            ~arg_typ:param_type
+                            new_inh_info;
+                          (), si)
                  ; tstr_attribute (attribute (string "klogic.ident.mangle") __)
                    |> map1 ~f:(fun attr_payload ->
-                        print_endline "klogic.ident.mangle";
-                        on_type_mangle_spec
-                          inh
-                          attr_payload
-                          ~k:(Inh_info.add_expr_hints inh);
-                        (), si)
+                     print_endline "klogic.ident.mangle";
+                     on_type_mangle_spec inh attr_payload ~k:(Inh_info.add_expr_hints inh);
+                     (), si)
                  ])
               si.str_loc)
             si
             Fun.id
             ~on_error:(fun _ ->
-            match si.str_desc with
-            (*           | Tstr_value (_, [ vb ]) -> on_rel_decl vb
-          | Tstr_value (_, (_ :: _ :: _ as vbs)) ->
-            List.iter vbs ~f:(fun x ->
-              let _, _ = on_rel_decl x in
-              ());
-            (), si *)
-            | Tstr_value (_, []) ->
-              Printf.ksprintf failwith "Should not happen (%s %d)" __FILE__ __LINE__
-            | Tstr_attribute
-                { attr_name = { txt = "klogic.preamble" | "klogic.prologue"; _ }
-                ; attr_payload =
-                    Parsetree.PStr
-                      [ { pstr_desc =
-                            Pstr_eval
-                              ( { pexp_desc =
-                                    Pexp_constant (Pconst_string (s, _, (None | Some "")))
-                                ; _
-                                }
-                              , _ )
-                        ; _
-                        }
-                      ]
-                ; _
-                } ->
-              Inh_info.add_preamble inh s;
-              (), si
-            | Tstr_attribute
-                { attr_name = { txt = "klogic.epilogue"; _ }
-                ; attr_payload =
-                    Parsetree.PStr
-                      [ { pstr_desc =
-                            Pstr_eval
-                              ( { pexp_desc =
-                                    Pexp_constant (Pconst_string (s, _, (None | Some "")))
-                                ; _
-                                }
-                              , _ )
-                        ; _
-                        }
-                      ]
-                ; _
-                } ->
-              Inh_info.add_epilogue inh s;
-              (), si
-            | Tstr_attribute
-                { attr_name = { txt = "klogic.type.mangle"; _ }; attr_payload; _ } ->
-              log "%s\n%!" "klogic.type.mangle";
-              on_type_mangle_spec inh attr_payload ~k:(Inh_info.add_hints inh);
-              (* TODO: specify mangling of names as an attribute *)
-              (), si
-            | Tstr_modtype
-                { mtd_type = Some { mty_desc = Tmty_signature sign; _ }
-                ; mtd_name = { txt; _ }
-                ; _
-                } ->
-              Inh_info.add_modtype inh txt sign;
-              (* log "%s %d" __FILE__ __LINE__; *)
-              (), si
-            | Tstr_attribute _ | Tstr_type _ | Tstr_open _ -> (), si
-            | _ ->
-              Format.eprintf
-                "%a\n%!"
-                Pprintast.structure_item
-                (MyUntype.untype_stru_item si);
-              Printf.ksprintf
-                failwith
-                "Not implemented in 'folder' (%s %d)"
-                __FILE__
-                __LINE__))
+              match si.str_desc with
+              (*           | Tstr_value (_, [ vb ]) -> on_rel_decl vb
+                           | Tstr_value (_, (_ :: _ :: _ as vbs)) ->
+                           List.iter vbs ~f:(fun x ->
+                           let _, _ = on_rel_decl x in
+                           ());
+                           (), si *)
+              | Tstr_value (_, []) ->
+                Printf.ksprintf failwith "Should not happen (%s %d)" __FILE__ __LINE__
+              | Tstr_attribute
+                  { attr_name = { txt = "klogic.preamble" | "klogic.prologue"; _ }
+                  ; attr_payload =
+                      Parsetree.PStr
+                        [ { pstr_desc =
+                              Pstr_eval
+                                ( { pexp_desc =
+                                      Pexp_constant
+                                        (Pconst_string (s, _, (None | Some "")))
+                                  ; _
+                                  }
+                                , _ )
+                          ; _
+                          }
+                        ]
+                  ; _
+                  } ->
+                Inh_info.add_preamble inh s;
+                (), si
+              | Tstr_attribute
+                  { attr_name = { txt = "klogic.epilogue"; _ }
+                  ; attr_payload =
+                      Parsetree.PStr
+                        [ { pstr_desc =
+                              Pstr_eval
+                                ( { pexp_desc =
+                                      Pexp_constant
+                                        (Pconst_string (s, _, (None | Some "")))
+                                  ; _
+                                  }
+                                , _ )
+                          ; _
+                          }
+                        ]
+                  ; _
+                  } ->
+                Inh_info.add_epilogue inh s;
+                (), si
+              | Tstr_attribute
+                  { attr_name = { txt = "klogic.type.mangle"; _ }; attr_payload; _ } ->
+                log "%s\n%!" "klogic.type.mangle";
+                on_type_mangle_spec inh attr_payload ~k:(Inh_info.add_hints inh);
+                (* TODO: specify mangling of names as an attribute *)
+                (), si
+              | Tstr_modtype
+                  { mtd_type = Some { mty_desc = Tmty_signature sign; _ }
+                  ; mtd_name = { txt; _ }
+                  ; _
+                  } ->
+                Inh_info.add_modtype inh txt sign;
+                (* log "%s %d" __FILE__ __LINE__; *)
+                (), si
+              | Tstr_attribute _ | Tstr_type _ | Tstr_open _ -> (), si
+              | _ ->
+                Format.eprintf
+                  "%a\n%!"
+                  Pprintast.structure_item
+                  (MyUntype.untype_stru_item si);
+                Printf.ksprintf
+                  failwith
+                  "Not implemented in 'folder' (%s %d)"
+                  __FILE__
+                  __LINE__))
   }
 ;;
 
