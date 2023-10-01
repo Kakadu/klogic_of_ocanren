@@ -27,197 +27,523 @@ fun  pause(f: () -> Goal): Goal = { st -> ThunkStream { f()(st) } }
 @Suppress("UNUSED_PARAMETER")
 fun <A: Term<A>> wc(f : (Term<A>) -> Goal ) : Goal = success
 
-// There are 11 relations
-fun <B : Term<B>, A : Term<A>> list_ho_map(f: ((Term<A>) -> Goal, Term<B>) -> Goal,
-lst: (Term<LogicList<A>>) -> Goal, ys: Term<LogicList<B>>): Goal =
-freshTypedVars { xs: Term<LogicList<A>> ->
-and(lst(xs),
-    conde(((xs `===` nilLogicList()) and (ys `===` nilLogicList())),
-          freshTypedVars { h: Term<A>, tl: Term<LogicList<A>>, tmph: Term<B>,
-            tmptl: Term<LogicList<B>> ->
-          and(xs `===` (h + tl),
-              ys `===` (tmph + tmptl),
-              f({ eta: Term<A> -> eta `===` h }, tmph),
-              list_ho_map(f, { eta: Term<LogicList<A>> -> eta `===` tl },
-              tmptl))
+// There are 12 relations
+fun <B : Term<B>, A : Term<A>> mapo(f: (Term<A>, Term<B>) -> Goal,
+l: Term<LogicList<A>>, res: Term<LogicList<B>>): Goal =
+conde(pause { and(l `===` nilLogicList(),
+                  res `===` nilLogicList()) },
+      freshTypedVars { l_hd: Term<A>, l_tl: Term<LogicList<A>>,
+        res_hd: Term<B>, res_tl: Term<LogicList<B>> ->
+      and(l `===` (l_hd + l_tl),
+          res `===` (res_hd + res_tl),
+          f(l_hd, res_hd),
+          mapo(f, l_tl, res_tl))
+      })
+fun <B : Term<B>, A : Term<A>> mapio_helper(f: (Term<PeanoLogicNumber>, Term<A>, Term<B>) -> Goal,
+i: Term<PeanoLogicNumber>, l: Term<LogicList<A>>,
+res: Term<LogicList<B>>): Goal =
+conde(pause { and(l `===` nilLogicList(),
+                  res `===` nilLogicList()) },
+      freshTypedVars { l_hd: Term<A>, l_tl: Term<LogicList<A>>,
+        res_hd: Term<B>, res_tl: Term<LogicList<B>> ->
+      and(l `===` (l_hd + l_tl),
+          res `===` (res_hd + res_tl),
+          f(i, l_hd, res_hd),
+          mapio_helper(f, NextNaturalNumber(i), l_tl, res_tl))
+      })
+fun <B : Term<B>, A : Term<A>> mapio(f: (Term<PeanoLogicNumber>, Term<A>, Term<B>) -> Goal,
+l: Term<LogicList<A>>, res: Term<LogicList<B>>): Goal =
+mapio_helper(f, ZeroNaturalNumber, l, res)
+fun <A : Term<A>> memo(e: Term<A>, l: Term<LogicList<A>>,
+res: Term<LogicBool>): Goal =
+conde(pause { and(l `===` nilLogicList(),
+                  res `===` false.toLogicBool()) },
+      freshTypedVars { hd: Term<A>, tl: Term<LogicList<A>> ->
+      and(l `===` (hd + tl),
+          conde(pause { and(hd `===` e,
+                            res `===` true.toLogicBool()) },
+                pause { and(hd `!==` e,
+                            memo(e, tl, res)) }))
+      })
+fun <A : Term<A>> ntho(l: Term<LogicList<A>>, n: Term<PeanoLogicNumber>,
+rez: Term<A>): Goal =
+freshTypedVars { hd: Term<A>, tl: Term<LogicList<A>> ->
+and(l `===` (hd + tl),
+    conde(pause { and(n `===` ZeroNaturalNumber,
+                      hd `===` rez) },
+          freshTypedVars { n': Term<PeanoLogicNumber> ->
+          and(n `===` NextNaturalNumber(n'),
+              ntho(tl, n', rez))
           }))
 }
-fun <B : Term<B>> list_ho_nth(hoxs: (Term<LogicList<B>>) -> Goal,
-hon: (Term<PeanoLogicNumber>) -> Goal, rez: Term<B>): Goal =
-freshTypedVars { xs: Term<LogicList<B>>, n: Term<PeanoLogicNumber> ->
-and(hoxs(xs),
-    hon(n),
-    conde(freshTypedVars { tl: Term<LogicList<B>> ->
-          and(n `===` ZeroNaturalNumber,
-              xs `===` (rez + tl))
-          },
-          freshTypedVars { prev: Term<PeanoLogicNumber>, h: Term<B>,
-            tl: Term<LogicList<B>> ->
-          and(n `===` NextNaturalNumber(prev),
-              xs `===` (h + tl),
-              list_ho_nth({ eta: Term<LogicList<B>> -> eta `===` tl },
-              { eta: Term<PeanoLogicNumber> -> eta `===` prev }, rez))
-          }))
-}
-fun <C : Term<C>, B : Term<B>, A : Term<A>> list_ho_fold_left2(f: ((Term<A>) -> Goal, 
-                                                                  (Term<B>) -> Goal, 
-                                                                  (Term<C>) -> Goal, Term<A>) -> Goal,
-acc: (Term<A>) -> Goal, l1: (Term<LogicList<B>>) -> Goal,
-l2: (Term<LogicList<C>>) -> Goal, q223: Term<A>): Goal =
-freshTypedVars { q209: Term</* (('b OCanren.ilogic,
-                                 'b OCanren.ilogic OCanren.Std.List.injected)
-                                OCanren.Std.List.t OCanren__.Logic.ilogic *
-                                ('c OCanren.ilogic,
-                                 'c OCanren.ilogic OCanren.Std.List.injected)
-                                OCanren.Std.List.t OCanren__.Logic.ilogic)
-                               OCanren__.Logic.ilogic */Error< /*('b OCanren.ilogic, 'b OCanren.ilogic OCanren.Std.List.injected)OCanren.Std.List.t OCanren__.Logic.ilogic *('c OCanren.ilogic, 'c OCanren.ilogic OCanren.Std.List.injected)OCanren.Std.List.t OCanren__.Logic.ilogic 111 */>>,
-  q205: Term<LogicList<B>>, q206: Term<LogicList<C>> ->
-and(q209 `===` LogicPair(q205, q206),
-    l1(q205),
-    l2(q206),
-    conde(((q209 `===` LogicPair(OCanren.exclamation_exclamation({| Other 
-                                                                 OCanren.Std.List.Nil |}),
-                       OCanren.exclamation_exclamation({| Other OCanren.Std.List.Nil |}))) and 
-          acc(q223)),
-          freshTypedVars { hd1: Term<B>, tl1: Term<LogicList<B>>,
-            hd2: Term<C>, tl2: Term<LogicList<C>> ->
-          and(q209 `===` LogicPair(OCanren.exclamation_exclamation({| Other 
-                                                                   OCanren.Std.List.Cons
-                                                                    (hd1,
-                                                                    tl1) |}),
-                         OCanren.exclamation_exclamation({| Other OCanren.Std.List.Cons
-                                                                    (hd2,
-                                                                    tl2) |})),
-              list_ho_fold_left2(f,
-              f(acc, { q210: Term<B> -> hd1 `===` q210 },
-              { q212: Term<C> -> hd2 `===` q212 }),
-              { q211: Term<LogicList<B>> -> tl1 `===` q211 },
-              { q213: Term<LogicList<C>> -> tl2 `===` q213 }, q223))
-          },
-          OCanren_dot_failure))
-}
-fun <ID : Term<ID>> substitute_typ(subst: (Term<LogicList<Jarg<Jtype<ID>>>>) -> Goal,
-q0: (Term<Jtype<ID>>) -> Goal, q30: Term<Jtype<ID>>): Goal =
-freshTypedVars { q3: Term<Jtype<ID>> ->
-and(q0(q3),
-    conde(freshTypedVars { typ: Term<Jtype<ID>>, q4: Term<Jtype<ID>> ->
-          and(q3 `===` Array_(typ),
-              q30 `===` Array_(q4),
-              substitute_typ(subst,
-              { eta: Term<Jtype<ID>> -> typ `===` eta }, q4))
-          },
-          freshTypedVars { id: Term<ID>,
-            args: Term<LogicList<Jarg<Jtype<ID>>>>,
-            q8: Term<LogicList<Jarg<Jtype<ID>>>> ->
-          and(q3 `===` Class_(id, args),
-              q30 `===` Class_(id, q8),
-              list_ho_map({ a: (Term<Jarg<Jtype<ID>>>) -> Goal, b: Term<Jarg<Jtype<ID>>> -> 
-                          substitute_arg(subst, a, b) },
-              { eta: Term<LogicList<Jarg<Jtype<ID>>>> -> eta `===` args },
-              q8))
-          },
-          freshTypedVars { id: Term<ID>,
-            args: Term<LogicList<Jarg<Jtype<ID>>>>,
-            q13: Term<LogicList<Jarg<Jtype<ID>>>> ->
-          and(q3 `===` Interface(id, args),
-              q30 `===` Interface(id, q13),
-              list_ho_map({ a: (Term<Jarg<Jtype<ID>>>) -> Goal, b: Term<Jarg<Jtype<ID>>> -> 
-                          substitute_arg(subst, a, b) },
-              { eta: Term<LogicList<Jarg<Jtype<ID>>>> -> eta `===` args },
-              q13))
-          },
-          freshTypedVars { typs: Term<LogicList<Jtype<ID>>>,
-            q17: Term<LogicList<Jtype<ID>>> ->
-          and(q3 `===` Intersect(typs),
-              q30 `===` Intersect(q17),
-              list_ho_map({ a: (Term<Jtype<ID>>) -> Goal, b: Term<Jtype<ID>> -> 
-                          substitute_typ(subst, a, b) },
-              { eta: Term<LogicList<Jtype<ID>>> -> eta `===` typs }, q17))
-          },
-          pause { and(q3 `===` Null(/* Unit */),
-                      q30 `===` Null(/* Unit */))
-          }))
-}
-fun <ID : Term<ID>> substitute_arg(subst: (Term<LogicList<Jarg<Jtype<ID>>>>) -> Goal,
-q34: (Term<Jarg<Jtype<ID>>>) -> Goal, q63: Term<Jarg<Jtype<ID>>>): Goal =
-freshTypedVars { q37: Term<Jarg<Jtype<ID>>> ->
-and(q34(q37),
-    conde(freshTypedVars { q38: Term<ID>, index: Term<PeanoLogicNumber>,
-            q39: Term<Jtype<ID>>, q40: Term<LogicOption<Jtype<ID>>> ->
-          and(q37 `===` Type(Var(q38, index, q39, q40)),
-              list_ho_nth(subst,
-              { eta: Term<PeanoLogicNumber> -> eta `===` index }, q63))
-          },
-          freshTypedVars { typ: Term<Jtype<ID>>, q48: Term<Jtype<ID>> ->
-          and(q37 `===` Type(typ),
-              q63 `===` Type(q48),
-              substitute_typ(subst,
-              { eta: Term<Jtype<ID>> -> typ `===` eta }, q48))
-          },
-          pause { and(q37 `===` Wildcard(None()),
-                      q63 `===` Wildcard(None()),
-                      wc {__JGS_miniJGS_ml_c26 : Term<Jtype<ID>> ->
-                      (q37 `!==` Type(__JGS_miniJGS_ml_c26))},
-                      wc {__JGS_miniJGS_ml_c31 : Term<ID> ->
-                      wc {__JGS_miniJGS_ml_c34 : Term<PeanoLogicNumber> ->
-                      wc {__JGS_miniJGS_ml_c37 : Term<Jtype<ID>> ->
-                      wc {__JGS_miniJGS_ml_c40 : Term<LogicOption<Jtype<ID>>> ->
-                      (q37 `!==` Type(Var(__JGS_miniJGS_ml_c31,
-                                      __JGS_miniJGS_ml_c34,
-                                      __JGS_miniJGS_ml_c37,
-                                      __JGS_miniJGS_ml_c40)))}}}})
-          },
-          freshTypedVars { p: Term<Polarity/*228*/>, typ: Term<Jtype<ID>>,
-            q58: Term<Polarity/*228*/>, q59: Term<Jtype<ID>> ->
-          and(q37 `===` Wildcard(Some(LogicPair(p, typ))),
-              q63 `===` Wildcard(Some(LogicPair(q58, q59))),
-              p `===` q58,
-              q37 `!==` Wildcard(None()),
-              wc {__JGS_miniJGS_ml_c26 : Term<Jtype<ID>> ->
-              (q37 `!==` Type(__JGS_miniJGS_ml_c26))},
-              substitute_typ(subst,
-              { eta: Term<Jtype<ID>> -> typ `===` eta }, q59))
-          }))
-}
-// HIGH_ORDER 
-interface HIGH_ORDER {
+fun <A : Term<A>> for_allo(p: (Term<A>, Term<LogicBool>) -> Goal,
+l: Term<LogicList<A>>, res: Term<LogicBool>): Goal =
+conde(pause { and(l `===` nilLogicList(),
+                  res `===` true.toLogicBool()) },
+      freshTypedVars { hd: Term<A>, tl: Term<LogicList<A>>,
+        p_res: Term<LogicBool> ->
+      and(l `===` (hd + tl),
+          p(hd, p_res),
+          conde(pause { and(p_res `===` true.toLogicBool(),
+                            for_allo(p, tl, res))
+                },
+                pause { and(p_res `===` false.toLogicBool(),
+                            res `===` false.toLogicBool())
+                }))
+      })
+fun <C : Term<C>, B : Term<B>, A : Term<A>> fold_left2o(f: (Term<A>, Term<B>, Term<C>, Term<A>) -> Goal,
+acc: Term<A>, l1: Term<LogicList<B>>, l2: Term<LogicList<C>>,
+res: Term<A>): Goal =
+conde(pause { and(l1 `===` nilLogicList(),
+                  l2 `===` nilLogicList(),
+                  res `===` acc)
+      },
+      freshTypedVars { hd1: Term<B>, tl1: Term<LogicList<B>>, hd2: Term<C>,
+        tl2: Term<LogicList<C>>, new_acc: Term<A> ->
+      and(l1 `===` (hd1 + tl1),
+          l2 `===` (hd2 + tl2),
+          f(acc, hd1, hd2, new_acc),
+          fold_left2o(f, new_acc, tl1, tl2, res))
+      })
+fun <ID : Term<ID>> substitute_typ(subst: Term<LogicList<Jarg<Jtype<ID>>>>,
+typ: Term<Jtype<ID>>, res: Term<Jtype<ID>>): Goal =
+conde(freshTypedVars { param: Term<Jtype<ID>>, new_param: Term<Jtype<ID>> ->
+      and(typ `===` Array_(param),
+          res `===` Array_(new_param),
+          substitute_typ(subst, param, new_param))
+      },
+      freshTypedVars { id: Term<ID>, args: Term<LogicList<Jarg<Jtype<ID>>>>,
+        new_args: Term<LogicList<Jarg<Jtype<ID>>>> ->
+      and(typ `===` Class_(id, args),
+          res `===` Class_(id, new_args),
+          mapo({ targ: Term<Jarg<Jtype<ID>>>, res: Term<Jarg<Jtype<ID>>> -> 
+               substitute_arg(subst, targ, res) },
+          args, new_args))
+      },
+      freshTypedVars { id: Term<ID>, args: Term<LogicList<Jarg<Jtype<ID>>>>,
+        new_args: Term<LogicList<Jarg<Jtype<ID>>>> ->
+      and(typ `===` Interface(id, args),
+          res `===` Interface(id, new_args),
+          mapo({ targ: Term<Jarg<Jtype<ID>>>, res: Term<Jarg<Jtype<ID>>> -> 
+               substitute_arg(subst, targ, res) },
+          args, new_args))
+      },
+      freshTypedVars { typs: Term<LogicList<Jtype<ID>>>,
+        new_typs: Term<LogicList<Jtype<ID>>> ->
+      and(typ `===` Intersect(typs),
+          res `===` Intersect(new_typs),
+          mapo({ typ: Term<Jtype<ID>>, res: Term<Jtype<ID>> -> substitute_typ(subst,
+                                                               typ, res) },
+          typs, new_typs))
+      },
+      pause { and(typ `===` Null(/* Unit */),
+                  res `===` Null(/* Unit */)) })
+fun <ID : Term<ID>> substitute_arg(subst: Term<LogicList<Jarg<Jtype<ID>>>>,
+targ: Term<Jarg<Jtype<ID>>>, res: Term<Jarg<Jtype<ID>>>): Goal =
+conde(freshTypedVars { index: Term<PeanoLogicNumber> ->
+      and(/* NOTE: fresh without delay */
+          freshTypedVars { __JGS_miniJGS_ml_c39 : Term<ID> ->
+          /* NOTE: fresh without delay */
+          freshTypedVars { __JGS_miniJGS_ml_c48 : Term<Jtype<ID>> ->
+          /* NOTE: fresh without delay */
+          freshTypedVars { __JGS_miniJGS_ml_c51 : Term<LogicOption<Jtype<ID>>> ->
+          (targ `===` Type(Var(__JGS_miniJGS_ml_c39, index,
+                           __JGS_miniJGS_ml_c48, __JGS_miniJGS_ml_c51))) 
+          } } },
+          ntho(subst, index, res))
+      },
+      freshTypedVars { typ: Term<Jtype<ID>>, new_typ: Term<Jtype<ID>> ->
+      and(targ `===` Type(typ),
+          res `===` Type(new_typ),
+          substitute_typ(subst, typ, new_typ))
+      },
+      pause { and(targ `===` Wildcard(None()),
+                  res `===` Wildcard(None())) },
+      freshTypedVars { p: Term<Polarity/*228*/>, typ: Term<Jtype<ID>>,
+        new_typ: Term<Jtype<ID>> ->
+      and(targ `===` Wildcard(Some(LogicPair(p, typ))),
+          res `===` Wildcard(Some(LogicPair(p, new_typ))),
+          substitute_typ(subst, typ, new_typ))
+      })
+// CLASSTABLE 
+interface CLASSTABLE {
   // decl_by_id
-  fun decl_by_id(v1: (Term<LogicInt>) -> Goal, v2: Term<Decl> ): Goal
-  // get_superclass
-  fun get_superclass(v3: (Term<LogicInt>) -> Goal,
-  v4: (Term<LogicInt>) -> Goal, v5: Term<LogicOption<Jtype<LogicInt>>>
-  ): Goal
+  fun decl_by_id(v1: Term<LogicInt>, v2: Term<Decl<LogicInt>> ): Goal
+  // get_superclass_by_id
+  fun get_superclass_by_id(v3: Term<LogicInt>, v4: Term<LogicInt>,
+  v5: Term<LogicOption<Jtype<LogicInt>>> ): Goal
   // object_t
-  fun object_t(v6: Term<JType> ): Goal
+  fun object_t( ): Term<Jtype<LogicInt>>
   // cloneable_t
-  fun cloneable_t(v7: Term<JType> ): Goal
+  fun cloneable_t( ): Term<Jtype<LogicInt>>
   // serializable_t
-  fun serializable_t(v8: Term<JType> ): Goal
+  fun serializable_t( ): Term<Jtype<LogicInt>>
   // new_var
-  fun new_var(v9: Term<LogicInt> ): Goal
-  }
-
-// CLASS_TABLE 
-interface CLASS_TABLE {
-  val HO : HIGH_ORDER
+  fun new_var(v6: Term</* unit */Error> ): Term<LogicInt>
   }
 
 // VERIFIER 
 interface VERIFIER {
-  // appo
-  fun<A : Term<A>> appo(v1: (Term<A>) -> Goal, v2: Term<A> ): Goal
   }
 
 // functor
-private val Verifier : (CLASS_TABLE) -> VERIFIER = { CT: CLASS_TABLE ->
+private val Verifier : (CLASSTABLE) -> VERIFIER = { CT: CLASSTABLE ->
 object: VERIFIER {
-  override fun <A : Term<A>> appo(f: (Term<A>) -> Goal, x: Term<A>): Goal =
-  f(x)
-}}
-fun  test_int(x: Term<LogicInt>): Goal =
-conde(x `===` 1.toLogic(),
-      x `===` 2.toLogic())
-fun  test_bool(x: Term<LogicBool>): Goal =
-conde(x `===` true.toLogicBool(),
-      x `===` false.toLogicBool())
+  override fun  minus_less_minus(less_minus_less: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,
+  type_a: Term<Jtype<LogicInt>>, type_b: Term<Jtype<LogicInt>>,
+  res: Term<LogicBool>): Goal =
+  conde(freshTypedVars { id_a: Term<LogicInt>,
+          targs_a: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
+          converted: Term<LogicOption<LogicList<Jarg<Jtype<LogicInt>>>>> ->
+        and(type_a `===` Class_(id_a, targs_a),
+            capture_conversion(less_minus_less, id_a, targs_a, converted),
+            conde(pause { and(converted `===` None(),
+                              res `===` false.toLogicBool())
+                  },
+                  freshTypedVars { targs_a: Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
+                  and(converted `===` Some(targs_a),
+                      conde(freshTypedVars { id_b: Term<LogicInt>,
+                              targs_b: Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
+                            and(conde(type_b `===` Interface(id_b, targs_b),
+                                      type_b `===` Class_(id_b, targs_b)),
+                                class_int_sub(less_minus_less, id_a, targs_a,
+                                id_b, targs_b, res))
+                            },
+                            freshTypedVars { typ: Term<Jtype<LogicInt>> ->
+                            and(/* NOTE: fresh without delay */
+                                freshTypedVars { __JGS_miniJGS_ml_c40 : Term<LogicInt> ->
+                                /* NOTE: fresh without delay */
+                                freshTypedVars { __JGS_miniJGS_ml_c43 : Term<PeanoLogicNumber> ->
+                                /* NOTE: fresh without delay */
+                                freshTypedVars { __JGS_miniJGS_ml_c46 : Term<Jtype<LogicInt>> ->
+                                (type_b `===` Var(__JGS_miniJGS_ml_c40,
+                                              __JGS_miniJGS_ml_c43,
+                                              __JGS_miniJGS_ml_c46,
+                                              Some(typ))) } } },
+                                conde(pause { and(typ `===` type_a,
+                                                  res `===` true.toLogicBool())
+                                      },
+                                      pause { and(res `===` false.toLogicBool(),
+                                                  typ `!==` type_a)
+                                      }))
+                            },
+                            pause { and(res `===` false.toLogicBool(),
+                                        wc {__JGS_miniJGS_ml_c40 : Term<LogicInt> ->
+                                        wc {__JGS_miniJGS_ml_c43 : Term<PeanoLogicNumber> ->
+                                        wc {__JGS_miniJGS_ml_c46 : Term<Jtype<LogicInt>> ->
+                                        wc {__JGS_miniJGS_ml_c59 : Term<Jtype<LogicInt>> ->
+                                        (type_b `!==` Var(__JGS_miniJGS_ml_c40,
+                                                      __JGS_miniJGS_ml_c43,
+                                                      __JGS_miniJGS_ml_c46,
+                                                      Some(__JGS_miniJGS_ml_c59)))}}}},
+                                        wc {__JGS_miniJGS_ml_c46 : Term<LogicInt> ->
+                                        wc {__JGS_miniJGS_ml_c49 : Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
+                                        (type_b `!==` Interface(__JGS_miniJGS_ml_c46,
+                                                      __JGS_miniJGS_ml_c49))}},
+                                        wc {__JGS_miniJGS_ml_c43 : Term<LogicInt> ->
+                                        wc {__JGS_miniJGS_ml_c46 : Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
+                                        (type_b `!==` Class_(__JGS_miniJGS_ml_c43,
+                                                      __JGS_miniJGS_ml_c46))}})
+                            }))
+                  }))
+        },
+        freshTypedVars { id_a: Term<LogicInt>,
+          targs_a: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
+          converted: Term<LogicOption<LogicList<Jarg<Jtype<LogicInt>>>>> ->
+        and(type_a `===` Interface(id_a, targs_a),
+            capture_conversion(less_minus_less, id_a, targs_a, converted),
+            conde(pause { and(converted `===` None(),
+                              res `===` false.toLogicBool())
+                  },
+                  freshTypedVars { targs_a: Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
+                  and(converted `===` Some(targs_a),
+                      conde(freshTypedVars { id_b: Term<LogicInt>,
+                              targs_b: Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
+                            and(conde(type_b `===` Class_(id_b, targs_b),
+                                      type_b `===` Interface(id_b, targs_b)),
+                                class_int_sub(less_minus_less, id_a, targs_a,
+                                id_b, targs_b, res))
+                            },
+                            freshTypedVars { typ: Term<Jtype<LogicInt>> ->
+                            and(/* NOTE: fresh without delay */
+                                freshTypedVars { __JGS_miniJGS_ml_c40 : Term<LogicInt> ->
+                                /* NOTE: fresh without delay */
+                                freshTypedVars { __JGS_miniJGS_ml_c43 : Term<PeanoLogicNumber> ->
+                                /* NOTE: fresh without delay */
+                                freshTypedVars { __JGS_miniJGS_ml_c46 : Term<Jtype<LogicInt>> ->
+                                (type_b `===` Var(__JGS_miniJGS_ml_c40,
+                                              __JGS_miniJGS_ml_c43,
+                                              __JGS_miniJGS_ml_c46,
+                                              Some(typ))) } } },
+                                conde(pause { and(typ `===` type_a,
+                                                  res `===` true.toLogicBool())
+                                      },
+                                      pause { and(res `===` false.toLogicBool(),
+                                                  typ `!==` type_a)
+                                      }))
+                            },
+                            pause { and(res `===` false.toLogicBool(),
+                                        wc {__JGS_miniJGS_ml_c40 : Term<LogicInt> ->
+                                        wc {__JGS_miniJGS_ml_c43 : Term<PeanoLogicNumber> ->
+                                        wc {__JGS_miniJGS_ml_c46 : Term<Jtype<LogicInt>> ->
+                                        wc {__JGS_miniJGS_ml_c59 : Term<Jtype<LogicInt>> ->
+                                        (type_b `!==` Var(__JGS_miniJGS_ml_c40,
+                                                      __JGS_miniJGS_ml_c43,
+                                                      __JGS_miniJGS_ml_c46,
+                                                      Some(__JGS_miniJGS_ml_c59)))}}}},
+                                        wc {__JGS_miniJGS_ml_c43 : Term<LogicInt> ->
+                                        wc {__JGS_miniJGS_ml_c46 : Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
+                                        (type_b `!==` Class_(__JGS_miniJGS_ml_c43,
+                                                      __JGS_miniJGS_ml_c46))}},
+                                        wc {__JGS_miniJGS_ml_c46 : Term<LogicInt> ->
+                                        wc {__JGS_miniJGS_ml_c49 : Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
+                                        (type_b `!==` Interface(__JGS_miniJGS_ml_c46,
+                                                      __JGS_miniJGS_ml_c49))}})
+                            }))
+                  }))
+        },
+        freshTypedVars { ta: Term<Jtype<LogicInt>> ->
+        and(type_a `===` Array_(ta),
+            conde(pause { and(ta `===` CT.object_t,
+                              conde(pause { and(res `===` true.toLogicBool(),
+                                                conde(type_b `===` CT.object_t,
+                                                      type_b `===` CT.cloneable_t,
+                                                      type_b `===` CT.serializable_t))
+                                    },
+                                    pause { and(type_b `!==` CT.object_t,
+                                                type_b `!==` CT.serializable_t,
+                                                type_b `!==` CT.cloneable_t,
+                                                conde(freshTypedVars { 
+                                                        tb: Term<Jtype<LogicInt>> ->
+                                                      and(type_b `===` 
+                                                          Array_(tb),
+                                                          minus_less_minus(less_minus_less,
+                                                          ta, tb, res))
+                                                      },
+                                                      pause { and(res `===` false.toLogicBool(),
+                                                                  wc {__JGS_miniJGS_ml_c74 : Term<Jtype<LogicInt>> ->
+                                                                  (type_b `!==` 
+                                                                  Array_(__JGS_miniJGS_ml_c74))})
+                                                      }))
+                                    }))
+                  },
+                  pause { and(ta `!==` CT.object_t,
+                              conde(freshTypedVars { tb: Term<Jtype<LogicInt>> ->
+                                    and(type_b `===` Array_(tb),
+                                        minus_less_minus(less_minus_less, ta,
+                                        tb, res))
+                                    },
+                                    pause { and(res `===` false.toLogicBool(),
+                                                wc {__JGS_miniJGS_ml_c67 : Term<Jtype<LogicInt>> ->
+                                                (type_b `!==` Array_(__JGS_miniJGS_ml_c67))})
+                                    }))
+                  }))
+        },
+        freshTypedVars { ts: Term<LogicList<Jtype<LogicInt>>> ->
+        and(type_a `===` Intersect(ts),
+            memo(type_b, ts, res))
+        },
+        freshTypedVars { upb_typ: Term<Jtype<LogicInt>> ->
+        and(/* NOTE: fresh without delay */
+            freshTypedVars { __JGS_miniJGS_ml_c26 : Term<LogicInt> ->
+            /* NOTE: fresh without delay */
+            freshTypedVars { __JGS_miniJGS_ml_c29 : Term<PeanoLogicNumber> ->
+            /* NOTE: fresh without delay */
+            freshTypedVars { __JGS_miniJGS_ml_c40 : Term<LogicOption<Jtype<LogicInt>>> ->
+            (type_a `===` Var(__JGS_miniJGS_ml_c26, __JGS_miniJGS_ml_c29,
+                          upb_typ, __JGS_miniJGS_ml_c40)) } } },
+            conde(pause { and(upb_typ `===` type_b,
+                              res `===` true.toLogicBool())
+                  },
+                  pause { and(res `===` false.toLogicBool(),
+                              upb_typ `!==` type_b)
+                  }))
+        },
+        pause { and(type_a `===` Null(/* Unit */),
+                    conde(pause { and(type_b `===` Null(/* Unit */),
+                                      res `===` false.toLogicBool())
+                          },
+                          pause { and(res `===` true.toLogicBool(),
+                                      type_b `!==` Null(/* Unit */))
+                          }))
+        })
+
+override fun  class_int_sub(less_minus_less: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,
+id_a: Term<LogicInt>, targs_a: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
+id_b: Term<LogicInt>, targs_b: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
+res: Term<LogicBool>): Goal =
+conde(pause { and(id_a `===` id_b,
+                  fold_left2o({ acc: Term<LogicBool>, ta: Term<Jarg<Jtype<LogicInt>>>, 
+                              tb: Term<Jarg<Jtype<LogicInt>>>, res: Term<LogicBool> -> 
+                              conde(pause { and(acc `===` false.toLogicBool(),
+                                                res `===` false.toLogicBool())
+                                    },
+                                    pause { and(acc `===` true.toLogicBool(),
+                                                less_equal_less(less_minus_less,
+                                                ta, tb, res))
+                                    }) },
+                  true.toLogicBool(), targs_a, targs_b, res))
+      },
+      freshTypedVars { super: Term<LogicOption<Jtype<LogicInt>>> ->
+      and(id_a `!==` id_b,
+          CT.get_superclass_by_id(id_a, id_b, super),
+          conde(freshTypedVars { targs_b': Term<LogicList<Jarg<Jtype<LogicInt>>>>,
+                  new_targs_b': Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
+                and(conde(/* NOTE: fresh without delay */
+                          freshTypedVars { __JGS_miniJGS_ml_c49 : Term<LogicInt> ->
+                          (super `===` Some(Class_(__JGS_miniJGS_ml_c49,
+                                            targs_b'))) },
+                          /* NOTE: fresh without delay */
+                          freshTypedVars { __JGS_miniJGS_ml_c52 : Term<LogicInt> ->
+                          (super `===` Some(Interface(__JGS_miniJGS_ml_c52,
+                                            targs_b'))) }),
+                    mapo({ arg: Term<Jarg<Jtype<LogicInt>>>, res: Term<Jarg<Jtype<LogicInt>>> -> 
+                         substitute_arg(targs_a, arg, res) },
+                    targs_b', new_targs_b'),
+                    conde(pause { and(targs_b `===` new_targs_b',
+                                      res `===` true.toLogicBool())
+                          },
+                          pause { and(res `===` false.toLogicBool(),
+                                      targs_b `!==` new_targs_b')
+                          }))
+                },
+                pause { and(super `===` None(),
+                            res `===` false.toLogicBool())
+                }))
+      })
+
+override fun  less_equal_less(_subtyping: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,
+type_a: Term<Jarg<Jtype<LogicInt>>>, type_b: Term<Jarg<Jtype<LogicInt>>>,
+res: Term<LogicBool>): Goal =
+conde(pause { and(type_a `===` type_b,
+                  res `===` true.toLogicBool()) },
+      pause { and(type_a `!==` type_b,
+                  res `===` false.toLogicBool()) })
+
+override fun  capture_conversion(_subtyping: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,
+_id: Term<LogicInt>, targs: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
+res: Term<LogicOption<LogicList<Jarg<Jtype<LogicInt>>>>>): Goal =
+res `===` Some(targs)
+
+override fun  targs_pred(less_minus_less: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,
+targ: Term<Jarg<Jtype<LogicInt>>>, res: Term<LogicBool>): Goal =
+conde(freshTypedVars { upb: Term<Jtype<LogicInt>>,
+        lwb: Term<Jtype<LogicInt>> ->
+      and(/* NOTE: fresh without delay */
+          freshTypedVars { __JGS_miniJGS_ml_c31 : Term<LogicInt> ->
+          /* NOTE: fresh without delay */
+          freshTypedVars { __JGS_miniJGS_ml_c34 : Term<PeanoLogicNumber> ->
+          (targ `===` Type(Var(__JGS_miniJGS_ml_c31, __JGS_miniJGS_ml_c34,
+                           upb, Some(lwb)))) } },
+          less_minus_less(lwb, upb, res))
+      },
+      pause { and(res `===` true.toLogicBool(),
+                  wc {__JGS_miniJGS_ml_c55 : Term<LogicInt> ->
+                  wc {__JGS_miniJGS_ml_c58 : Term<PeanoLogicNumber> ->
+                  wc {__JGS_miniJGS_ml_c61 : Term<Jtype<LogicInt>> ->
+                  wc {__JGS_miniJGS_ml_c74 : Term<Jtype<LogicInt>> ->
+                  (targ `!==` Type(Var(__JGS_miniJGS_ml_c55,
+                                   __JGS_miniJGS_ml_c58,
+                                   __JGS_miniJGS_ml_c61,
+                                   Some(__JGS_miniJGS_ml_c74))))}}}})
+      })
+
+override fun  targs_helper(subst: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
+cc_typ: Term<CC_type<LogicInt>>, res: Term<Jarg<Jtype<LogicInt>>>): Goal =
+conde(freshTypedVars { t: Term<Jtype<LogicInt>>,
+        new_t: Term<Jtype<LogicInt>> ->
+      and(cc_typ `===` CC_type.cc_type(t),
+          res `===` Type(new_t),
+          substitute_typ(subst, t, new_t))
+      },
+      freshTypedVars { id: Term<LogicInt>, i: Term<PeanoLogicNumber>,
+        p: Term<Jtype<LogicInt>>, new_p: Term<Jtype<LogicInt>>,
+        lwb: Term<LogicOption<Jtype<LogicInt>>> ->
+      and(cc_typ `===` CC_type.cc_var(id, i, CC_subst.cc_subst(p), lwb),
+          res `===` Type(Var(id, i, new_p, lwb)),
+          substitute_typ(subst, p, new_p))
+      },
+      /* NOTE: fresh without delay */
+      freshTypedVars { id : Term<LogicInt>,  i : Term<PeanoLogicNumber>,
+       t : Term<Jtype<LogicInt>>,  p : Term<Jtype<LogicInt>>,
+       lwb : Term<LogicOption<Jtype<LogicInt>>> ->
+      freshTypedVars { upb: Term<Jtype<LogicInt>>,
+        new_p: Term<Jtype<LogicInt>> ->
+      and(cc_typ `===` CC_type.cc_var(id, i, CC_subst.cc_inter(t, p), lwb),
+          res `===` Type(Var(id, i, upb, lwb)),
+          substitute_typ(subst, p, new_p),
+          conde(freshTypedVars { ts: Term<LogicList<Jtype<LogicInt>>> ->
+                and(new_p `===` Intersect(ts),
+                    upb `===` Intersect((t + ts)))
+                },
+                pause { and(upb `===` Intersect(OCanren.Std.list({ x: Term<Jtype<LogicInt>> -> x },
+                                                {| Other [t; new_p] |})),
+                            wc {__JGS_miniJGS_ml_c38 : Term<LogicList<Jtype<LogicInt>>> ->
+                            (new_p `!==` Intersect(__JGS_miniJGS_ml_c38))})
+                }))
+      } })
+
+override fun  subst_helper(raw_element: Term<CC_type<LogicInt>>,
+targ: Term<Jarg<Jtype<LogicInt>>>): Goal =
+conde(freshTypedVars { t: Term<Jtype<LogicInt>> ->
+      and(raw_element `===` CC_type.cc_type(t),
+          targ `===` Type(t))
+      },
+      freshTypedVars { id: Term<LogicInt>, i: Term<PeanoLogicNumber> ->
+      and(/* NOTE: fresh without delay */
+          freshTypedVars { __JGS_miniJGS_ml_c39 : Term<CC_subst/*228*/<LogicInt, Jtype<LogicInt>>> ->
+          /* NOTE: fresh without delay */
+          freshTypedVars { __JGS_miniJGS_ml_c42 : Term<LogicOption<Jtype<LogicInt>>> ->
+          (raw_element `===` CC_type.cc_var(id, i, __JGS_miniJGS_ml_c39,
+                             __JGS_miniJGS_ml_c42)) } },
+          targ `===` Type(Var(id, i, Null(/* Unit */), None())))
+      })
+
+override fun  raw_helper(id: Term<LogicInt>, i: Term<PeanoLogicNumber>,
+targ: Term<Jarg<Jtype<LogicInt>>>, cc_targ: Term<CC_type<LogicInt>>): Goal =
+conde(freshTypedVars { t: Term<Jtype<LogicInt>> ->
+      and(targ `===` Type(t),
+          cc_targ `===` CC_type.cc_type(t))
+      },
+      freshTypedVars { param: Term<Jtype<LogicInt>>,
+        params_val: Term<LogicList<Jtype<LogicInt>>> ->
+      and(targ `===` Wildcard(None()),
+          cc_targ `===` CC_type.cc_var(CT.new_var(/* Unit */), i,
+                        CC_subst.cc_subst(param), Some(Null(/* Unit */))),
+          params(id, params_val),
+          ntho(params_val, i, param))
+      },
+      freshTypedVars { t: Term<Jtype<LogicInt>>,
+        subst: Term<Jtype<LogicInt>>,
+        params_val: Term<LogicList<Jtype<LogicInt>>> ->
+      and(targ `===` Wildcard(Some(LogicPair(Polarity.super(/* Unit */), t))),
+          cc_targ `===` CC_type.cc_var(CT.new_var(/* Unit */), i,
+                        CC_subst.cc_subst(subst), Some(t)),
+          params(id, params_val),
+          ntho(params_val, i, subst))
+      },
+      freshTypedVars { t: Term<Jtype<LogicInt>>, t2: Term<Jtype<LogicInt>>,
+        params_val: Term<LogicList<Jtype<LogicInt>>> ->
+      and(targ `===` Wildcard(Some(LogicPair(Polarity.extends(/* Unit */), t))),
+          cc_targ `===` CC_type.cc_var(CT.new_var(/* Unit */), i,
+                        CC_subst.cc_inter(t, t2), Some(Null(/* Unit */))),
+          params(id, params_val),
+          ntho(params_val, i, t2))
+      })
+
+override fun  params(id: Term<LogicInt>,
+p: Term<LogicList<Jtype<LogicInt>>>): Goal =
+freshTypedVars { decl: Term<Decl/*228*/<LogicInt, Jtype<LogicInt>, LogicList<Jtype<LogicInt>>>> ->
+and(CT.decl_by_id(id, decl),
+    conde(/* NOTE: fresh without delay */
+          freshTypedVars { __JGS_miniJGS_ml_c33 : Term<Jtype<LogicInt>> ->
+          /* NOTE: fresh without delay */
+          freshTypedVars { __JGS_miniJGS_ml_c36 : Term<LogicList<Jtype<LogicInt>>> ->
+          (decl `===` Decl.c(p, __JGS_miniJGS_ml_c33, __JGS_miniJGS_ml_c36))
+          } },
+          /* NOTE: fresh without delay */
+          freshTypedVars { __JGS_miniJGS_ml_c58 : Term<LogicList<Jtype<LogicInt>>> ->
+          (decl `===` Decl.i(p, __JGS_miniJGS_ml_c58)) }))
+}
 // Put epilogue here 
+}}
