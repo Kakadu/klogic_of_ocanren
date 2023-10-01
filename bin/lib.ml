@@ -308,22 +308,9 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
 ;;
 
 let do_skip_structure_item item =
-  let has_bad_attr xs =
-    (* log "%s on the list of %d size" __FUNCTION__ (List.length xs); *)
-    try
-      let _ =
-        List.find
-          ~f:(function
-            | { Parsetree.attr_name = { txt = "skip_from_klogic" }; _ } -> true
-            | _ -> false)
-          xs
-      in
-      true
-    with
-    | Not_found -> false
-  in
   match item.Typedtree.str_desc with
-  | Tstr_module { mb_attributes = attrs } | Tstr_eval (_, attrs) -> has_bad_attr attrs
+  | Tstr_module { mb_attributes = attrs } | Tstr_eval (_, attrs) ->
+    has_attr "skip_from_klogic" attrs
   | _ -> false
 ;;
 

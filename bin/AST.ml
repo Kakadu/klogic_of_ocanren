@@ -307,7 +307,7 @@ let rec pp_typ_as_kotlin inh_info =
       let open Tast_pattern in
       path [ "OCanren"; "Std"; "Nat"; "t" ]
     in
-    let pinj_option () =
+    let _pinj_option () =
       let open Tast_pattern in
       path [ "OCanren"; "Std"; "Option"; "injected" ]
       ||| path [ "OCanren"; "Std"; "Option"; "groundi" ]
@@ -785,6 +785,19 @@ let pp_rvb_as_kotlin ?(override = true) inh_info ppf { Rvb.name; args; body } =
     body
 ;;
 
+let has_attr name xs =
+  try
+    let _ =
+      List.find
+        ~f:(function
+          | { Parsetree.attr_name = { txt }; _ } -> String.equal txt name)
+        xs
+    in
+    true
+  with
+  | Not_found -> false
+;;
+
 (* pp_typ_as_kotlin *)
 let pp_modtype_as_kotlin info name sign ppf =
   let open Format in
@@ -799,6 +812,10 @@ let pp_modtype_as_kotlin info name sign ppf =
   printfn "@[@[<v 2>@[interface %s {@]" name;
   List.iter sign.Typedtree.sig_items ~f:(fun sitem ->
     match sitem.sig_desc with
+    | Tsig_value
+        { val_name = { txt = name; _ }; val_val = { val_type; _ }; val_attributes }
+      when has_attr "klogic_val" val_attributes ->
+      printfn "@[val %s : %a@]" name (pp_typ_as_kotlin info) val_type
     | Tsig_value { val_name = { txt = name; _ }; val_val = { val_type; _ }; _ } ->
       let args, ret = unparse_arrows val_type in
       let args =
