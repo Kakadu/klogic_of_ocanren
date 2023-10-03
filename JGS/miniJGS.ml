@@ -29,8 +29,10 @@ import utils.LogicOption
 @Suppress("UNCHECKED_CAST")
 fun <T: Term<T>> None(): LogicOption<T> = utils.None as LogicOption<T>
 
+context(RelationalContext)
 fun  pause(f: () -> Goal): Goal = { st -> ThunkStream { f()(st) } }
-@Suppress("UNUSED_PARAMETER")
+
+context(RelationalContext)
 fun <A: Term<A>> wc(f : (Term<A>) -> Goal ) : Goal = success
 |}]
 

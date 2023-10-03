@@ -761,6 +761,7 @@ let pp_rvb_as_kotlin ?(override = true) inh_info ppf { Rvb.name; args; body } =
       ~init:S.empty
       args
   in
+  fprintf ppf "context(RelationalContext)@ ";
   fprintf
     ppf
     "@[%sfun %s %a(%a): Goal =@]@,@[%a@]\n%!"
@@ -831,6 +832,7 @@ let pp_modtype_as_kotlin info name sign ppf =
           ~init:S.empty
           args
       in
+      printfn "context(RelationalContext)";
       printfn
         "@[fun%s %a("
         (if S.is_empty tvars

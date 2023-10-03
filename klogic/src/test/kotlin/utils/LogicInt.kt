@@ -3,7 +3,7 @@ package utils
 import org.klogic.core.*
 
 @JvmInline
-value class LogicInt(private val n: Int) : CustomTerm<LogicInt> {
+value class LogicInt(val n: Int) : CustomTerm<LogicInt> {
     override val subtreesToUnify: Array<*>
         get() = arrayOf(n)
 

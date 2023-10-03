@@ -162,7 +162,7 @@ data class Var<ID : Term<ID>>(val id: Term<ID>, val args: Term<PeanoLogicNumber>
                               val upb: Term<Jtype<ID>>, val lwb: Term<LogicOption<Jtype<ID>>>) :
         Jtype<ID>() {
     override val subtreesToUnify: Array<Term<*>>
-        get() = arrayOf(id, args)
+        get() = arrayOf(id, args, upb,lwb )
 
     @Suppress("UNCHECKED_CAST")
     override fun constructFromSubtrees(subtrees: Iterable<*>): CustomTerm<Jtype<ID>> {
