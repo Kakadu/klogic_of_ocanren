@@ -17,15 +17,14 @@ repositories {
 dependencies {
     testImplementation(platform("org.junit:junit-bom:5.9.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
-    // core
-//    testImplementation("com.github.UnitTestBot.klogic:klogic-core:0.1.5")
-    // util terms
-//    testImplementation("com.github.UnitTestBot.klogic:klogic-utils:0.1.5")
+
+    testImplementation("com.github.UnitTestBot.klogic:klogic-core:0.2.1") // core
+    testImplementation("com.github.UnitTestBot.klogic:klogic-utils:0.2.1") // util terms
     // Pin klogic commit with wildcards
-    testImplementation(
-            "com.github.UnitTestBot.klogic:klogic-core:e17613a29a5932661b81a915b2de64d2f7bf43e6") // core
-    testImplementation(
-            "com.github.UnitTestBot.klogic:klogic-utils:e17613a29a5932661b81a915b2de64d2f7bf43e6") // util terms
+//    testImplementation(
+//            "com.github.UnitTestBot.klogic:klogic-core:65882576927ce590f6d927b40f3a4c06060d7c9b") // core
+//    testImplementation(
+//            "com.github.UnitTestBot.klogic:klogic-utils:65882576927ce590f6d927b40f3a4c06060d7c9b") // util terms
 }
 
 tasks.withType<KotlinCompile> {

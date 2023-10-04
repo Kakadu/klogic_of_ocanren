@@ -1,10 +1,14 @@
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.klogic.core.*
 import org.klogic.core.Var
 import org.klogic.utils.terms.LogicBool
+import org.klogic.utils.terms.LogicBool.Companion.toLogicBool
 import org.klogic.utils.terms.LogicList
 import org.klogic.utils.terms.LogicList.Companion.logicListOf
+import org.klogic.utils.terms.LogicTruᴼ
 import utils.*
 import utils.JGS.*
 import utils.LogicInt.Companion.toLogic
@@ -119,25 +123,85 @@ data class NotComplete(val v: VERIFIER) {
 class JGSTest {
     @AfterEach
     fun clear() {
-        UnificationsController.onFinish()
+//        UnificationsController.onFinish()
     }
 
-    @Test
-    fun test1() {
+    private val unificationsTracer = UnificationListener { firstTerm, secondTerm, stateBefore, stateAfter ->
+        //if (System.getenv("SILENT_UNIFICATIONS") == null)
+        val rez =
+            if (stateAfter == null)
+                " ~~> _|_"
+            else ""
+        println("${firstTerm.walk(stateBefore.substitution)} `===` ${secondTerm.walk(stateBefore.substitution)}$rez")
+    }
+
+    fun testForward(a: (CLASSTABLE) -> Term<Jtype<ID>>, b: (CLASSTABLE) -> Term<Jtype<ID>>, rez: Boolean, verbose: Boolean = false) {
         val classtable = DefaultCT()
         val v = Verifier(classtable)
 
-
         withEmptyContext {
-            val a: Term<Jtype<ID>> = Array_(classtable.object_t)
-            val b: Term<Jtype<ID>> = classtable.object_t
-            val g: (Term<LogicBool>) -> Goal = { NotComplete(v).check(a, b, it) }
+            addUnificationListener(unificationsTracer)
+            val g: (Term<LogicBool>) -> Goal = { NotComplete(v).check(a(classtable), b(classtable), it) }
 
-            run(1, g).forEachIndexed { i, x ->
-                println("$i: $x")
-            }
-            UnificationsController.onFinish()
+            val answers = run(2, g).map { it.term }.toList()
+            if (verbose)
+                answers.forEachIndexed { i, x -> println("$i: $x") }
+
+            assertEquals(answers.count(), 1)
+            val expectedTerm = rez.toLogicBool()
+            assertEquals(expectedTerm, answers[0])
         }
+    }
+    @Test
+    @DisplayName("Object[] <: Object")
+    fun test1() {
+        val a: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> Array_(classtable.object_t) }
+        val b: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> classtable.object_t }
+        testForward(a, b, true)
+    }
+    @Test
+    @DisplayName("Object[] <: Clonable")
+    fun test2() {
+        val a: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> Array_(classtable.object_t) }
+        val b: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> classtable.cloneable_t }
+        testForward(a, b, true)
+    }
+    @Test
+    @DisplayName("Object[] <: Serializable")
+    fun test3() {
+        val a: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> Array_(classtable.object_t) }
+        val b: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> classtable.serializable_t }
+        testForward(a, b, true)
+    }
+
+    @Test
+    @DisplayName("Object[] :> Object is FALSE")
+    fun test4() {
+        val a: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> classtable.object_t }
+        val b: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> Array_(classtable.object_t) }
+        testForward(a, b, false)
+    }
+    @Test
+    @DisplayName("Object[] :> Clonable is FALSE")
+    fun test5() {
+        val a: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> classtable.cloneable_t }
+        val b: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> Array_(classtable.object_t) }
+        testForward(a, b, false)
+    }
+    @Test
+    @DisplayName("Object[] :> Serializable is FALSE")
+    fun test6() {
+        val a: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> classtable.serializable_t }
+        val b: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> Array_(classtable.object_t) }
+        testForward(a, b, false)
+    }
+
+    @Test
+    @DisplayName("Object[][] <: Serializable[]")
+    fun test7() {
+        val a: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> Array_(Array_(classtable.object_t)) }
+        val b: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> Array_(classtable.serializable_t) }
+        testForward(a, b, true, true)
     }
 
 }

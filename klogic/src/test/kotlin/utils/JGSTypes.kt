@@ -153,7 +153,7 @@ data class TypeInterface<ID : Term<ID>>(val id: Term<ID>,
             "Expected only head and tail for constructing Cons but got more elements"
         }
 
-        @Suppress("UNCHECKED_CAST") return TypeClass_(head as Term<ID>,
+        @Suppress("UNCHECKED_CAST") return TypeInterface(head as Term<ID>,
                 args as Term<LogicList<Jarg<Jtype<ID>>>>)
     }
 }
