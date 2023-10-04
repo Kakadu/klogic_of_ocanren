@@ -8,12 +8,28 @@ import org.klogic.utils.terms.LogicBool
 import org.klogic.utils.terms.LogicBool.Companion.toLogicBool
 import org.klogic.utils.terms.LogicList
 import org.klogic.utils.terms.LogicList.Companion.logicListOf
-import org.klogic.utils.terms.LogicTruᴼ
 import utils.*
 import utils.JGS.*
 import utils.LogicInt.Companion.toLogic
 
-class DefaultCT : CLASSTABLE {
+typealias ID = LogicInt
+
+interface MutableClassTable : CLASSTABLE {
+    fun addClass(c: C<ID>): Int
+    fun addClass(
+        params: Term<LogicList<Jtype<ID>>>,
+        superClass: Term<Jtype<ID>>,
+        supers: Term<LogicList<Jtype<ID>>>,
+    ): Int
+
+    fun addInterface(c: I<ID>): Int
+    fun addInterface(
+        params: Term<LogicList<Jtype<ID>>>,
+        supers: Term<LogicList<Jtype<ID>>>
+    ): Int
+}
+
+class DefaultCT : MutableClassTable {
     private var lastId: Int = 0
     fun newId(): Int {
         lastId++;
@@ -30,17 +46,26 @@ class DefaultCT : CLASSTABLE {
     override val cloneable_t: Term<Jtype<LogicInt>>
     override val serializable_t: Term<Jtype<LogicInt>>
 
-    private fun addClass(c: C<ID>): Int {
+    override fun addClass(c: C<ID>): Int {
         data[newId()] = c
         return lastId
     }
 
-    private fun addInterface(c: I<ID>): Int {
+    override fun addClass(
+        params: Term<LogicList<Jtype<ID>>>,
+        superClass: Term<Jtype<ID>>,
+        supers: Term<LogicList<Jtype<ID>>>,
+    ): Int {
+        data[newId()] = C(params, superClass, supers)
+        return lastId
+    }
+
+    override fun addInterface(c: I<ID>): Int {
         data[newId()] = c
         return lastId
     }
 
-    private fun addInterface(
+    override fun addInterface(
         params: Term<LogicList<Jtype<ID>>>,
         supers: Term<LogicList<Jtype<ID>>>
     ): Int {
@@ -51,7 +76,7 @@ class DefaultCT : CLASSTABLE {
 
     constructor() {
         top = Class_<ID>(0.toLogic(), logicListOf());
-        addClass(C(logicListOf(), top, logicListOf()))
+        addClass(logicListOf(), top, logicListOf())
         lastId = 0;
         objectId = addClass(C(logicListOf(), top, logicListOf()))
         assert(objectId == 1)
@@ -82,6 +107,22 @@ class DefaultCT : CLASSTABLE {
         }
     }
 
+    context(RelationalContext)
+    fun getSuperclassByIdFreeFree(subId: Term<LogicInt>,
+                                  v4: Term<LogicInt>,
+                                  rez: Term<Jtype<LogicInt>>) : Goal {
+        TODO("")
+
+//        return
+//            data.entries.fold(failure) { acc, entry ->
+//                val d = entry.value
+//                when (d) {
+//                    is I -> acc
+//                    is C -> acc `|||` and(entry.key.toLogic() `===` subId, v4 `===` d.id)
+//                }
+//
+//            }
+    }
     context(RelationalContext) override fun get_superclass_by_id(
         v3: Term<LogicInt>,
         v4: Term<LogicInt>,
@@ -91,7 +132,6 @@ class DefaultCT : CLASSTABLE {
     }
 }
 
-typealias ID = LogicInt
 
 //
 //interface IFOO {
@@ -135,12 +175,20 @@ class JGSTest {
         println("${firstTerm.walk(stateBefore.substitution)} `===` ${secondTerm.walk(stateBefore.substitution)}$rez")
     }
 
-    fun testForward(a: (CLASSTABLE) -> Term<Jtype<ID>>, b: (CLASSTABLE) -> Term<Jtype<ID>>, rez: Boolean, verbose: Boolean = false) {
+    fun testForward(
+        a: (MutableClassTable) -> Term<Jtype<ID>>,
+        b: (MutableClassTable) -> Term<Jtype<ID>>,
+        init: (MutableClassTable) -> Unit = { },
+        rez: Boolean,
+        verbose: Boolean = false
+    ) {
         val classtable = DefaultCT()
+        init(classtable)
         val v = Verifier(classtable)
 
         withEmptyContext {
-            addUnificationListener(unificationsTracer)
+            if (verbose)
+                addUnificationListener(unificationsTracer)
             val g: (Term<LogicBool>) -> Goal = { NotComplete(v).check(a(classtable), b(classtable), it) }
 
             val answers = run(2, g).map { it.term }.toList()
@@ -152,26 +200,29 @@ class JGSTest {
             assertEquals(expectedTerm, answers[0])
         }
     }
+
     @Test
     @DisplayName("Object[] <: Object")
     fun test1() {
         val a: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> Array_(classtable.object_t) }
         val b: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> classtable.object_t }
-        testForward(a, b, true)
+        testForward(a, b, rez = true)
     }
+
     @Test
     @DisplayName("Object[] <: Clonable")
     fun test2() {
         val a: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> Array_(classtable.object_t) }
         val b: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> classtable.cloneable_t }
-        testForward(a, b, true)
+        testForward(a, b, rez = true)
     }
+
     @Test
     @DisplayName("Object[] <: Serializable")
     fun test3() {
         val a: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> Array_(classtable.object_t) }
         val b: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> classtable.serializable_t }
-        testForward(a, b, true)
+        testForward(a, b, rez = true)
     }
 
     @Test
@@ -179,21 +230,23 @@ class JGSTest {
     fun test4() {
         val a: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> classtable.object_t }
         val b: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> Array_(classtable.object_t) }
-        testForward(a, b, false)
+        testForward(a, b, rez = false)
     }
+
     @Test
     @DisplayName("Object[] :> Clonable is FALSE")
     fun test5() {
         val a: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> classtable.cloneable_t }
         val b: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> Array_(classtable.object_t) }
-        testForward(a, b, false)
+        testForward(a, b, rez = false)
     }
+
     @Test
     @DisplayName("Object[] :> Serializable is FALSE")
     fun test6() {
         val a: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> classtable.serializable_t }
         val b: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> Array_(classtable.object_t) }
-        testForward(a, b, false)
+        testForward(a, b, rez = false)
     }
 
     @Test
@@ -201,7 +254,21 @@ class JGSTest {
     fun test7() {
         val a: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> Array_(Array_(classtable.object_t)) }
         val b: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> Array_(classtable.serializable_t) }
-        testForward(a, b, true, true)
+        testForward(a, b, rez = true, verbose = false)
     }
 
+    @Test
+    @DisplayName("A <: B")
+    fun test8() {
+        var a: Term<Jtype<ID>>? = null
+        var b: Term<Jtype<ID>>? = null
+        // TODO(Kakadu): this null-related stuff is bad. rewrite.
+        val init :  (MutableClassTable) -> Unit = { ct: MutableClassTable ->
+            val aId = ct.addClass(logicListOf() , ct.object_t, logicListOf())
+            a = Class_(aId.toLogic(), logicListOf())
+            val bId = ct.addClass(logicListOf() , a!!, logicListOf())
+            b = Class_(bId.toLogic(), logicListOf())
+        }
+        testForward({ a!! }, { b!! }, init, rez = true, verbose = false)
+    }
 }

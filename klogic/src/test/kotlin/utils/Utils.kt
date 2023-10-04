@@ -179,3 +179,9 @@ fun <T : Term<T>> reverso(a: ListTerm<T>, b: ListTerm<T>): Goal = { state ->
             }
     )(state)
 }
+
+context(RelationalContext)
+fun <A: Term<A>> debugUnify(msg: String, a: Term<A>, b: Term<A>) : Goal = { st ->
+    println(msg);
+    (a `===` b)(st)
+}
