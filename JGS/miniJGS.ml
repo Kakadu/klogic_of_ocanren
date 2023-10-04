@@ -307,11 +307,11 @@ open CC_type
 open CC_subst
 
 let rec substitute_typ :
-  'id.
-  'id ilogic Jtype.injected Targ.injected Std.List.injected
-  -> 'id ilogic Jtype.injected
-  -> 'id ilogic Jtype.injected
-  -> goal
+          'id.
+          'id ilogic Jtype.injected Targ.injected Std.List.injected
+          -> 'id ilogic Jtype.injected
+          -> 'id ilogic Jtype.injected
+          -> goal
   =
  fun subst typ res ->
   conde
@@ -339,11 +339,11 @@ let rec substitute_typ :
     ]
 
 and substitute_arg :
-  'id.
-  'id ilogic Jtype.injected Targ.injected Std.List.injected
-  -> 'id ilogic Jtype.injected Targ.injected
-  -> 'id ilogic Jtype.injected Targ.injected
-  -> goal
+      'id.
+      'id ilogic Jtype.injected Targ.injected Std.List.injected
+      -> 'id ilogic Jtype.injected Targ.injected
+      -> 'id ilogic Jtype.injected Targ.injected
+      -> goal
   =
  fun subst targ res ->
   conde
@@ -447,7 +447,7 @@ module Verifier (CT : CLASSTABLE) : VERIFIER = struct
       decl
       (CT.decl_by_id id decl)
       (conde [ decl === Decl.c p __ __; decl === Decl.i p __ ])
-  ;;
+ ;;
 
   let raw_helper :
      int ilogic
@@ -478,7 +478,7 @@ module Verifier (CT : CLASSTABLE) : VERIFIER = struct
           (params id params_val)
           (ntho params_val i t2)
       ]
-  ;;
+ ;;
 
   let subst_helper :
     int ilogic CC_type.injected -> int ilogic Jtype.injected Targ.injected -> goal
@@ -491,7 +491,7 @@ module Verifier (CT : CLASSTABLE) : VERIFIER = struct
           (raw_element === cc_var id i __ __)
           (targ === type_ (var id i (null ()) (Std.none ())))
       ]
-  ;;
+ ;;
 
   let targs_helper :
      int ilogic Jtype.injected Targ.injected Std.List.injected
@@ -526,7 +526,7 @@ module Verifier (CT : CLASSTABLE) : VERIFIER = struct
                  (new_p =/= intersect __)
              ])
       ]
-  ;;
+ ;;
 
   let targs_pred :
      (int ilogic Jtype.injected -> int ilogic Jtype.injected -> bool ilogic -> goal)
@@ -542,7 +542,7 @@ module Verifier (CT : CLASSTABLE) : VERIFIER = struct
           (( <-< ) lwb upb res)
       ; fresh () (res === !!true) (targ =/= type_ (var __ __ __ (Std.some __)))
       ]
-  ;;
+ ;;
 
   (* TODO: two useless arguments (they were used in comlete version of `capture_conversion`) *)
   let capture_conversion :
@@ -553,7 +553,7 @@ module Verifier (CT : CLASSTABLE) : VERIFIER = struct
     -> goal
     =
    fun _subtyping _id targs res -> res === Std.some targs
-  ;;
+ ;;
 
   (* TODO: useless argument (it was used in comlete version of `( <=< )` *)
   let ( <=< ) :
@@ -568,7 +568,7 @@ module Verifier (CT : CLASSTABLE) : VERIFIER = struct
       [ fresh () (type_a === type_b) (res === !!true)
       ; fresh () (type_a =/= type_b) (res === !!false)
       ]
-  ;;
+ ;;
 
   let class_int_sub :
      (int ilogic Jtype.injected -> int ilogic Jtype.injected -> bool ilogic -> goal)
@@ -616,7 +616,7 @@ module Verifier (CT : CLASSTABLE) : VERIFIER = struct
              ; fresh () (super_ === Std.none ()) (res === !!false)
              ])
       ]
-  ;;
+ ;;
 
   let rec ( -<- ) :
      (int ilogic Jtype.injected -> int ilogic Jtype.injected -> bool ilogic -> goal)
@@ -741,5 +741,249 @@ module Verifier (CT : CLASSTABLE) : VERIFIER = struct
              ; fresh () (res === !!true) (type_b =/= null ())
              ])
       ]
-  ;;
+ ;;
+end
+
+(* JGS_Helpers *)
+
+let only_classes_interfaces_and_arrays : int ilogic Jtype.injected -> goal =
+ fun q ->
+  wc
+  @@ fun inter ->
+  wc
+  @@ fun id ->
+  wc
+  @@ fun lwb ->
+  wc
+  @@ fun upb ->
+  wc
+  @@ fun index ->
+  fresh
+    ()
+    (q =/= Jtype.null ())
+    (q =/= Jtype.intersect inter)
+    (q =/= Jtype.var id lwb upb index)
+;;
+
+(* Closure *)
+
+let rec list_same_length :
+  'a ilogic Std.List.injected -> 'b ilogic Std.List.injected -> goal
+  =
+ fun xs ys ->
+  let open Std in
+  conde
+    [ fresh (h1 h2 tl1 tl2) (xs === h1 % tl1) (ys === h2 % tl2) (list_same_length tl1 tl2)
+    ; fresh () (xs === nil ()) (ys === nil ())
+    ]
+;;
+
+module type CLOSURE = sig
+  val direct_subtyping :
+     (int ilogic Jtype.injected -> goal -> goal -> goal)
+    -> ((int ilogic Jtype.injected -> int ilogic Jtype.injected -> bool ilogic -> goal)
+        -> int ilogic Jtype.injected
+        -> int ilogic Jtype.injected
+        -> bool ilogic
+        -> goal)
+    -> goal
+    -> int ilogic Jtype.injected
+    -> int ilogic Jtype.injected
+    -> goal
+
+  val closure :
+     (int ilogic Jtype.injected -> goal -> goal -> goal)
+    -> ((int ilogic Jtype.injected -> int ilogic Jtype.injected -> bool ilogic -> goal)
+        -> int ilogic Jtype.injected
+        -> int ilogic Jtype.injected
+        -> bool ilogic
+        -> goal)
+    -> goal
+    -> int ilogic Jtype.injected
+    -> int ilogic Jtype.injected
+    -> goal
+end
+
+module Closure (CT : CLASSTABLE) : CLOSURE = struct
+  let is_correct_type :
+     (int ilogic Jtype.injected -> int ilogic Jtype.injected -> goal)
+    -> int ilogic Jtype.injected
+    -> goal
+    =
+   fun closure_subtyping t ->
+    conde
+      [ (* Array: always allow *)
+        fresh elems (t === Jtype.array elems)
+      ; (* Class: should be metioned in class declarations with the same arguments amount *)
+        fresh
+          (id actual_params expected_params super supers)
+          (t === Jtype.class_ id actual_params)
+          (CT.decl_by_id id (Decl.c expected_params super supers))
+          (* TODO (Kakadu): write a relation same_length *)
+          (* (List.lengtho expected_params length)
+          (List.lengtho actual_params length) *)
+          (list_same_length expected_params actual_params)
+      ; (* Interface: should be metioned in interface declarations with the same arguments amount *)
+        fresh
+          (id actual_params expected_params supers)
+          (t === Jtype.interface id actual_params)
+          (CT.decl_by_id id (Decl.i expected_params supers))
+          (list_same_length expected_params actual_params)
+      ; (* Variable: lower bound should be subtype of upper bound *)
+        fresh
+          (id index upb lwb)
+          (t === Jtype.var id index upb (Std.Option.some lwb))
+          (upb =/= lwb)
+          (closure_subtyping lwb upb)
+      ; (* Varaible without lover bound: always allow *)
+        fresh (id index upb) (t === Jtype.var id index upb (Std.Option.none ()))
+      ; (* Null: always allow *)
+        t === Jtype.null ()
+      ; (* Intersect: always allow *)
+        fresh args (t === Jtype.intersect args)
+      ]
+ ;;
+
+  let ( -<- ) :
+     ((int ilogic Jtype.injected -> int ilogic Jtype.injected -> bool ilogic -> goal)
+      -> int ilogic Jtype.injected
+      -> int ilogic Jtype.injected
+      -> bool ilogic
+      -> goal)
+    -> (int ilogic Jtype.injected -> int ilogic Jtype.injected -> goal)
+    -> (int ilogic Jtype.injected -> goal)
+    -> int ilogic Jtype.injected
+    -> int ilogic Jtype.injected
+    -> goal
+    =
+   fun open_direct_subtyping closure_subtyping is_correct_type ta tb ->
+    fresh
+      ()
+      (open_direct_subtyping
+         (fun a b rez -> fresh () (rez === !!true) (closure_subtyping a b))
+         ta
+         tb
+         !!true)
+      (is_correct_type ta)
+      (is_correct_type tb)
+ ;;
+
+  let rec ( <-< ) :
+     (int ilogic Jtype.injected -> int ilogic Jtype.injected -> goal)
+    -> goal
+    -> int ilogic Jtype.injected
+    -> int ilogic Jtype.injected
+    -> goal
+    =
+   fun direct_subtyping query_constr ta tb ->
+    fresh
+      ()
+      query_constr
+      (only_classes_interfaces_and_arrays ta)
+      (only_classes_interfaces_and_arrays tb)
+      (conde
+         [ direct_subtyping ta tb
+         ; fresh
+             ti
+             (tb =/= ti)
+             (ta =/= ti)
+             (ta =/= tb)
+             (only_classes_interfaces_and_arrays ti)
+             (direct_subtyping ti tb)
+             (( <-< ) direct_subtyping query_constr ta ti)
+         ])
+ ;;
+
+  let rec ( >-> ) :
+     (int ilogic Jtype.injected -> int ilogic Jtype.injected -> goal)
+    -> goal
+    -> int ilogic Jtype.injected
+    -> int ilogic Jtype.injected
+    -> goal
+    =
+   fun direct_subtyping query_constr ta tb ->
+    fresh
+      ()
+      query_constr
+      (only_classes_interfaces_and_arrays ta)
+      (only_classes_interfaces_and_arrays tb)
+      (conde
+         [ direct_subtyping ta tb
+         ; fresh
+             ti
+             (tb =/= ti)
+             (ta =/= ti)
+             (ta =/= tb)
+             (only_classes_interfaces_and_arrays ti)
+             (direct_subtyping ta ti)
+             (( >-> ) direct_subtyping query_constr ti tb)
+         ])
+ ;;
+
+  (* `debug_var_handler` should be:
+
+  let debug_var_handler : int ilogic Jtype.injected -> goal -> goal -> goal =
+   fun ta closure_down closure_up ->
+    debug_var ta
+      (Fun.flip (Jtype.reify OCanren.reify))
+      (fun reified_ta ->
+        match reified_ta with [ Value _ ] -> closure_up | _ -> closure_down)
+  *)
+  let ( <-> ) :
+     (int ilogic Jtype.injected -> goal -> goal -> goal)
+    -> (int ilogic Jtype.injected -> int ilogic Jtype.injected -> goal)
+    -> goal
+    -> int ilogic Jtype.injected
+    -> int ilogic Jtype.injected
+    -> goal
+    =
+   fun debug_var_handler direct_subtyping query_constr ta tb ->
+    debug_var_handler
+      ta
+      (( <-< ) direct_subtyping query_constr ta tb)
+      (( >-> ) direct_subtyping query_constr ta tb)
+ ;;
+
+  let rec direct_subtyping :
+     (int ilogic Jtype.injected -> goal -> goal -> goal)
+    -> ((int ilogic Jtype.injected -> int ilogic Jtype.injected -> bool ilogic -> goal)
+        -> int ilogic Jtype.injected
+        -> int ilogic Jtype.injected
+        -> bool ilogic
+        -> goal)
+    -> goal
+    -> int ilogic Jtype.injected
+    -> int ilogic Jtype.injected
+    -> goal
+    =
+   fun debug_var_handler open_direct_subtyping query_constr ta tb ->
+    ( -<- )
+      open_direct_subtyping
+      (fun ta tb -> closure debug_var_handler open_direct_subtyping query_constr ta tb)
+      (is_correct_type (fun ta tb ->
+         closure debug_var_handler open_direct_subtyping query_constr ta tb))
+      ta
+      tb
+
+  and closure :
+     (int ilogic Jtype.injected -> goal -> goal -> goal)
+    -> ((int ilogic Jtype.injected -> int ilogic Jtype.injected -> bool ilogic -> goal)
+        -> int ilogic Jtype.injected
+        -> int ilogic Jtype.injected
+        -> bool ilogic
+        -> goal)
+    -> goal
+    -> int ilogic Jtype.injected
+    -> int ilogic Jtype.injected
+    -> goal
+    =
+   fun debug_var_handler open_direct_subtyping query_constr ta tb ->
+    ( <-> )
+      debug_var_handler
+      (fun ta tb ->
+        direct_subtyping debug_var_handler open_direct_subtyping query_constr ta tb)
+      query_constr
+      ta
+      tb
+ ;;
 end
