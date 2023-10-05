@@ -1,6 +1,6 @@
 (library
- (name miniJGS)
- (modules miniJGS)
+ (name JGS)
+ (modules JGS)
  (libraries OCanren noCanren.Option noCanren.List)
  (wrapped false)
  (flags
