@@ -151,14 +151,13 @@ fun <ID : Term<ID>> substitute_arg(subst: Term<LogicList<Jarg<Jtype<ID>>>>,
 targ: Term<Jarg<Jtype<ID>>>, res: Term<Jarg<Jtype<ID>>>): Goal =
 conde(freshTypedVars { index: Term<PeanoLogicNumber> ->
       and(/* NOTE: fresh without delay */
-          freshTypedVars { __JGS_miniJGS_ml_c39 : Term<ID> ->
+          freshTypedVars { __JGS_JGS_ml_c39 : Term<ID> ->
           /* NOTE: fresh without delay */
-          freshTypedVars { __JGS_miniJGS_ml_c48 : Term<Jtype<ID>> ->
+          freshTypedVars { __JGS_JGS_ml_c48 : Term<Jtype<ID>> ->
           /* NOTE: fresh without delay */
-          freshTypedVars { __JGS_miniJGS_ml_c51 : Term<LogicOption<Jtype<ID>>> ->
-          (targ `===` Type(Var(__JGS_miniJGS_ml_c39, index,
-                           __JGS_miniJGS_ml_c48, __JGS_miniJGS_ml_c51))) 
-          } } },
+          freshTypedVars { __JGS_JGS_ml_c51 : Term<LogicOption<Jtype<ID>>> ->
+          (targ `===` Type(Var(__JGS_JGS_ml_c39, index, __JGS_JGS_ml_c48,
+                           __JGS_JGS_ml_c51))) } } },
           ntho(subst, index, res))
       },
       freshTypedVars { typ: Term<Jtype<ID>>, new_typ: Term<Jtype<ID>> ->
@@ -251,14 +250,13 @@ object: VERIFIER {
   freshTypedVars { decl: Term<Decl<LogicInt>> ->
   and(CT.decl_by_id(id, decl),
       conde(/* NOTE: fresh without delay */
-            freshTypedVars { __JGS_miniJGS_ml_c33 : Term<Jtype<LogicInt>> ->
+            freshTypedVars { __JGS_JGS_ml_c33 : Term<Jtype<LogicInt>> ->
             /* NOTE: fresh without delay */
-            freshTypedVars { __JGS_miniJGS_ml_c36 : Term<LogicList<Jtype<LogicInt>>> ->
-            (decl `===` C(p, __JGS_miniJGS_ml_c33, __JGS_miniJGS_ml_c36)) 
-            } },
+            freshTypedVars { __JGS_JGS_ml_c36 : Term<LogicList<Jtype<LogicInt>>> ->
+            (decl `===` C(p, __JGS_JGS_ml_c33, __JGS_JGS_ml_c36)) } },
             /* NOTE: fresh without delay */
-            freshTypedVars { __JGS_miniJGS_ml_c58 : Term<LogicList<Jtype<LogicInt>>> ->
-            (decl `===` I(p, __JGS_miniJGS_ml_c58)) }))
+            freshTypedVars { __JGS_JGS_ml_c58 : Term<LogicList<Jtype<LogicInt>>> ->
+            (decl `===` I(p, __JGS_JGS_ml_c58)) }))
   }
 context(RelationalContext)
 override fun  raw_helper(id: Term<LogicInt>, i: Term<PeanoLogicNumber>,
@@ -301,11 +299,11 @@ conde(freshTypedVars { t: Term<Jtype<LogicInt>> ->
       },
       freshTypedVars { id: Term<LogicInt>, i: Term<PeanoLogicNumber> ->
       and(/* NOTE: fresh without delay */
-          freshTypedVars { __JGS_miniJGS_ml_c39 : Term<ClosureConversion<LogicInt>> ->
+          freshTypedVars { __JGS_JGS_ml_c39 : Term<ClosureConversion<LogicInt>> ->
           /* NOTE: fresh without delay */
-          freshTypedVars { __JGS_miniJGS_ml_c42 : Term<LogicOption<Jtype<LogicInt>>> ->
-          (raw_element `===` CC_var(id, i, __JGS_miniJGS_ml_c39,
-                             __JGS_miniJGS_ml_c42)) } },
+          freshTypedVars { __JGS_JGS_ml_c42 : Term<LogicOption<Jtype<LogicInt>>> ->
+          (raw_element `===` CC_var(id, i, __JGS_JGS_ml_c39,
+                             __JGS_JGS_ml_c42)) } },
           targ `===` Type(Var(id, i, Null(), None())))
       })
 context(RelationalContext)
@@ -339,8 +337,8 @@ conde(freshTypedVars { t: Term<Jtype<LogicInt>>,
                     upb `===` Intersect((t + ts)))
                 },
                 pause { and(upb `===` Intersect((t + (new_p + nilLogicList()))),
-                            wc {__JGS_miniJGS_ml_c38 : Term<LogicList<Jtype<LogicInt>>> ->
-                            (new_p `!==` Intersect(__JGS_miniJGS_ml_c38))})
+                            wc {__JGS_JGS_ml_c38 : Term<LogicList<Jtype<LogicInt>>> ->
+                            (new_p `!==` Intersect(__JGS_JGS_ml_c38))})
                 }))
       } })
 context(RelationalContext)
@@ -349,22 +347,20 @@ targ: Term<Jarg<Jtype<LogicInt>>>, res: Term<LogicBool>): Goal =
 conde(freshTypedVars { upb: Term<Jtype<LogicInt>>,
         lwb: Term<Jtype<LogicInt>> ->
       and(/* NOTE: fresh without delay */
-          freshTypedVars { __JGS_miniJGS_ml_c31 : Term<LogicInt> ->
+          freshTypedVars { __JGS_JGS_ml_c31 : Term<LogicInt> ->
           /* NOTE: fresh without delay */
-          freshTypedVars { __JGS_miniJGS_ml_c34 : Term<PeanoLogicNumber> ->
-          (targ `===` Type(Var(__JGS_miniJGS_ml_c31, __JGS_miniJGS_ml_c34,
-                           upb, Some(lwb)))) } },
+          freshTypedVars { __JGS_JGS_ml_c34 : Term<PeanoLogicNumber> ->
+          (targ `===` Type(Var(__JGS_JGS_ml_c31, __JGS_JGS_ml_c34, upb,
+                           Some(lwb)))) } },
           less_minus_less(lwb, upb, res))
       },
       pause { and(res `===` true.toLogicBool(),
-                  wc {__JGS_miniJGS_ml_c55 : Term<LogicInt> ->
-                  wc {__JGS_miniJGS_ml_c58 : Term<PeanoLogicNumber> ->
-                  wc {__JGS_miniJGS_ml_c61 : Term<Jtype<LogicInt>> ->
-                  wc {__JGS_miniJGS_ml_c74 : Term<Jtype<LogicInt>> ->
-                  (targ `!==` Type(Var(__JGS_miniJGS_ml_c55,
-                                   __JGS_miniJGS_ml_c58,
-                                   __JGS_miniJGS_ml_c61,
-                                   Some(__JGS_miniJGS_ml_c74))))}}}})
+                  wc {__JGS_JGS_ml_c55 : Term<LogicInt> ->
+                  wc {__JGS_JGS_ml_c58 : Term<PeanoLogicNumber> ->
+                  wc {__JGS_JGS_ml_c61 : Term<Jtype<LogicInt>> ->
+                  wc {__JGS_JGS_ml_c74 : Term<Jtype<LogicInt>> ->
+                  (targ `!==` Type(Var(__JGS_JGS_ml_c55, __JGS_JGS_ml_c58,
+                                   __JGS_JGS_ml_c61, Some(__JGS_JGS_ml_c74))))}}}})
       })
 context(RelationalContext)
 override fun  capture_conversion(_subtyping: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,
@@ -402,12 +398,12 @@ conde(pause { and(id_a `===` id_b,
           conde(freshTypedVars { targs_b2: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
                   new_targs_b2: Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
                 and(conde(/* NOTE: fresh without delay */
-                          freshTypedVars { __JGS_miniJGS_ml_c50 : Term<LogicInt> ->
-                          (super_ `===` Some(Class_(__JGS_miniJGS_ml_c50,
+                          freshTypedVars { __JGS_JGS_ml_c50 : Term<LogicInt> ->
+                          (super_ `===` Some(Class_(__JGS_JGS_ml_c50,
                                              targs_b2))) },
                           /* NOTE: fresh without delay */
-                          freshTypedVars { __JGS_miniJGS_ml_c53 : Term<LogicInt> ->
-                          (super_ `===` Some(Interface(__JGS_miniJGS_ml_c53,
+                          freshTypedVars { __JGS_JGS_ml_c53 : Term<LogicInt> ->
+                          (super_ `===` Some(Interface(__JGS_JGS_ml_c53,
                                              targs_b2))) }),
                     mapo({ arg: Term<Jarg<Jtype<LogicInt>>>, res: Term<Jarg<Jtype<LogicInt>>> -> 
                          substitute_arg(targs_a, arg, res) },
@@ -446,14 +442,14 @@ conde(freshTypedVars { id_a: Term<LogicInt>,
                           },
                           freshTypedVars { typ: Term<Jtype<LogicInt>> ->
                           and(/* NOTE: fresh without delay */
-                              freshTypedVars { __JGS_miniJGS_ml_c40 : Term<LogicInt> ->
+                              freshTypedVars { __JGS_JGS_ml_c40 : Term<LogicInt> ->
                               /* NOTE: fresh without delay */
-                              freshTypedVars { __JGS_miniJGS_ml_c43 : Term<PeanoLogicNumber> ->
+                              freshTypedVars { __JGS_JGS_ml_c43 : Term<PeanoLogicNumber> ->
                               /* NOTE: fresh without delay */
-                              freshTypedVars { __JGS_miniJGS_ml_c46 : Term<Jtype<LogicInt>> ->
-                              (type_b `===` Var(__JGS_miniJGS_ml_c40,
-                                            __JGS_miniJGS_ml_c43,
-                                            __JGS_miniJGS_ml_c46, Some(typ)))
+                              freshTypedVars { __JGS_JGS_ml_c46 : Term<Jtype<LogicInt>> ->
+                              (type_b `===` Var(__JGS_JGS_ml_c40,
+                                            __JGS_JGS_ml_c43,
+                                            __JGS_JGS_ml_c46, Some(typ))) 
                               } } },
                               conde(pause { and(typ `===` type_a,
                                                 res `===` true.toLogicBool())
@@ -463,22 +459,22 @@ conde(freshTypedVars { id_a: Term<LogicInt>,
                                     }))
                           },
                           pause { and(res `===` false.toLogicBool(),
-                                      wc {__JGS_miniJGS_ml_c40 : Term<LogicInt> ->
-                                      wc {__JGS_miniJGS_ml_c43 : Term<PeanoLogicNumber> ->
-                                      wc {__JGS_miniJGS_ml_c46 : Term<Jtype<LogicInt>> ->
-                                      wc {__JGS_miniJGS_ml_c59 : Term<Jtype<LogicInt>> ->
-                                      (type_b `!==` Var(__JGS_miniJGS_ml_c40,
-                                                    __JGS_miniJGS_ml_c43,
-                                                    __JGS_miniJGS_ml_c46,
-                                                    Some(__JGS_miniJGS_ml_c59)))}}}},
-                                      wc {__JGS_miniJGS_ml_c46 : Term<LogicInt> ->
-                                      wc {__JGS_miniJGS_ml_c49 : Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
-                                      (type_b `!==` Interface(__JGS_miniJGS_ml_c46,
-                                                    __JGS_miniJGS_ml_c49))}},
-                                      wc {__JGS_miniJGS_ml_c43 : Term<LogicInt> ->
-                                      wc {__JGS_miniJGS_ml_c46 : Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
-                                      (type_b `!==` Class_(__JGS_miniJGS_ml_c43,
-                                                    __JGS_miniJGS_ml_c46))}})
+                                      wc {__JGS_JGS_ml_c40 : Term<LogicInt> ->
+                                      wc {__JGS_JGS_ml_c43 : Term<PeanoLogicNumber> ->
+                                      wc {__JGS_JGS_ml_c46 : Term<Jtype<LogicInt>> ->
+                                      wc {__JGS_JGS_ml_c59 : Term<Jtype<LogicInt>> ->
+                                      (type_b `!==` Var(__JGS_JGS_ml_c40,
+                                                    __JGS_JGS_ml_c43,
+                                                    __JGS_JGS_ml_c46,
+                                                    Some(__JGS_JGS_ml_c59)))}}}},
+                                      wc {__JGS_JGS_ml_c46 : Term<LogicInt> ->
+                                      wc {__JGS_JGS_ml_c49 : Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
+                                      (type_b `!==` Interface(__JGS_JGS_ml_c46,
+                                                    __JGS_JGS_ml_c49))}},
+                                      wc {__JGS_JGS_ml_c43 : Term<LogicInt> ->
+                                      wc {__JGS_JGS_ml_c46 : Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
+                                      (type_b `!==` Class_(__JGS_JGS_ml_c43,
+                                                    __JGS_JGS_ml_c46))}})
                           }))
                 }))
       },
@@ -501,14 +497,14 @@ conde(freshTypedVars { id_a: Term<LogicInt>,
                           },
                           freshTypedVars { typ: Term<Jtype<LogicInt>> ->
                           and(/* NOTE: fresh without delay */
-                              freshTypedVars { __JGS_miniJGS_ml_c40 : Term<LogicInt> ->
+                              freshTypedVars { __JGS_JGS_ml_c40 : Term<LogicInt> ->
                               /* NOTE: fresh without delay */
-                              freshTypedVars { __JGS_miniJGS_ml_c43 : Term<PeanoLogicNumber> ->
+                              freshTypedVars { __JGS_JGS_ml_c43 : Term<PeanoLogicNumber> ->
                               /* NOTE: fresh without delay */
-                              freshTypedVars { __JGS_miniJGS_ml_c46 : Term<Jtype<LogicInt>> ->
-                              (type_b `===` Var(__JGS_miniJGS_ml_c40,
-                                            __JGS_miniJGS_ml_c43,
-                                            __JGS_miniJGS_ml_c46, Some(typ)))
+                              freshTypedVars { __JGS_JGS_ml_c46 : Term<Jtype<LogicInt>> ->
+                              (type_b `===` Var(__JGS_JGS_ml_c40,
+                                            __JGS_JGS_ml_c43,
+                                            __JGS_JGS_ml_c46, Some(typ))) 
                               } } },
                               conde(pause { and(typ `===` type_a,
                                                 res `===` true.toLogicBool())
@@ -518,22 +514,22 @@ conde(freshTypedVars { id_a: Term<LogicInt>,
                                     }))
                           },
                           pause { and(res `===` false.toLogicBool(),
-                                      wc {__JGS_miniJGS_ml_c40 : Term<LogicInt> ->
-                                      wc {__JGS_miniJGS_ml_c43 : Term<PeanoLogicNumber> ->
-                                      wc {__JGS_miniJGS_ml_c46 : Term<Jtype<LogicInt>> ->
-                                      wc {__JGS_miniJGS_ml_c59 : Term<Jtype<LogicInt>> ->
-                                      (type_b `!==` Var(__JGS_miniJGS_ml_c40,
-                                                    __JGS_miniJGS_ml_c43,
-                                                    __JGS_miniJGS_ml_c46,
-                                                    Some(__JGS_miniJGS_ml_c59)))}}}},
-                                      wc {__JGS_miniJGS_ml_c43 : Term<LogicInt> ->
-                                      wc {__JGS_miniJGS_ml_c46 : Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
-                                      (type_b `!==` Class_(__JGS_miniJGS_ml_c43,
-                                                    __JGS_miniJGS_ml_c46))}},
-                                      wc {__JGS_miniJGS_ml_c46 : Term<LogicInt> ->
-                                      wc {__JGS_miniJGS_ml_c49 : Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
-                                      (type_b `!==` Interface(__JGS_miniJGS_ml_c46,
-                                                    __JGS_miniJGS_ml_c49))}})
+                                      wc {__JGS_JGS_ml_c40 : Term<LogicInt> ->
+                                      wc {__JGS_JGS_ml_c43 : Term<PeanoLogicNumber> ->
+                                      wc {__JGS_JGS_ml_c46 : Term<Jtype<LogicInt>> ->
+                                      wc {__JGS_JGS_ml_c59 : Term<Jtype<LogicInt>> ->
+                                      (type_b `!==` Var(__JGS_JGS_ml_c40,
+                                                    __JGS_JGS_ml_c43,
+                                                    __JGS_JGS_ml_c46,
+                                                    Some(__JGS_JGS_ml_c59)))}}}},
+                                      wc {__JGS_JGS_ml_c43 : Term<LogicInt> ->
+                                      wc {__JGS_JGS_ml_c46 : Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
+                                      (type_b `!==` Class_(__JGS_JGS_ml_c43,
+                                                    __JGS_JGS_ml_c46))}},
+                                      wc {__JGS_JGS_ml_c46 : Term<LogicInt> ->
+                                      wc {__JGS_JGS_ml_c49 : Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
+                                      (type_b `!==` Interface(__JGS_JGS_ml_c46,
+                                                    __JGS_JGS_ml_c49))}})
                           }))
                 }))
       },
@@ -556,9 +552,9 @@ conde(freshTypedVars { id_a: Term<LogicInt>,
                                                         ta, tb, res))
                                                     },
                                                     pause { and(res `===` false.toLogicBool(),
-                                                                wc {__JGS_miniJGS_ml_c74 : Term<Jtype<LogicInt>> ->
+                                                                wc {__JGS_JGS_ml_c74 : Term<Jtype<LogicInt>> ->
                                                                 (type_b `!==` 
-                                                                Array_(__JGS_miniJGS_ml_c74))})
+                                                                Array_(__JGS_JGS_ml_c74))})
                                                     }))
                                   }))
                 },
@@ -569,8 +565,8 @@ conde(freshTypedVars { id_a: Term<LogicInt>,
                                       tb, res))
                                   },
                                   pause { and(res `===` false.toLogicBool(),
-                                              wc {__JGS_miniJGS_ml_c67 : Term<Jtype<LogicInt>> ->
-                                              (type_b `!==` Array_(__JGS_miniJGS_ml_c67))})
+                                              wc {__JGS_JGS_ml_c67 : Term<Jtype<LogicInt>> ->
+                                              (type_b `!==` Array_(__JGS_JGS_ml_c67))})
                                   }))
                 }))
       },
@@ -580,13 +576,13 @@ conde(freshTypedVars { id_a: Term<LogicInt>,
       },
       freshTypedVars { upb_typ: Term<Jtype<LogicInt>> ->
       and(/* NOTE: fresh without delay */
-          freshTypedVars { __JGS_miniJGS_ml_c26 : Term<LogicInt> ->
+          freshTypedVars { __JGS_JGS_ml_c26 : Term<LogicInt> ->
           /* NOTE: fresh without delay */
-          freshTypedVars { __JGS_miniJGS_ml_c29 : Term<PeanoLogicNumber> ->
+          freshTypedVars { __JGS_JGS_ml_c29 : Term<PeanoLogicNumber> ->
           /* NOTE: fresh without delay */
-          freshTypedVars { __JGS_miniJGS_ml_c40 : Term<LogicOption<Jtype<LogicInt>>> ->
-          (type_a `===` Var(__JGS_miniJGS_ml_c26, __JGS_miniJGS_ml_c29,
-                        upb_typ, __JGS_miniJGS_ml_c40)) } } },
+          freshTypedVars { __JGS_JGS_ml_c40 : Term<LogicOption<Jtype<LogicInt>>> ->
+          (type_a `===` Var(__JGS_JGS_ml_c26, __JGS_JGS_ml_c29, upb_typ,
+                        __JGS_JGS_ml_c40)) } } },
           conde(pause { and(upb_typ `===` type_b,
                             res `===` true.toLogicBool())
                 },

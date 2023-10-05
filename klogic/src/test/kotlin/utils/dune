@@ -29,4 +29,4 @@
    %{target})))
 
 (cram
- (deps OlegNumbers.kt miniJGS.kt))
+ (deps OlegNumbers.kt JGS.kt))
