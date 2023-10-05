@@ -2,14 +2,24 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.klogic.core.*
+import org.klogic.core.RelationalContext
+//import org.klogic.core.*
+import org.klogic.core.Term
+import org.klogic.core.UnificationListener
+import org.klogic.core.reified
+import org.klogic.core.Goal
 import org.klogic.core.Var
+import org.klogic.core.debugVar
+import org.klogic.core.failure
+import org.klogic.core.`|||`
+import org.klogic.core.and
 import org.klogic.utils.terms.LogicBool
 import org.klogic.utils.terms.LogicBool.Companion.toLogicBool
 import org.klogic.utils.terms.LogicList
 import org.klogic.utils.terms.LogicList.Companion.logicListOf
 import utils.*
 import utils.JGS.*
+import utils.JGS.Wildcard
 import utils.LogicInt.Companion.toLogic
 
 typealias ID = LogicInt
@@ -17,15 +27,15 @@ typealias ID = LogicInt
 interface MutableClassTable : CLASSTABLE {
     fun addClass(c: C<ID>): Int
     fun addClass(
-        params: Term<LogicList<Jtype<ID>>>,
-        superClass: Term<Jtype<ID>>,
-        supers: Term<LogicList<Jtype<ID>>>,
+            params: Term<LogicList<Jtype<ID>>>,
+            superClass: Term<Jtype<ID>>,
+            supers: Term<LogicList<Jtype<ID>>>,
     ): Int
 
     fun addInterface(c: I<ID>): Int
     fun addInterface(
-        params: Term<LogicList<Jtype<ID>>>,
-        supers: Term<LogicList<Jtype<ID>>>
+            params: Term<LogicList<Jtype<ID>>>,
+            supers: Term<LogicList<Jtype<ID>>>
     ): Int
 }
 
@@ -52,9 +62,9 @@ class DefaultCT : MutableClassTable {
     }
 
     override fun addClass(
-        params: Term<LogicList<Jtype<ID>>>,
-        superClass: Term<Jtype<ID>>,
-        supers: Term<LogicList<Jtype<ID>>>,
+            params: Term<LogicList<Jtype<ID>>>,
+            superClass: Term<Jtype<ID>>,
+            supers: Term<LogicList<Jtype<ID>>>,
     ): Int {
         data[newId()] = C(params, superClass, supers)
         return lastId
@@ -66,8 +76,8 @@ class DefaultCT : MutableClassTable {
     }
 
     override fun addInterface(
-        params: Term<LogicList<Jtype<ID>>>,
-        supers: Term<LogicList<Jtype<ID>>>
+            params: Term<LogicList<Jtype<ID>>>,
+            supers: Term<LogicList<Jtype<ID>>>
     ): Int {
         data[newId()] = I(params, supers)
         return lastId
@@ -109,26 +119,65 @@ class DefaultCT : MutableClassTable {
 
     context(RelationalContext)
     fun getSuperclassByIdFreeFree(subId: Term<LogicInt>,
-                                  v4: Term<LogicInt>,
-                                  rez: Term<Jtype<LogicInt>>) : Goal {
-        TODO("")
+                                  superId: Term<LogicInt>,
+                                  rez: Term<Jtype<LogicInt>>): Goal {
+        val parents: (Decl<ID>) -> List<Jtype<ID>> = { it ->
+            when (it) {
+                is I ->
+                    when (it.supers) {
+                        is LogicList<Jtype<ID>> ->
+                            it.supers.toList().map { it -> it as Jtype<ID> }
 
-//        return
-//            data.entries.fold(failure) { acc, entry ->
-//                val d = entry.value
-//                when (d) {
-//                    is I -> acc
-//                    is C -> acc `|||` and(entry.key.toLogic() `===` subId, v4 `===` d.id)
-//                }
-//
-//            }
+                        is Var -> TODO("")
+                        is Wildcard<*> -> TODO("Should not be reachable")
+                        else -> TODO("Should not be reachable 100%")
+                    }
+
+                is C ->
+                    when (it.supers) {
+                        is LogicList<Jtype<ID>> ->
+                            it.supers.toList().map { it as Jtype<ID> }
+
+                        is Var -> TODO("")
+                        is Wildcard<*> -> TODO("Should not be reachable")
+                        else -> TODO("Should not be reachable 100%")
+                    } + when (it.superClass) {
+                        is Jtype<ID> ->
+                            listOf(it.superClass)
+
+                        is Var -> TODO("")
+                        is Wildcard<*> -> TODO("Should not be reachable")
+                        else -> TODO("Should not be reachable 100%")
+                    }
+            }
+        }
+        return data.entries.fold(failure) { acc, entry ->
+            val curId = entry.key
+            if (curId == objectId)
+                acc
+            else {
+                val d: Term<Decl<ID>> = entry.value
+                val parentsList = parents(d as Decl<ID>)
+
+
+                parentsList.fold(acc) { acc, jtyp ->
+                    when (jtyp) {
+                        is Interface -> acc `|||` and(jtyp.id `===` superId, curId.toLogic() `===` subId, rez `===` jtyp)
+                        is Class_ -> acc `|||` and(jtyp.id `===` superId, curId.toLogic() `===` subId, rez `===` jtyp)
+                        else -> TODO("ancestor of the interface should be an interface")
+                    }
+                }
+            }
+        }
     }
+
     context(RelationalContext) override fun get_superclass_by_id(
-        v3: Term<LogicInt>,
-        v4: Term<LogicInt>,
-        v5: Term<LogicOption<Jtype<LogicInt>>>
-    ): Goal {
-        TODO("Not yet implemented")
+            subId: Term<LogicInt>,
+            superId: Term<LogicInt>,
+            rez: Term<LogicOption<Jtype<LogicInt>>>
+    ): Goal = freshTypedVars { answerJtyp: Term<Jtype<LogicInt>> ->
+        and(rez `===` Some(answerJtyp),
+                getSuperclassByIdFreeFree(subId, superId, answerJtyp))
     }
 }
 
@@ -150,12 +199,14 @@ class DefaultCT : MutableClassTable {
 data class NotComplete(val v: VERIFIER) {
     context(RelationalContext)
     fun smallFish(ta: Term<Jtype<LogicInt>>, tb: Term<Jtype<LogicInt>>, rez: Term<LogicBool>): Goal =
-        this.check(ta, tb, rez)
+            this.check(ta, tb, rez)
 
     context(RelationalContext)
     fun check(ta: Term<Jtype<LogicInt>>, tb: Term<Jtype<LogicInt>>, rez: Term<LogicBool>): Goal {
         return v.minus_less_minus(
-            { a, b, c -> smallFish(a, b, c) }, ta, tb, rez
+//                smallFish,
+                { a, b, c -> smallFish(a, b, c) },
+                ta, tb, rez
         )
     }
 }
@@ -169,18 +220,18 @@ class JGSTest {
     private val unificationsTracer = UnificationListener { firstTerm, secondTerm, stateBefore, stateAfter ->
         //if (System.getenv("SILENT_UNIFICATIONS") == null)
         val rez =
-            if (stateAfter == null)
-                " ~~> _|_"
-            else ""
+                if (stateAfter == null)
+                    " ~~> _|_"
+                else ""
         println("${firstTerm.walk(stateBefore.substitution)} `===` ${secondTerm.walk(stateBefore.substitution)}$rez")
     }
 
     fun testForward(
-        a: (MutableClassTable) -> Term<Jtype<ID>>,
-        b: (MutableClassTable) -> Term<Jtype<ID>>,
-        init: (MutableClassTable) -> Unit = { },
-        rez: Boolean,
-        verbose: Boolean = false
+            a: (MutableClassTable) -> Term<Jtype<ID>>,
+            b: (MutableClassTable) -> Term<Jtype<ID>>,
+            init: (MutableClassTable) -> Unit = { },
+            rez: Boolean,
+            verbose: Boolean = false
     ) {
         val classtable = DefaultCT()
         init(classtable)
@@ -195,7 +246,7 @@ class JGSTest {
             if (verbose)
                 answers.forEachIndexed { i, x -> println("$i: $x") }
 
-            assertEquals(answers.count(), 1)
+            assertEquals(1, answers.count())
             val expectedTerm = rez.toLogicBool()
             assertEquals(expectedTerm, answers[0])
         }
@@ -263,12 +314,12 @@ class JGSTest {
         var a: Term<Jtype<ID>>? = null
         var b: Term<Jtype<ID>>? = null
         // TODO(Kakadu): this null-related stuff is bad. rewrite.
-        val init :  (MutableClassTable) -> Unit = { ct: MutableClassTable ->
-            val aId = ct.addClass(logicListOf() , ct.object_t, logicListOf())
+        val init: (MutableClassTable) -> Unit = { ct: MutableClassTable ->
+            val aId = ct.addClass(logicListOf(), ct.object_t, logicListOf())
             a = Class_(aId.toLogic(), logicListOf())
-            val bId = ct.addClass(logicListOf() , a!!, logicListOf())
+            val bId = ct.addClass(logicListOf(), a!!, logicListOf())
             b = Class_(bId.toLogic(), logicListOf())
         }
-        testForward({ a!! }, { b!! }, init, rez = true, verbose = false)
+        testForward({ b!! }, { a!! }, init, rez = true, verbose = false)
     }
 }
