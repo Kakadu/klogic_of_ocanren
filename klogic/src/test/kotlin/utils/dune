@@ -28,5 +28,35 @@
    -o
    %{target})))
 
+(rule
+ (deps
+  %{project_root}/bin/klogic_of_ocanren.exe
+  ../../../../../JGS/.JGS.objs/byte/closure.cmo
+  ;
+  )
+ (target Closure.kt)
+ (mode promote)
+ (action
+  (run
+   %{project_root}/bin/klogic_of_ocanren.exe
+   ../../../../../JGS/.JGS.objs/byte/closure.cmt
+   -o
+   %{target})))
+
+(rule
+ (deps
+  %{project_root}/bin/klogic_of_ocanren.exe
+  ../../../../../JGS/.JGS.objs/byte/jGS_Helpers.cmo
+  ;
+  )
+ (target JGS_Helpers.kt)
+ (mode promote)
+ (action
+  (run
+   %{project_root}/bin/klogic_of_ocanren.exe
+   ../../../../../JGS/.JGS.objs/byte/jGS_Helpers.cmt
+   -o
+   %{target})))
+
 (cram
  (deps OlegNumbers.kt JGS.kt))
