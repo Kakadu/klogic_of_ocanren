@@ -557,6 +557,7 @@ let print_ident ppf s =
     | '@' -> Special "at"
     | '^' -> Special "hat"
     | '|' -> Special "pipe"
+    | '\'' -> Special "prime"
     | c -> Common c
   in
   let rec concat_chars ppf =
