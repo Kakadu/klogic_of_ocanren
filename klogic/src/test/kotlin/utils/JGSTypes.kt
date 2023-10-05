@@ -158,25 +158,25 @@ data class TypeInterface<ID : Term<ID>>(val id: Term<ID>,
     }
 }
 
-data class Var<ID : Term<ID>>(val id: Term<ID>, val args: Term<PeanoLogicNumber>,
+data class Var<ID : Term<ID>>(val id: Term<ID>, val index: Term<PeanoLogicNumber>,
                               val upb: Term<Jtype<ID>>, val lwb: Term<LogicOption<Jtype<ID>>>) :
         Jtype<ID>() {
     override val subtreesToUnify: Array<Term<*>>
-        get() = arrayOf(id, args, upb,lwb )
+        get() = arrayOf(id, index, upb,lwb )
 
     @Suppress("UNCHECKED_CAST")
     override fun constructFromSubtrees(subtrees: Iterable<*>): CustomTerm<Jtype<ID>> {
         // We use by-hand iteration here to avoid losing performance.
         val iterator = subtrees.iterator()
         val head = iterator.next()
-        val args = iterator.next() as Term<PeanoLogicNumber>
+        val index = iterator.next() as Term<PeanoLogicNumber>
         val upb = iterator.next() as Term<Jtype<ID>>
         val lwb = iterator.next() as Term<LogicOption<Jtype<ID>>>
 
         require(!iterator.hasNext()) {
             "Expected only head and tail for constructing Cons but got more elements"
         }
-        return Var(head as Term<ID>, args, upb, lwb)
+        return Var(head as Term<ID>, index, upb, lwb)
     }
 }
 

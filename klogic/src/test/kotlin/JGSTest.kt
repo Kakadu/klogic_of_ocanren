@@ -17,6 +17,7 @@ import org.klogic.utils.terms.LogicBool
 import org.klogic.utils.terms.LogicBool.Companion.toLogicBool
 import org.klogic.utils.terms.LogicList
 import org.klogic.utils.terms.LogicList.Companion.logicListOf
+import org.klogic.utils.terms.toPeanoLogicNumber
 import utils.*
 import utils.JGS.*
 import utils.JGS.Wildcard
@@ -33,10 +34,9 @@ interface MutableClassTable : CLASSTABLE {
     ): Int
 
     fun addInterface(c: I<ID>): Int
-    fun addInterface(
-            params: Term<LogicList<Jtype<ID>>>,
-            supers: Term<LogicList<Jtype<ID>>>
-    ): Int
+    fun addInterface(params: Term<LogicList<Jtype<ID>>>, supers: Term<LogicList<Jtype<ID>>>): Int
+
+    fun makeTVar(id: Int, upb: Term<Jtype<ID>>): Jtype<ID>
 }
 
 class DefaultCT : MutableClassTable {
@@ -75,14 +75,17 @@ class DefaultCT : MutableClassTable {
         return lastId
     }
 
-    override fun addInterface(
-            params: Term<LogicList<Jtype<ID>>>,
-            supers: Term<LogicList<Jtype<ID>>>
-    ): Int {
+    override fun addInterface(params: Term<LogicList<Jtype<ID>>>, supers: Term<LogicList<Jtype<ID>>>): Int {
         data[newId()] = I(params, supers)
         return lastId
 
     }
+
+    override fun makeTVar(index: Int, upb: Term<Jtype<ID>>): Jtype<ID> {
+        val id = newId()
+        return Var(id.toLogic(), index.toPeanoLogicNumber(), upb, None())
+    }
+
 
     constructor() {
         top = Class_<ID>(0.toLogic(), logicListOf());
@@ -118,43 +121,35 @@ class DefaultCT : MutableClassTable {
     }
 
     context(RelationalContext)
-    fun getSuperclassByIdFreeFree(subId: Term<LogicInt>,
-                                  superId: Term<LogicInt>,
-                                  rez: Term<Jtype<LogicInt>>): Goal {
+    fun getSuperclassByIdFreeFree(subId: Term<LogicInt>, superId: Term<LogicInt>, rez: Term<Jtype<LogicInt>>): Goal {
         val parents: (Decl<ID>) -> List<Jtype<ID>> = { it ->
             when (it) {
-                is I ->
-                    when (it.supers) {
-                        is LogicList<Jtype<ID>> ->
-                            it.supers.toList().map { it -> it as Jtype<ID> }
+                is I -> when (it.supers) {
+                    is LogicList<Jtype<ID>> -> it.supers.toList().map { it -> it as Jtype<ID> }
 
-                        is Var -> TODO("")
-                        is Wildcard<*> -> TODO("Should not be reachable")
-                        else -> TODO("Should not be reachable 100%")
-                    }
+                    is Var -> TODO("")
+                    is Wildcard<*> -> TODO("Should not be reachable")
+                    else -> TODO("Should not be reachable 100%")
+                }
 
-                is C ->
-                    when (it.supers) {
-                        is LogicList<Jtype<ID>> ->
-                            it.supers.toList().map { it as Jtype<ID> }
+                is C -> when (it.supers) {
+                    is LogicList<Jtype<ID>> -> it.supers.toList().map { it as Jtype<ID> }
 
-                        is Var -> TODO("")
-                        is Wildcard<*> -> TODO("Should not be reachable")
-                        else -> TODO("Should not be reachable 100%")
-                    } + when (it.superClass) {
-                        is Jtype<ID> ->
-                            listOf(it.superClass)
+                    is Var -> TODO("")
+                    is Wildcard<*> -> TODO("Should not be reachable")
+                    else -> TODO("Should not be reachable 100%")
+                } + when (it.superClass) {
+                    is Jtype<ID> -> listOf(it.superClass)
 
-                        is Var -> TODO("")
-                        is Wildcard<*> -> TODO("Should not be reachable")
-                        else -> TODO("Should not be reachable 100%")
-                    }
+                    is Var -> TODO("")
+                    is Wildcard<*> -> TODO("Should not be reachable")
+                    else -> TODO("Should not be reachable 100%")
+                }
             }
         }
         return data.entries.fold(failure) { acc, entry ->
             val curId = entry.key
-            if (curId == objectId)
-                acc
+            if (curId == objectId) acc
             else {
                 val d: Term<Decl<ID>> = entry.value
                 val parentsList = parents(d as Decl<ID>)
@@ -171,43 +166,20 @@ class DefaultCT : MutableClassTable {
         }
     }
 
-    context(RelationalContext) override fun get_superclass_by_id(
-            subId: Term<LogicInt>,
-            superId: Term<LogicInt>,
-            rez: Term<LogicOption<Jtype<LogicInt>>>
-    ): Goal = freshTypedVars { answerJtyp: Term<Jtype<LogicInt>> ->
-        and(rez `===` Some(answerJtyp),
-                getSuperclassByIdFreeFree(subId, superId, answerJtyp))
+    context(RelationalContext) override fun get_superclass_by_id(subId: Term<LogicInt>, superId: Term<LogicInt>, rez: Term<LogicOption<Jtype<LogicInt>>>): Goal = freshTypedVars { answerJtyp: Term<Jtype<LogicInt>> ->
+        and(rez `===` Some(answerJtyp), getSuperclassByIdFreeFree(subId, superId, answerJtyp))
     }
 }
 
 
-//
-//interface IFOO {
-//    context(RelationalContext)
-//    fun foo(): Goal
-//}
-//
-//@Test
-//fun testIFOO(i: IFOO): Goal {
-//    withEmptyContext {
-//        val g = i.foo()
-//        return g
-//    }
-//}
-
 data class NotComplete(val v: VERIFIER) {
     context(RelationalContext)
-    fun smallFish(ta: Term<Jtype<LogicInt>>, tb: Term<Jtype<LogicInt>>, rez: Term<LogicBool>): Goal =
-            this.check(ta, tb, rez)
+    fun smallFish(ta: Term<Jtype<LogicInt>>, tb: Term<Jtype<LogicInt>>, rez: Term<LogicBool>): Goal = this.check(ta, tb, rez)
 
     context(RelationalContext)
     fun check(ta: Term<Jtype<LogicInt>>, tb: Term<Jtype<LogicInt>>, rez: Term<LogicBool>): Goal {
         return v.minus_less_minus(
-//                smallFish,
-                { a, b, c -> smallFish(a, b, c) },
-                ta, tb, rez
-        )
+                { a, b, c -> smallFish(a, b, c) }, ta, tb, rez)
     }
 }
 
@@ -219,32 +191,22 @@ class JGSTest {
 
     private val unificationsTracer = UnificationListener { firstTerm, secondTerm, stateBefore, stateAfter ->
         //if (System.getenv("SILENT_UNIFICATIONS") == null)
-        val rez =
-                if (stateAfter == null)
-                    " ~~> _|_"
-                else ""
+        val rez = if (stateAfter == null) " ~~> _|_"
+        else ""
         println("${firstTerm.walk(stateBefore.substitution)} `===` ${secondTerm.walk(stateBefore.substitution)}$rez")
     }
 
-    fun testForward(
-            a: (MutableClassTable) -> Term<Jtype<ID>>,
-            b: (MutableClassTable) -> Term<Jtype<ID>>,
-            init: (MutableClassTable) -> Unit = { },
-            rez: Boolean,
-            verbose: Boolean = false
-    ) {
+    fun testForward(a: (MutableClassTable) -> Term<Jtype<ID>>, b: (MutableClassTable) -> Term<Jtype<ID>>, init: (MutableClassTable) -> Unit = { }, rez: Boolean, verbose: Boolean = false) {
         val classtable = DefaultCT()
         init(classtable)
         val v = Verifier(classtable)
 
         withEmptyContext {
-            if (verbose)
-                addUnificationListener(unificationsTracer)
+            if (verbose) addUnificationListener(unificationsTracer)
             val g: (Term<LogicBool>) -> Goal = { NotComplete(v).check(a(classtable), b(classtable), it) }
 
             val answers = run(2, g).map { it.term }.toList()
-            if (verbose)
-                answers.forEachIndexed { i, x -> println("$i: $x") }
+            if (verbose) answers.forEachIndexed { i, x -> println("$i: $x") }
 
             assertEquals(1, answers.count())
             val expectedTerm = rez.toLogicBool()
@@ -321,5 +283,58 @@ class JGSTest {
             b = Class_(bId.toLogic(), logicListOf())
         }
         testForward({ b!! }, { a!! }, init, rez = true, verbose = false)
+    }
+
+    @Test
+    @DisplayName("C <: IA")
+    fun test9() {
+        var ia: Term<Jtype<ID>>? = null
+        var c: Term<Jtype<ID>>? = null
+        // TODO(Kakadu): this null-related stuff is bad. rewrite.
+        val init: (MutableClassTable) -> Unit = { ct: MutableClassTable ->
+            val iaId = ct.addInterface(logicListOf(), logicListOf())
+            ia = Interface(iaId.toLogic(), logicListOf())
+            val cId = ct.addClass(logicListOf(), ct.object_t, logicListOf(ia!!))
+            c = Class_(cId.toLogic(), logicListOf())
+        }
+        testForward({ c!! }, { ia!! }, init, rez = true, verbose = false)
+    }
+
+    @Test
+    @DisplayName("F<A, B> <: E<D<B>")
+    fun test12() {
+        var a: Term<Jtype<ID>>?
+        var b: Term<Jtype<ID>>?
+        var left: Term<Jtype<ID>>? = null
+        var right: Term<Jtype<ID>>? = null
+        // TODO(Kakadu): this null-related stuff is bad. rewrite.
+        val init: (MutableClassTable) -> Unit = { ct: MutableClassTable ->
+            val aId = ct.addClass(logicListOf(), ct.object_t, logicListOf())
+            a = Class_(aId.toLogic(), logicListOf())
+            val bId = ct.addClass(logicListOf(), a!!, logicListOf())
+            b = Class_(bId.toLogic(), logicListOf())
+
+            val dId = ct.addClass(params = logicListOf(ct.object_t), ct.object_t, logicListOf())
+
+            val eId = ct.addClass(logicListOf(ct.object_t, ct.object_t), ct.object_t, logicListOf())
+
+            val fId = ct.addClass(logicListOf(ct.object_t, ct.object_t),
+                    Class_(eId.toLogic(),
+                            logicListOf(Type(Class_(dId.toLogic(), logicListOf(Type(ct.makeTVar(1, ct.object_t))))),
+                                    Type(ct.makeTVar(0, ct.object_t))
+                            )),
+                    logicListOf())
+            left = Class_(fId.toLogic(),
+                    logicListOf(
+                            Type(a!!), Type(b!!)
+                    ))
+            right = Class_(eId.toLogic(),
+                    logicListOf(
+                            Type(Class_(dId.toLogic(), logicListOf( Type( Class_(bId.toLogic(), logicListOf())  )  ))),
+                            Type(a!!)
+                    ))
+
+        }
+        testForward({ left!! }, { right!! }, init, rez = true, verbose = false)
     }
 }
