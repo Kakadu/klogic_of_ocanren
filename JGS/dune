@@ -1,23 +1,4 @@
 (library
- (name JGS)
- (modules JGS)
- (libraries OCanren noCanren.Option noCanren.List)
- (wrapped false)
- (flags
-  (:standard
-   -rectypes
-   ;-dsource
-   -w
-   -9))
- (preprocess
-  (pps
-   OCanren-ppx.ppx_wildcard
-   OCanren-ppx.ppx_distrib
-   -new-typenames
-   ppx_hack
-   GT.ppx_all)))
-
-(library
  (name miniJGS)
  (modules miniJGS)
  (libraries OCanren noCanren.Option noCanren.List)
