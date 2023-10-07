@@ -19,8 +19,8 @@ module type SAMPLE_CLASSTABLE = sig
   val make_tvar : int -> jtype -> jtype
   val make_interface : jtype list -> jtype list -> int
 
-  val make_class_fix
-    :  params:(int -> jtype list)
+  val make_class_fix :
+     params:(int -> jtype list)
     -> (int -> jtype)
     -> (int -> jtype list)
     -> int
@@ -30,8 +30,8 @@ module type SAMPLE_CLASSTABLE = sig
   module HO : sig
     val decl_by_id : (int ilogic -> goal) -> HO.decl_injected -> goal
 
-    val get_superclass
-      :  (int ilogic -> goal)
+    val get_superclass :
+       (int ilogic -> goal)
       -> (int ilogic -> goal)
       -> HO.jtype_injected Std.Option.injected
       -> goal
@@ -204,27 +204,27 @@ module SampleCT () : SAMPLE_CLASSTABLE = struct
         then (
           let bindings = M.bindings !m in
           decl_by_id_disjs_args
-            := lazy (Stdlib.List.map (fun (k, v) -> !!k, decl_inj v) bindings);
+          := lazy (Stdlib.List.map (fun (k, v) -> !!k, decl_inj v) bindings);
           get_superclass_disjs_args
-            := lazy
-                 (Stdlib.List.concat_map
-                    (fun (sub_id, decl) ->
-                      let supers =
-                        match decl with
-                        | C { super; supers; _ } -> super :: supers
-                        | I { supers = []; _ } -> [ object_t ]
-                        | I { supers; _ } -> supers
-                      in
-                      Stdlib.List.filter_map
-                        (fun super ->
-                          match super with
-                          | Class (super_id, _) | Interface (super_id, _) ->
-                            (* Printf.printf "sub_id: %d, super_id: %d\n" sub_id
+          := lazy
+               (Stdlib.List.concat_map
+                  (fun (sub_id, decl) ->
+                    let supers =
+                      match decl with
+                      | C { super; supers; _ } -> super :: supers
+                      | I { supers = []; _ } -> [ object_t ]
+                      | I { supers; _ } -> supers
+                    in
+                    Stdlib.List.filter_map
+                      (fun super ->
+                        match super with
+                        | Class (super_id, _) | Interface (super_id, _) ->
+                          (* Printf.printf "sub_id: %d, super_id: %d\n" sub_id
                               super_id; *)
-                            Some (!!sub_id, !!super_id, jtype_inj super)
-                          | _ -> None)
-                        supers)
-                    bindings);
+                          Some (!!sub_id, !!super_id, jtype_inj super)
+                        | _ -> None)
+                      supers)
+                  bindings);
           table_was_changed := false);
         { decl_by_id = !decl_by_id_disjs_args
         ; get_superclass = !get_superclass_disjs_args
@@ -247,13 +247,15 @@ module SampleCT () : SAMPLE_CLASSTABLE = struct
               Stdlib.List.map (fun (k, v) -> id_val === k &&& (rez === v)) disj_args
             in
             (match disjs with
-             | [] -> failure
-             | h :: tl -> List.fold_left ( ||| ) h tl)))
-   ;;
+            | [] -> failure
+            | h :: tl -> List.fold_left ( ||| ) h tl)))
+    ;;
 
-    let get_superclass
-      :  (int ilogic -> goal) -> (int ilogic -> goal)
-      -> HO.jtype_injected Std.Option.injected -> goal
+    let get_superclass :
+       (int ilogic -> goal)
+      -> (int ilogic -> goal)
+      -> HO.jtype_injected Std.Option.injected
+      -> goal
       =
      fun sub_id super_id some_rez ->
       fresh
@@ -271,7 +273,7 @@ module SampleCT () : SAMPLE_CLASSTABLE = struct
          match disjs with
          | [] -> failure
          | h :: tl -> List.fold_left ( ||| ) h tl)
-   ;;
+    ;;
 
     let object_t =
       let object_t = jtype_inj object_t in

@@ -8,8 +8,8 @@ type ('a, 'b, 'c) t
 val parse : ('a, 'b, 'c) t -> Location.t -> ?on_error:(string -> 'c) -> 'a -> 'b -> 'c
 
 (** Matches a value against a list of patterns. *)
-val parse_conde
-  :  ('a, 'b, 'c) t list
+val parse_conde :
+   ('a, 'b, 'c) t list
   -> Location.t
   -> ?on_error:(string -> 'c)
   -> 'a
@@ -17,13 +17,13 @@ val parse_conde
   -> 'c
 
 module Packed : sig
-  type ('a, 'b, 'c) pattern = ('a, 'b, 'c) t
-  type ('a, 'b) t
+    type ('a, 'b, 'c) pattern = ('a, 'b, 'c) t
+    type ('a, 'b) t
 
-  val create : ('a, 'b, 'c) pattern -> 'b -> ('a, 'c) t
-  val parse : ('a, 'b) t -> Location.t -> 'a -> 'b
-end
-with type ('a, 'b, 'c) pattern := ('a, 'b, 'c) t
+    val create : ('a, 'b, 'c) pattern -> 'b -> ('a, 'c) t
+    val parse : ('a, 'b) t -> Location.t -> 'a -> 'b
+  end
+  with type ('a, 'b, 'c) pattern := ('a, 'b, 'c) t
 
 val as__ : ('a, 'b, 'c) t -> ('a, 'a -> 'b, 'c) t
 
@@ -52,28 +52,28 @@ val map0 : ('a, 'b, 'c) t -> f:'d -> ('a, 'd -> 'b, 'c) t
 val map1 : ('a, 'b -> 'c, 'd) t -> f:('b -> 'e) -> ('a, 'e -> 'c, 'd) t
 val map2 : ('a, 'b -> 'c -> 'd, 'e) t -> f:('b -> 'c -> 'f) -> ('a, 'f -> 'd, 'e) t
 
-val map3
-  :  ('a, 'b -> 'c -> 'd -> 'e, 'f) t
+val map3 :
+   ('a, 'b -> 'c -> 'd -> 'e, 'f) t
   -> f:('b -> 'c -> 'd -> 'g)
   -> ('a, 'g -> 'e, 'f) t
 
-val map4
-  :  ('a, 'b -> 'c -> 'd -> 'e -> 'f, 'g) t
+val map4 :
+   ('a, 'b -> 'c -> 'd -> 'e -> 'f, 'g) t
   -> f:('b -> 'c -> 'd -> 'e -> 'h)
   -> ('a, 'h -> 'f, 'g) t
 
-val map5
-  :  ('a, 'b -> 'c -> 'd -> 'e -> 'f -> 'g, 'h) t
+val map5 :
+   ('a, 'b -> 'c -> 'd -> 'e -> 'f -> 'g, 'h) t
   -> f:('b -> 'c -> 'd -> 'e -> 'f -> 'i)
   -> ('a, 'i -> 'g, 'h) t
 
-val map6
-  :  ('a, 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h, 'i) t
+val map6 :
+   ('a, 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h, 'i) t
   -> f:('b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'j)
   -> ('a, 'j -> 'h, 'i) t
 
-val map7
-  :  ('a, 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> 'i, 'j) t
+val map7 :
+   ('a, 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> 'i, 'j) t
   -> f:('b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> 'k)
   -> ('a, 'k -> 'i, 'j) t
 
@@ -83,8 +83,8 @@ val pack2 : ('a, 'b -> 'c -> 'd, 'e) t -> ('a, 'b * 'c -> 'd, 'e) t
 val pack3 : ('a, 'b -> 'c -> 'd -> 'e, 'f) t -> ('a, 'b * 'c * 'd -> 'e, 'f) t
 val pack4 : ('a, 'b -> 'c -> 'd -> 'e -> 'f, 'g) t -> ('a, 'b * 'c * 'd * 'e -> 'f, 'g) t
 
-val pack5
-  :  ('a, 'b -> 'c -> 'd -> 'e -> 'f -> 'g, 'h) t
+val pack5 :
+   ('a, 'b -> 'c -> 'd -> 'e -> 'f -> 'g, 'h) t
   -> ('a, 'b * 'c * 'd * 'e * 'f -> 'g, 'h) t
 
 open Typedtree
@@ -118,8 +118,8 @@ val nolabel : (Asttypes.arg_label, 'a, 'a) t
 val labelled : (string, 'a, 'b) t -> (Asttypes.arg_label, 'a, 'b) t
 val tpat_var : (string, 'a, 'b) t -> (pattern, 'a, 'b) t
 
-val tpat_var_type
-  :  (string, 'a, 'b) t
+val tpat_var_type :
+   (string, 'a, 'b) t
   -> (Types.type_expr, 'b, 'c) t
   -> (value pattern_desc pattern_data, 'a, 'c) t
 
@@ -135,88 +135,88 @@ val pident : (string, 'a, 'b) t -> (Path.t, 'a, 'b) t
     texp_ident (path [ "Stdlib"; "&&" ])  (* CORRECT *) *)
 val texp_ident : (Path.t, 'a, 'b) t -> (expression, 'a, 'b) t
 
-val texp_ident_typ
-  :  (Path.t, 'a, 'b) t
+val texp_ident_typ :
+   (Path.t, 'a, 'b) t
   -> (Types.type_expr, 'b, 'c) t
   -> (expression, 'a, 'c) t
 
 val texp_assert : (expression, 'a, 'b) t -> (expression, 'a, 'b) t
 
-val texp_construct
-  :  (Longident.t, 'a, 'b) t
+val texp_construct :
+   (Longident.t, 'a, 'b) t
   -> (Types.constructor_description, 'b, 'c) t
   -> (expression list, 'c, 'd) t
   -> (expression, 'a, 'd) t
 
 val texp_unit : (expression, 'a, 'a) t
 
-val texp_let
-  :  (value_binding list, 'a, 'b) t
+val texp_let :
+   (value_binding list, 'a, 'b) t
   -> (expression, 'b, 'c) t
   -> (expression, 'a, 'c) t
 
-val texp_apply
-  :  (expression, 'a, 'b) t
+val texp_apply :
+   (expression, 'a, 'b) t
   -> ((Asttypes.arg_label * expression option) list, 'b, 'c) t
   -> (expression, 'a, 'c) t
 
-val texp_apply1
-  :  (expression, 'a, 'b) t
+val texp_apply1 :
+   (expression, 'a, 'b) t
   -> (expression, 'b, 'c) t
   -> (expression, 'a, 'c) t
 
-val texp_apply2
-  :  (expression, 'a, 'b) t
+val texp_apply2 :
+   (expression, 'a, 'b) t
   -> (expression, 'b, 'c) t
   -> (expression, 'c, 'd) t
   -> (expression, 'a, 'd) t
 
-val texp_apply_nolabelled
-  :  (expression, 'a, 'b) t
+val texp_apply_nolabelled :
+   (expression, 'a, 'b) t
   -> (expression list, 'b, 'c) t
   -> (expression, 'a, 'c) t
 
-val texp_lambda
-  :  (value general_pattern, 'a, 'b) t
+val texp_lambda :
+   (value general_pattern, 'a, 'b) t
   -> (expression, 'b, 'c) t
   -> (expression, 'a, 'c) t
 
 val texp_function : (case_val list, 'a, 'b) t -> (expression, 'a, 'b) t
 
-val case
-  :  (pattern, 'a, 'b) t
+val case :
+   (pattern, 'a, 'b) t
   -> (expression option, 'b, 'c) t
   -> (expression, 'c, 'd) t
   -> (case_val, 'a, 'd) t
 
-val texp_ascription
-  :  (expression, 'a, 'b) t
+val texp_ascription :
+   (expression, 'a, 'b) t
   -> (Types.type_expr, 'b, 'c) t
   -> (expression, 'a, 'c) t
 
-val texp_match
-  :  (expression, 'a, 'b) t
+val texp_match :
+   (expression, 'a, 'b) t
   -> (case_comp list, 'b, 'c) t
   -> (expression, 'a, 'c) t
 
-val texp_ite
-  :  (expression, 'a, 'b) t
+val texp_ite :
+   (expression, 'a, 'b) t
   -> (expression, 'b, 'c) t
   -> (expression option, 'c, 'd) t
   -> (expression, 'a, 'd) t
 
-val texp_try
-  :  (expression, 'a, 'b) t
+val texp_try :
+   (expression, 'a, 'b) t
   -> (case_val list, 'b, 'c) t
   -> (expression, 'a, 'c) t
 
-val texp_record
-  :  (expression option, 'a, 'b) t
+val texp_record :
+   (expression option, 'a, 'b) t
   -> ((Types.label_description * record_label_definition) array, 'b, 'c) t
   -> (expression, 'a, 'c) t
 
-val texp_field
-  :  (expression, 'a, 'b) t
+val texp_field :
+   (expression, 'a, 'b) t
   -> (Types.label_description, 'b, 'c) t
   -> (expression, 'a, 'c) t
 
@@ -224,31 +224,31 @@ val texp_assert_false : unit -> (expression, 'a, 'a) t
 val label_desc : (string, 'a, 'b) t -> (Types.label_description, 'a, 'b) t
 val rld_kept : (record_label_definition, 'a, 'a) t
 
-val rld_overriden
-  :  (Longident.t, 'a, 'b) t
+val rld_overriden :
+   (Longident.t, 'a, 'b) t
   -> (expression, 'b, 'c) t
   -> (record_label_definition, 'a, 'c) t
 
 val typ_var : (string, 'a, 'b) t -> (Types.type_expr, 'a, 'b) t
 
-val typ_constr
-  :  (Path.t, 'a, 'b) t
+val typ_constr :
+   (Path.t, 'a, 'b) t
   -> (Types.type_expr list, 'b, 'c) t
   -> (Types.type_expr, 'a, 'c) t
 
-val typ_arrow
-  :  (Types.type_expr, 'a, 'b) t
+val typ_arrow :
+   (Types.type_expr, 'a, 'b) t
   -> (Types.type_expr, 'b, 'c) t
   -> (Types.type_expr, 'a, 'c) t
 
 (** An alias to [typ_arrow] *)
-val ( @-> )
-  :  (Types.type_expr, 'a, 'b) t
+val ( @-> ) :
+   (Types.type_expr, 'a, 'b) t
   -> (Types.type_expr, 'b, 'c) t
   -> (Types.type_expr, 'a, 'c) t
 
-val typ_arrows
-  :  (Types.type_expr list, 'a, 'b) t
+val typ_arrows :
+   (Types.type_expr list, 'a, 'b) t
   -> (Types.type_expr, 'b, 'c) t
   -> (Types.type_expr, 'a, 'c) t
 
@@ -258,16 +258,16 @@ val core_typ : (Types.type_expr, 'a, 'b) t -> (core_type, 'a, 'b) t
 
 val tstr_value : (value_binding list, 'a, 'b) t -> (structure_item, 'a, 'b) t
 
-val tstr_module
-  :  (Ident.t, 'a, 'b) t
+val tstr_module :
+   (Ident.t, 'a, 'b) t
   -> (module_expr, 'b, 'c) t
   -> (structure_item, 'a, 'c) t
 
 val tstr_attribute : (attribute, 'a, 'b) t -> (structure_item, 'a, 'b) t
 val tsig_attribute : (attribute, 'a, 'b) t -> (signature_item, 'a, 'b) t
 
-val attribute
-  :  (string, 'a, 'b) t
+val attribute :
+   (string, 'a, 'b) t
   -> (Parsetree.payload, 'b, 'c) t
   -> (attribute, 'a, 'c) t
 
@@ -275,27 +275,27 @@ val tstr_docattr : (string, 'a, 'b) t -> (structure_item, 'a, 'b) t
 val tsig_docattr : (string, 'a, 'b) t -> (signature_item, 'a, 'b) t
 val payload_pstr : (Parsetree.structure, 'a, 'b) t -> (Parsetree.payload, 'a, 'b) t
 
-val tmod_ascription
-  :  (module_expr, 'a, 'b) t
+val tmod_ascription :
+   (module_expr, 'a, 'b) t
   -> (module_type, 'b, 'c) t
   -> (module_expr, 'a, 'c) t
 
 val tmod_structure : (structure, 'a, 'b) t -> (module_expr, 'a, 'b) t
 
-val tmod_functor
-  :  (functor_parameter, 'a, 'b) t
+val tmod_functor :
+   (functor_parameter, 'a, 'b) t
   -> (module_expr, 'b, 'c) t
   -> (module_expr, 'a, 'c) t
 
-val value_binding
-  :  (pattern, 'a, 'b) t
+val value_binding :
+   (pattern, 'a, 'b) t
   -> (expression, 'b, 'c) t
   -> (value_binding, 'a, 'c) t
 
 val tmod_structure : (structure, 'a, 'b) t -> (module_expr, 'a, 'b) t
 
-val tfun_param_named
-  :  (Ident.t, 'a, 'b) t
+val tfun_param_named :
+   (Ident.t, 'a, 'b) t
   -> (module_type, 'b, 'c) t
   -> (functor_parameter, 'a, 'c) t
 

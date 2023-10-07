@@ -5,18 +5,20 @@
   , "PARAMETER_NAME_CHANGED_ON_OVERRIDE", "NAME_SHADOWING"
   )
 
-package utils.JGS_Helpres
+package utils.JGS
 
 import org.klogic.core.*
 import org.klogic.utils.terms.*
+import utils.LogicInt
+import utils.Some
+import utils.None
+import utils.LogicOption
 
-import utils.JGS
+//context(RelationalContext)
+//fun  pause(f: () -> Goal): Goal = { st -> ThunkStream { f()(st) } }
 
-context(RelationalContext)
-fun  pause(f: () -> Goal): Goal = { st -> ThunkStream { f()(st) } }
-
-context(RelationalContext)
-fun <A: Term<A>> wc(f : (Term<A>) -> Goal ) : Goal = success
+//context(RelationalContext)
+//fun <A: Term<A>> wc(f : (Term<A>) -> Goal ) : Goal = success
 |}]
 
 [@@@klogic.epilogue {|// Put epilogue here |}]

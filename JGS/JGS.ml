@@ -30,7 +30,7 @@ context(RelationalContext)
 fun  pause(f: () -> Goal): Goal = { st -> ThunkStream { f()(st) } }
 
 context(RelationalContext)
-fun <A: Term<A>> wc(f : (Term<A>) -> Goal ) : Goal = success
+fun <A: Term<A>> wc(f : (Term<A>) -> Goal ) : Goal = f(wildcard())
 |}]
 
 [@@@klogic.epilogue {|// Put epilogue here |}]
@@ -304,11 +304,11 @@ open CC_type
 open CC_subst
 
 let rec substitute_typ :
-          'id.
-          'id ilogic Jtype.injected Targ.injected Std.List.injected
-          -> 'id ilogic Jtype.injected
-          -> 'id ilogic Jtype.injected
-          -> goal
+  'id.
+  'id ilogic Jtype.injected Targ.injected Std.List.injected
+  -> 'id ilogic Jtype.injected
+  -> 'id ilogic Jtype.injected
+  -> goal
   =
  fun subst typ res ->
   conde
@@ -336,11 +336,11 @@ let rec substitute_typ :
     ]
 
 and substitute_arg :
-      'id.
-      'id ilogic Jtype.injected Targ.injected Std.List.injected
-      -> 'id ilogic Jtype.injected Targ.injected
-      -> 'id ilogic Jtype.injected Targ.injected
-      -> goal
+  'id.
+  'id ilogic Jtype.injected Targ.injected Std.List.injected
+  -> 'id ilogic Jtype.injected Targ.injected
+  -> 'id ilogic Jtype.injected Targ.injected
+  -> goal
   =
  fun subst targ res ->
   conde
@@ -444,7 +444,7 @@ module Verifier (CT : CLASSTABLE) : VERIFIER = struct
       decl
       (CT.decl_by_id id decl)
       (conde [ decl === Decl.c p __ __; decl === Decl.i p __ ])
- ;;
+  ;;
 
   let raw_helper :
      int ilogic
@@ -475,7 +475,7 @@ module Verifier (CT : CLASSTABLE) : VERIFIER = struct
           (params id params_val)
           (ntho params_val i t2)
       ]
- ;;
+  ;;
 
   let subst_helper :
     int ilogic CC_type.injected -> int ilogic Jtype.injected Targ.injected -> goal
@@ -488,7 +488,7 @@ module Verifier (CT : CLASSTABLE) : VERIFIER = struct
           (raw_element === cc_var id i __ __)
           (targ === type_ (var id i (null ()) (Std.none ())))
       ]
- ;;
+  ;;
 
   let targs_helper :
      int ilogic Jtype.injected Targ.injected Std.List.injected
@@ -523,7 +523,7 @@ module Verifier (CT : CLASSTABLE) : VERIFIER = struct
                  (new_p =/= intersect __)
              ])
       ]
- ;;
+  ;;
 
   let targs_pred :
      (int ilogic Jtype.injected -> int ilogic Jtype.injected -> bool ilogic -> goal)
@@ -539,7 +539,7 @@ module Verifier (CT : CLASSTABLE) : VERIFIER = struct
           (( <-< ) lwb upb res)
       ; fresh () (res === !!true) (targ =/= type_ (var __ __ __ (Std.some __)))
       ]
- ;;
+  ;;
 
   (* TODO: two useless arguments (they were used in comlete version of `capture_conversion`) *)
   let capture_conversion :
@@ -550,7 +550,7 @@ module Verifier (CT : CLASSTABLE) : VERIFIER = struct
     -> goal
     =
    fun _subtyping _id targs res -> res === Std.some targs
- ;;
+  ;;
 
   (* TODO: useless argument (it was used in comlete version of `( <=< )` *)
   let ( <=< ) :
@@ -565,7 +565,7 @@ module Verifier (CT : CLASSTABLE) : VERIFIER = struct
       [ fresh () (type_a === type_b) (res === !!true)
       ; fresh () (type_a =/= type_b) (res === !!false)
       ]
- ;;
+  ;;
 
   let class_int_sub :
      (int ilogic Jtype.injected -> int ilogic Jtype.injected -> bool ilogic -> goal)
@@ -613,7 +613,7 @@ module Verifier (CT : CLASSTABLE) : VERIFIER = struct
              ; fresh () (super_ === Std.none ()) (res === !!false)
              ])
       ]
- ;;
+  ;;
 
   let rec ( -<- ) :
      (int ilogic Jtype.injected -> int ilogic Jtype.injected -> bool ilogic -> goal)
@@ -738,5 +738,5 @@ module Verifier (CT : CLASSTABLE) : VERIFIER = struct
              ; fresh () (res === !!true) (type_b =/= null ())
              ])
       ]
- ;;
+  ;;
 end

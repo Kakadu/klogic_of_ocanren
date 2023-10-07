@@ -13,6 +13,12 @@ import org.klogic.utils.terms.Nil.nilLogicList
 import utils.LogicInt
 import utils.LogicInt.Companion.toLogic
 
+import utils.JGS.*
+import utils.JGS.Var
+import utils.Some
+import utils.None
+import utils.LogicOption
+
 @Suppress("UNCHECKED_CAST")
 fun <T: Term<T>> None(): LogicOption<T> = utils.None as LogicOption<T>
 
@@ -43,6 +49,33 @@ interface CLOSURE {
   fun closure(v6: (Term<Jtype<LogicInt>>, Goal, Goal) -> Goal,
   v7: ((Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal, Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,
   v8: Goal, v9: Term<Jtype<LogicInt>>, v10: Term<Jtype<LogicInt>> ): Goal
+  // is_correct_type
+  context(RelationalContext)
+  fun is_correct_type(
+  v11: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>) -> Goal,
+  v12: Term<Jtype<LogicInt>> ): Goal
+  // minus_less_minus
+  context(RelationalContext)
+  fun minus_less_minus(
+  v13: ((Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal, Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,
+  v14: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>) -> Goal,
+  v15: (Term<Jtype<LogicInt>>) -> Goal, v16: Term<Jtype<LogicInt>>,
+  v17: Term<Jtype<LogicInt>> ): Goal
+  // greater_minus_greater
+  context(RelationalContext)
+  fun greater_minus_greater(
+  v18: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>) -> Goal, v19: Goal,
+  v20: Term<Jtype<LogicInt>>, v21: Term<Jtype<LogicInt>> ): Goal
+  // less_minus_less
+  context(RelationalContext)
+  fun less_minus_less(
+  v22: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>) -> Goal, v23: Goal,
+  v24: Term<Jtype<LogicInt>>, v25: Term<Jtype<LogicInt>> ): Goal
+  // less_minus_greater
+  context(RelationalContext)
+  fun less_minus_greater(v26: (Term<Jtype<LogicInt>>, Goal, Goal) -> Goal,
+  v27: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>) -> Goal, v28: Goal,
+  v29: Term<Jtype<LogicInt>>, v30: Term<Jtype<LogicInt>> ): Goal
   }
 
 // functor
@@ -56,10 +89,10 @@ object: CLOSURE {
         freshTypedVars { id: Term<LogicInt>,
           actual_params: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
           expected_params: Term<LogicList<Jtype<LogicInt>>>,
-          super: Term<Jtype<LogicInt>>,
+          super_: Term<Jtype<LogicInt>>,
           supers: Term<LogicList<Jtype<LogicInt>>> ->
         and(t `===` Class_(id, actual_params),
-            CT.decl_by_id(id, C(expected_params, super, supers)),
+            CT.decl_by_id(id, C(expected_params, super_, supers)),
             list_same_length(expected_params, actual_params))
         },
         freshTypedVars { id: Term<LogicInt>,
@@ -101,14 +134,14 @@ override fun  less_minus_less(direct_subtyping: (Term<Jtype<LogicInt>>, Term<Jty
 query_constr: Goal, ta: Term<Jtype<LogicInt>>,
 tb: Term<Jtype<LogicInt>>): Goal =
 pause { and(query_constr,
-            JGS_Helpers.only_classes_interfaces_and_arrays(ta),
-            JGS_Helpers.only_classes_interfaces_and_arrays(tb),
+            only_classes_interfaces_and_arrays(ta),
+            only_classes_interfaces_and_arrays(tb),
             conde(direct_subtyping(ta, tb),
                   freshTypedVars { ti: Term<Jtype<LogicInt>> ->
                   and(tb `!==` ti,
                       ta `!==` ti,
                       ta `!==` tb,
-                      JGS_Helpers.only_classes_interfaces_and_arrays(ti),
+                      only_classes_interfaces_and_arrays(ti),
                       direct_subtyping(ti, tb),
                       less_minus_less(direct_subtyping, query_constr, ta, ti))
                   }))
@@ -118,14 +151,14 @@ override fun  greater_minus_greater(direct_subtyping: (Term<Jtype<LogicInt>>, Te
 query_constr: Goal, ta: Term<Jtype<LogicInt>>,
 tb: Term<Jtype<LogicInt>>): Goal =
 pause { and(query_constr,
-            JGS_Helpers.only_classes_interfaces_and_arrays(ta),
-            JGS_Helpers.only_classes_interfaces_and_arrays(tb),
+            only_classes_interfaces_and_arrays(ta),
+            only_classes_interfaces_and_arrays(tb),
             conde(direct_subtyping(ta, tb),
                   freshTypedVars { ti: Term<Jtype<LogicInt>> ->
                   and(tb `!==` ti,
                       ta `!==` ti,
                       ta `!==` tb,
-                      JGS_Helpers.only_classes_interfaces_and_arrays(ti),
+                      only_classes_interfaces_and_arrays(ti),
                       direct_subtyping(ta, ti),
                       greater_minus_greater(direct_subtyping, query_constr,
                       ti, tb))
@@ -149,9 +182,12 @@ minus_less_minus(open_direct_subtyping,
                                                           open_direct_subtyping,
                                                           query_constr, ta,
                                                           tb) },
-is_correct_type({ ta: Term<Jtype<LogicInt>>, tb: Term<Jtype<LogicInt>> -> 
-                closure(debug_var_handler, open_direct_subtyping,
-                query_constr, ta, tb) }),
+{ eta: Term<Jtype<LogicInt>> -> is_correct_type({ ta: Term<Jtype<LogicInt>>, 
+                                                tb: Term<Jtype<LogicInt>> -> 
+                                                closure(debug_var_handler,
+                                                open_direct_subtyping,
+                                                query_constr, ta, tb) },
+                                eta) },
 ta, tb)
 context(RelationalContext)
 override fun  closure(debug_var_handler: (Term<Jtype<LogicInt>>, Goal, Goal) -> Goal,

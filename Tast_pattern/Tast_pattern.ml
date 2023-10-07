@@ -49,8 +49,8 @@ let parse (T f) loc ?on_error x k =
   try f { matched = 0 } loc x k with
   | Expected (loc, expected) ->
     (match on_error with
-     | None -> Location.raise_errorf ~loc "%s expected" expected
-     | Some f -> f expected)
+    | None -> Location.raise_errorf ~loc "%s expected" expected
+    | Some f -> f expected)
 ;;
 
 module Packed = struct
@@ -207,13 +207,13 @@ let alt (T f1) (T f2) =
         let m1 = save_context ctx in
         restore_context ctx backup;
         (try f2 ctx loc x k with
-         | e2 ->
-           let m2 = save_context ctx in
-           if m1 >= m2
-           then (
-             restore_context ctx m1;
-             raise e1)
-           else raise e2))
+        | e2 ->
+          let m2 = save_context ctx in
+          if m1 >= m2
+          then (
+            restore_context ctx m1;
+            raise e1)
+          else raise e2))
 ;;
 
 let ( ||| ) = alt
@@ -225,10 +225,10 @@ let choice ps =
         | [] -> fail loc "no choices left "
         | h :: tl ->
           (match to_func h ctx loc e k with
-           | exception Expected (_, _) ->
-             (* log "Got Expected %S" s; *)
-             helper tl
-           | x -> x)
+          | exception Expected (_, _) ->
+            (* log "Got Expected %S" s; *)
+            helper tl
+          | x -> x)
       in
       helper ps)
 ;;
@@ -555,7 +555,7 @@ let texp_apply_nolabelled (T f0) (T args0) =
            in
            args0 ctx loc args k
          with
-         | EarlyExit -> fail loc "texp_apply: None among the arguments ")
+        | EarlyExit -> fail loc "texp_apply: None among the arguments ")
       | _ -> fail loc "texp_apply")
 ;;
 

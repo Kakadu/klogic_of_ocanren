@@ -28,9 +28,9 @@ typealias ID = LogicInt
 interface MutableClassTable : CLASSTABLE {
     fun addClass(c: C<ID>): Int
     fun addClass(
-            params: Term<LogicList<Jtype<ID>>>,
-            superClass: Term<Jtype<ID>>,
-            supers: Term<LogicList<Jtype<ID>>>,
+        params: Term<LogicList<Jtype<ID>>>,
+        superClass: Term<Jtype<ID>>,
+        supers: Term<LogicList<Jtype<ID>>>,
     ): Int
 
     fun addInterface(c: I<ID>): Int
@@ -62,9 +62,9 @@ class DefaultCT : MutableClassTable {
     }
 
     override fun addClass(
-            params: Term<LogicList<Jtype<ID>>>,
-            superClass: Term<Jtype<ID>>,
-            supers: Term<LogicList<Jtype<ID>>>,
+        params: Term<LogicList<Jtype<ID>>>,
+        superClass: Term<Jtype<ID>>,
+        supers: Term<LogicList<Jtype<ID>>>,
     ): Int {
         data[newId()] = C(params, superClass, supers)
         return lastId
@@ -75,7 +75,8 @@ class DefaultCT : MutableClassTable {
         return lastId
     }
 
-    override fun addInterface(params: Term<LogicList<Jtype<ID>>>, supers: Term<LogicList<Jtype<ID>>>): Int {
+    override fun addInterface(params: Term<LogicList<Jtype<ID>>>,
+                              supers: Term<LogicList<Jtype<ID>>>): Int {
         data[newId()] = I(params, supers)
         return lastId
 
@@ -121,7 +122,8 @@ class DefaultCT : MutableClassTable {
     }
 
     context(RelationalContext)
-    fun getSuperclassByIdFreeFree(subId: Term<LogicInt>, superId: Term<LogicInt>, rez: Term<Jtype<LogicInt>>): Goal {
+    fun getSuperclassByIdFreeFree(subId: Term<LogicInt>, superId: Term<LogicInt>,
+                                  rez: Term<Jtype<LogicInt>>): Goal {
         val parents: (Decl<ID>) -> List<Jtype<ID>> = { it ->
             when (it) {
                 is I -> when (it.supers) {
@@ -157,8 +159,12 @@ class DefaultCT : MutableClassTable {
 
                 parentsList.fold(acc) { acc, jtyp ->
                     when (jtyp) {
-                        is Interface -> acc `|||` and(jtyp.id `===` superId, curId.toLogic() `===` subId, rez `===` jtyp)
-                        is Class_ -> acc `|||` and(jtyp.id `===` superId, curId.toLogic() `===` subId, rez `===` jtyp)
+                        is Interface -> acc `|||` and(jtyp.id `===` superId,
+                                curId.toLogic() `===` subId, rez `===` jtyp)
+
+                        is Class_ -> acc `|||` and(jtyp.id `===` superId,
+                                curId.toLogic() `===` subId, rez `===` jtyp)
+
                         else -> TODO("ancestor of the interface should be an interface")
                     }
                 }
@@ -166,7 +172,9 @@ class DefaultCT : MutableClassTable {
         }
     }
 
-    context(RelationalContext) override fun get_superclass_by_id(subId: Term<LogicInt>, superId: Term<LogicInt>, rez: Term<LogicOption<Jtype<LogicInt>>>): Goal = freshTypedVars { answerJtyp: Term<Jtype<LogicInt>> ->
+    context(RelationalContext) override fun get_superclass_by_id(subId: Term<LogicInt>,
+                                                                 superId: Term<LogicInt>,
+                                                                 rez: Term<LogicOption<Jtype<LogicInt>>>): Goal = freshTypedVars { answerJtyp: Term<Jtype<LogicInt>> ->
         and(rez `===` Some(answerJtyp), getSuperclassByIdFreeFree(subId, superId, answerJtyp))
     }
 }
@@ -174,7 +182,8 @@ class DefaultCT : MutableClassTable {
 
 data class NotComplete(val v: VERIFIER) {
     context(RelationalContext)
-    fun smallFish(ta: Term<Jtype<LogicInt>>, tb: Term<Jtype<LogicInt>>, rez: Term<LogicBool>): Goal = this.check(ta, tb, rez)
+    fun smallFish(ta: Term<Jtype<LogicInt>>, tb: Term<Jtype<LogicInt>>,
+                  rez: Term<LogicBool>): Goal = this.check(ta, tb, rez)
 
     context(RelationalContext)
     fun check(ta: Term<Jtype<LogicInt>>, tb: Term<Jtype<LogicInt>>, rez: Term<LogicBool>): Goal {
@@ -186,24 +195,31 @@ data class NotComplete(val v: VERIFIER) {
 class JGSTest {
     @AfterEach
     fun clear() {
-//        UnificationsController.onFinish()
+        //        UnificationsController.onFinish()
     }
 
     private val unificationsTracer = UnificationListener { firstTerm, secondTerm, stateBefore, stateAfter ->
         //if (System.getenv("SILENT_UNIFICATIONS") == null)
         val rez = if (stateAfter == null) " ~~> _|_"
         else ""
-        println("${firstTerm.walk(stateBefore.substitution)} `===` ${secondTerm.walk(stateBefore.substitution)}$rez")
+        println("${firstTerm.walk(stateBefore.substitution)} `===` ${
+            secondTerm.walk(stateBefore.substitution)
+        }$rez")
     }
 
-    fun testForward(a: (MutableClassTable) -> Term<Jtype<ID>>, b: (MutableClassTable) -> Term<Jtype<ID>>, init: (MutableClassTable) -> Unit = { }, rez: Boolean, verbose: Boolean = false) {
+    fun testForward(a: (MutableClassTable) -> Term<Jtype<ID>>,
+                    b: (MutableClassTable) -> Term<Jtype<ID>>,
+                    init: (MutableClassTable) -> Unit = { }, rez: Boolean,
+                    verbose: Boolean = false) {
         val classtable = DefaultCT()
         init(classtable)
         val v = Verifier(classtable)
 
         withEmptyContext {
             if (verbose) addUnificationListener(unificationsTracer)
-            val g: (Term<LogicBool>) -> Goal = { NotComplete(v).check(a(classtable), b(classtable), it) }
+            val g: (Term<LogicBool>) -> Goal = {
+                NotComplete(v).check(a(classtable), b(classtable), it)
+            }
 
             val answers = run(2, g).map { it.term }.toList()
             if (verbose) answers.forEachIndexed { i, x -> println("$i: $x") }
@@ -265,13 +281,15 @@ class JGSTest {
     @Test
     @DisplayName("Object[][] <: Serializable[]")
     fun test7() {
-        val a: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> Array_(Array_(classtable.object_t)) }
+        val a: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable ->
+            Array_(Array_(classtable.object_t))
+        }
         val b: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> Array_(classtable.serializable_t) }
         testForward(a, b, rez = true, verbose = false)
     }
 
     @Test
-    @DisplayName("A <: B")
+    @DisplayName("B <: A")
     fun test8() {
         var a: Term<Jtype<ID>>? = null
         var b: Term<Jtype<ID>>? = null
@@ -320,7 +338,8 @@ class JGSTest {
 
             val fId = ct.addClass(logicListOf(ct.object_t, ct.object_t),
                     Class_(eId.toLogic(),
-                            logicListOf(Type(Class_(dId.toLogic(), logicListOf(Type(ct.makeTVar(1, ct.object_t))))),
+                            logicListOf(Type(Class_(dId.toLogic(),
+                                    logicListOf(Type(ct.makeTVar(1, ct.object_t))))),
                                     Type(ct.makeTVar(0, ct.object_t))
                             )),
                     logicListOf())
@@ -330,7 +349,8 @@ class JGSTest {
                     ))
             right = Class_(eId.toLogic(),
                     logicListOf(
-                            Type(Class_(dId.toLogic(), logicListOf( Type( Class_(bId.toLogic(), logicListOf())  )  ))),
+                            Type(Class_(dId.toLogic(),
+                                    logicListOf(Type(Class_(bId.toLogic(), logicListOf()))))),
                             Type(a!!)
                     ))
 

@@ -25,7 +25,7 @@ context(RelationalContext)
 fun  pause(f: () -> Goal): Goal = { st -> ThunkStream { f()(st) } }
 
 context(RelationalContext)
-fun <A: Term<A>> wc(f : (Term<A>) -> Goal ) : Goal = success
+fun <A: Term<A>> wc(f : (Term<A>) -> Goal ) : Goal = f(wildcard())
 
 // There are 12 relations
 context(RelationalContext)

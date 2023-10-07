@@ -63,7 +63,7 @@ let is_mplus_star = need_insert_fname ~name:"mplus_star"
 let is_disj e = need_insert_fname ~name:"disj" e || need_insert_fname ~name:"|||" e
 
 (*
-let rec walkthrough ~fname (expr: expression) =
+   let rec walkthrough ~fname (expr: expression) =
 
   let add_fname () =
     [%expr [%e Ast_helper.Exp.constant (Pconst_string (fname,None))] <=>
@@ -212,8 +212,8 @@ let mapper =
         let open Ast_builder.Default in
         self#expression
         @@ (match other_args with
-            | [] -> Fun.id
-            | args -> fun f -> pexp_apply ~loc f args)
+           | [] -> Fun.id
+           | args -> fun f -> pexp_apply ~loc f args)
              [%expr
                fun st ->
                  pause (fun () ->
@@ -222,30 +222,28 @@ let mapper =
                      pexp_apply ~loc [%expr mplus_star]
                      @@ nolabelize_args
                      @@ List.map goals ~f:(function
-                          | [] -> assert false
-                          | h :: tl ->
-                            pexp_apply ~loc [%expr bind_star]
-                            @@ ((Nolabel, [%expr [%e h] st]) :: nolabelize_args tl))])]
+                       | [] -> assert false
+                       | h :: tl ->
+                         pexp_apply ~loc [%expr bind_star]
+                         @@ ((Nolabel, [%expr [%e h] st]) :: nolabelize_args tl))])]
       | Pexp_apply (e1, args) when is_bind_star e1 ->
         self#expression
           (match args with
-           | [] -> failwith "should not happen"
-           | [ (_, e) ] -> e
-           | [ (_, e); (_, g0) ] -> [%expr bind [%e e] [%e g0]]
-           | (_, e) :: (_, g0) :: tl ->
-             let open Ast_builder.Default in
-             pexp_apply ~loc [%expr bind_star (bind [%e e] [%e g0])] tl)
+          | [] -> failwith "should not happen"
+          | [ (_, e) ] -> e
+          | [ (_, e); (_, g0) ] -> [%expr bind [%e e] [%e g0]]
+          | (_, e) :: (_, g0) :: tl ->
+            let open Ast_builder.Default in
+            pexp_apply ~loc [%expr bind_star (bind [%e e] [%e g0])] tl)
       | Pexp_apply (e1, args) when is_mplus_star e1 ->
         self#expression
           (match args with
-           | [] -> failwith "should not happen"
-           | [ (_, e) ] -> e
-           | (_, e0) :: tl ->
-             let open Ast_builder.Default in
-             [%expr
-               mplus
-                 [%e e0]
-                 (pause (fun () -> [%e pexp_apply ~loc [%expr mplus_star] tl]))])
+          | [] -> failwith "should not happen"
+          | [ (_, e) ] -> e
+          | (_, e0) :: tl ->
+            let open Ast_builder.Default in
+            [%expr
+              mplus [%e e0] (pause (fun () -> [%e pexp_apply ~loc [%expr mplus_star] tl]))])
       (* pexp_apply ~loc [%expr bind_star (bind [%e e] [%e g0])] tl) *)
       (* fresh  *)
       | Pexp_apply (e1, [ _ ]) when is_fresh e1 ->
@@ -263,15 +261,15 @@ let mapper =
         in
         self#expression
           (match reconstruct_args args with
-           | Some (xs : string list) ->
-             let rec loop acc = function
-               | [] -> acc
-               | v :: tl ->
-                 let px = Pat.var ~loc (Ast_builder.Default.Located.mk v ~loc) in
-                 [%expr
-                   let [%p px] = State.fresh st in
-                   [%e loop acc tl]]
-               (* | x :: y :: z :: rest ->
+          | Some (xs : string list) ->
+            let rec loop acc = function
+              | [] -> acc
+              | v :: tl ->
+                let px = Pat.var ~loc (Ast_builder.Default.Located.mk v ~loc) in
+                [%expr
+                  let [%p px] = State.fresh st in
+                  [%e loop acc tl]]
+              (* | x :: y :: z :: rest ->
                  let px = Pat.var ~loc (Ast_builder.Default.Located.mk x ~loc) in
                  let py = Pat.var ~loc (Ast_builder.Default.Located.mk y ~loc) in
                  let pz = Pat.var ~loc (Ast_builder.Default.Located.mk z ~loc) in
@@ -279,13 +277,13 @@ let mapper =
                | x :: rest ->
                  let px = Pat.var ~loc (Ast_builder.Default.Located.mk x ~loc) in
                  [%expr Fresh.one (fun [%p px] -> [%e loop acc rest])] *)
-             in
-             [%expr
-               fun st -> pause (fun () -> (* TODO: new scope  *)
-                                          [%e loop new_body xs])]
-           | None ->
-             Caml.Format.eprintf "Can't reconstruct args of 'fresh'";
-             { e with pexp_desc = Pexp_apply (e1, [ Nolabel, new_body ]) })
+            in
+            [%expr
+              fun st -> pause (fun () -> (* TODO: new scope  *)
+                                         [%e loop new_body xs])]
+          | None ->
+            Caml.Format.eprintf "Can't reconstruct args of 'fresh'";
+            { e with pexp_desc = Pexp_apply (e1, [ Nolabel, new_body ]) })
       | Pexp_apply (d, [ (_, body) ]) when is_defer d ->
         let ans = [%expr delay (fun () -> [%e self#expression body])] in
         ans

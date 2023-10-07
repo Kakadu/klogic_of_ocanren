@@ -8,4 +8,4 @@ open Oleg_numbers
   |> List.iteri (fun i n -> Printf.printf "  %3d: %d\n" i (to_int n));
   [%expect {| 0: 15 |}]
 ;;
- *)
+*)

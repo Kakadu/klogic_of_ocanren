@@ -17,6 +17,12 @@ import org.klogic.utils.terms.Nil.nilLogicList
 import utils.LogicInt
 import utils.LogicInt.Companion.toLogic
 
+import utils.JGS.*
+import utils.JGS.Var
+import utils.Some
+import utils.None
+import utils.LogicOption
+
 @Suppress("UNCHECKED_CAST")
 fun <T: Term<T>> None(): LogicOption<T> = utils.None as LogicOption<T>
 
@@ -37,6 +43,7 @@ fun  pause(f: () -> Goal): Goal = { st -> ThunkStream { f()(st) } }
 ; "JGS.Decl.c", "C"
 ; "JGS.Decl.i", "I"
 ; "OCanren.Std.some", "Some"
+; "JGS_Helpers.only_classes_interfaces_and_arrays", "only_classes_interfaces_and_arrays"
 ]]
 
 (*  *)
@@ -77,6 +84,47 @@ module type CLOSURE = sig
     -> int ilogic Jtype.injected
     -> int ilogic Jtype.injected
     -> goal
+
+  (** Functions [is_correct_type], [(-<-)], [( <-< )] are not required to be public for OCaml,
+      but the way we put 'override' identifier in Kotlin requires making it visible *)
+  val is_correct_type :
+     (int ilogic Jtype.injected -> int ilogic Jtype.injected -> goal)
+    -> int ilogic Jtype.injected
+    -> goal
+
+  val ( -<- ) :
+     ((int ilogic Jtype.injected -> int ilogic Jtype.injected -> bool ilogic -> goal)
+      -> int ilogic Jtype.injected
+      -> int ilogic Jtype.injected
+      -> bool ilogic
+      -> goal)
+    -> (int ilogic Jtype.injected -> int ilogic Jtype.injected -> goal)
+    -> (int ilogic Jtype.injected -> goal)
+    -> int ilogic Jtype.injected
+    -> int ilogic Jtype.injected
+    -> goal
+
+  val ( >-> ) :
+     (int ilogic Jtype.injected -> int ilogic Jtype.injected -> goal)
+    -> goal
+    -> int ilogic Jtype.injected
+    -> int ilogic Jtype.injected
+    -> goal
+
+  val ( <-< ) :
+     (int ilogic Jtype.injected -> int ilogic Jtype.injected -> goal)
+    -> goal
+    -> int ilogic Jtype.injected
+    -> int ilogic Jtype.injected
+    -> goal
+
+  val ( <-> ) :
+     (int ilogic Jtype.injected -> goal -> goal -> goal)
+    -> (int ilogic Jtype.injected -> int ilogic Jtype.injected -> goal)
+    -> goal
+    -> int ilogic Jtype.injected
+    -> int ilogic Jtype.injected
+    -> goal
 end
 
 module Closure (CT : CLASSTABLE) : CLOSURE = struct
@@ -91,9 +139,9 @@ module Closure (CT : CLASSTABLE) : CLOSURE = struct
         fresh elems (t === Jtype.array elems)
       ; (* Class: should be metioned in class declarations with the same arguments amount *)
         fresh
-          (id actual_params expected_params super supers)
+          (id actual_params expected_params super_ supers)
           (t === Jtype.class_ id actual_params)
-          (CT.decl_by_id id (Decl.c expected_params super supers))
+          (CT.decl_by_id id (Decl.c expected_params super_ supers))
           (list_same_length expected_params actual_params)
       ; (* Interface: should be metioned in interface declarations with the same arguments amount *)
         fresh
@@ -114,7 +162,7 @@ module Closure (CT : CLASSTABLE) : CLOSURE = struct
       ; (* Intersect: always allow *)
         fresh args (t === Jtype.intersect args)
       ]
- ;;
+  ;;
 
   let ( -<- ) :
      ((int ilogic Jtype.injected -> int ilogic Jtype.injected -> bool ilogic -> goal)
@@ -138,7 +186,7 @@ module Closure (CT : CLASSTABLE) : CLOSURE = struct
          !!true)
       (is_correct_type ta)
       (is_correct_type tb)
- ;;
+  ;;
 
   let rec ( <-< ) :
      (int ilogic Jtype.injected -> int ilogic Jtype.injected -> goal)
@@ -164,7 +212,7 @@ module Closure (CT : CLASSTABLE) : CLOSURE = struct
              (direct_subtyping ti tb)
              (( <-< ) direct_subtyping query_constr ta ti)
          ])
- ;;
+  ;;
 
   let rec ( >-> ) :
      (int ilogic Jtype.injected -> int ilogic Jtype.injected -> goal)
@@ -190,7 +238,7 @@ module Closure (CT : CLASSTABLE) : CLOSURE = struct
              (direct_subtyping ta ti)
              (( >-> ) direct_subtyping query_constr ti tb)
          ])
- ;;
+  ;;
 
   let ( <-> ) :
      (int ilogic Jtype.injected -> goal -> goal -> goal)
@@ -209,13 +257,13 @@ module Closure (CT : CLASSTABLE) : CLOSURE = struct
       (Fun.flip (Jtype.reify OCanren.reify))
       (fun reified_ta ->
         match reified_ta with [ Value _ ] -> closure_up | _ -> closure_down)
-  *)
+   *)
    fun debug_var_handler direct_subtyping query_constr ta tb ->
     debug_var_handler
       ta
       (( <-< ) direct_subtyping query_constr ta tb)
       (( >-> ) direct_subtyping query_constr ta tb)
- ;;
+  ;;
 
   let rec direct_subtyping :
      (int ilogic Jtype.injected -> goal -> goal -> goal)
@@ -233,8 +281,11 @@ module Closure (CT : CLASSTABLE) : CLOSURE = struct
     ( -<- )
       open_direct_subtyping
       (fun ta tb -> closure debug_var_handler open_direct_subtyping query_constr ta tb)
-      (is_correct_type (fun ta tb ->
-         closure debug_var_handler open_direct_subtyping query_constr ta tb))
+      (fun eta ->
+        is_correct_type
+          (fun ta tb ->
+            closure debug_var_handler open_direct_subtyping query_constr ta tb)
+          eta)
       ta
       tb
 
@@ -258,5 +309,5 @@ module Closure (CT : CLASSTABLE) : CLOSURE = struct
       query_constr
       ta
       tb
- ;;
+  ;;
 end

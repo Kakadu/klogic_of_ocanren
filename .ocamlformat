@@ -1,7 +1,7 @@
 # expansion of 'janestreet' profile for ocamlformat 0.24.1
 # ocamlformat --profile=janestreet --print-config 2>&1 | sed 's/\(command line\)//g'| sed 's/(profile janestreet ())//g'
 quiet=false
-ocaml-version=4.04.0
+version=0.26.1
 max-iters=10
 margin-check=false
 disable=false

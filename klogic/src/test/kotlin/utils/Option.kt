@@ -13,17 +13,17 @@ sealed class LogicOption<T : Term<T>> : CustomTerm<LogicOption<T>> {
 
     abstract fun isEmpty(): Boolean
     abstract operator fun get(index: Int): Term<T>
-//    abstract fun toList(): List<Term<T>>
+    //    abstract fun toList(): List<Term<T>>
 
-//    companion object {
-//        fun <T : Term<T>> logicOptionOf(vararg terms: Term<T>): LogicOption<T> {
-//            if (terms.isEmpty()) {
-//                return noneLogic()
-//            }
-//
-//            return Some(terms.first(), LogicOptionOf(*terms.drop(1).toTypedArray()))
-//        }
-//    }
+    //    companion object {
+    //        fun <T : Term<T>> logicOptionOf(vararg terms: Term<T>): LogicOption<T> {
+    //            if (terms.isEmpty()) {
+    //                return noneLogic()
+    //            }
+    //
+    //            return Some(terms.first(), LogicOptionOf(*terms.drop(1).toTypedArray()))
+    //        }
+    //    }
 }
 
 
@@ -38,13 +38,14 @@ object None : LogicOption<Nothing>() {
     override val subtreesToUnify: Array<Term<*>>
         get() = emptyArray()
 
-    override fun constructFromSubtrees(subtrees: Iterable<*>): CustomTerm<LogicOption<Nothing>> = this
+    override fun constructFromSubtrees(
+        subtrees: Iterable<*>): CustomTerm<LogicOption<Nothing>> = this
 
     override fun get(index: Int): Nothing = throw IndexOutOfBoundsException("This list is empty")
 
-//    override fun toList(): List<Term<Nothing>> = emptyList()
+    //    override fun toList(): List<Term<Nothing>> = emptyList()
 
-    override fun toString(): String = "()"
+    override fun toString(): String = "None"
 }
 
 data class Some<T : Term<T>>(val head: Term<T>) : LogicOption<T>() {
@@ -69,7 +70,7 @@ data class Some<T : Term<T>>(val head: Term<T>) : LogicOption<T>() {
         return Some(head as Term<T>)
     }
 
-    override fun toString(): String = head.toString()
+    override fun toString(): String = "Some (${head.toString()})"
 
     override fun get(index: Int): Term<T> {
         require(index == 0) {
@@ -78,16 +79,16 @@ data class Some<T : Term<T>>(val head: Term<T>) : LogicOption<T>() {
         return head
     }
 
-//    override fun toList(): List<Term<T>> {
-//        val begin = listOf(head)
-//
-//        return begin + if (tail is LogicOption<T>) {
-//            tail.toList()
-//        } else {
-//            // Tail is Var
-//            tail as Var<LogicOption<T>>
-//            listOf(tail.cast())
-//        }
-//    }
+    //    override fun toList(): List<Term<T>> {
+    //        val begin = listOf(head)
+    //
+    //        return begin + if (tail is LogicOption<T>) {
+    //            tail.toList()
+    //        } else {
+    //            // Tail is Var
+    //            tail as Var<LogicOption<T>>
+    //            listOf(tail.cast())
+    //        }
+    //    }
 
 }
