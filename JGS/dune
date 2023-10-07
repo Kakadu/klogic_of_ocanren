@@ -1,25 +1,6 @@
 (library
  (name JGS)
- (modules JGS)
- (libraries OCanren noCanren.Option noCanren.List)
- (wrapped false)
- (flags
-  (:standard
-   -rectypes
-   ;-dsource
-   -w
-   -9))
- (preprocess
-  (pps
-   OCanren-ppx.ppx_wildcard
-   OCanren-ppx.ppx_distrib
-   -new-typenames
-   ppx_hack
-   GT.ppx_all)))
-
-(library
- (name miniJGS)
- (modules miniJGS)
+ (modules JGS Closure JGS_Helpers)
  (libraries OCanren noCanren.Option noCanren.List)
  (wrapped false)
  (flags
@@ -38,7 +19,7 @@
 
 (library
  (name test_JGS)
- (modules MutableTypeTable Closure JGS_Helpers)
+ (modules MutableTypeTable)
  (libraries JGS)
  (wrapped false)
  (flags
