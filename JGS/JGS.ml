@@ -672,10 +672,7 @@ module Verifier (CT : CLASSTABLE) : VERIFIER = struct
                  (conde
                     [ fresh
                         (id_b targs_b)
-                        (conde
-                           [ type_b === class_ id_b targs_b
-                           ; type_b === interface id_b targs_b
-                           ])
+                        (type_b === interface id_b targs_b)
                         (class_int_sub ( <-< ) id_a targs_a id_b targs_b res)
                     ; fresh
                         typ

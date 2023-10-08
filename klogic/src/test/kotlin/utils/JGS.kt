@@ -456,8 +456,7 @@ object: VERIFIER {
                     and(converted `===` Some(targs_a),
                         conde(freshTypedVars { id_b: Term<LogicInt>,
                                 targs_b: Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
-                              and(conde(type_b `===` Class_(id_b, targs_b),
-                                        type_b `===` Interface(id_b, targs_b)),
+                              and(type_b `===` Interface(id_b, targs_b),
                                   class_int_sub(less_minus_less, id_a,
                                   targs_a, id_b, targs_b, res))
                               },
