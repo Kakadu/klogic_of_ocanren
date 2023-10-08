@@ -2,26 +2,14 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.klogic.core.RelationalContext
-//import org.klogic.core.*
-import org.klogic.core.Term
-import org.klogic.core.UnificationListener
-import org.klogic.core.reified
-import org.klogic.core.Goal
-import org.klogic.core.Var
-import org.klogic.core.debugVar
-import org.klogic.core.failure
-import org.klogic.core.`|||`
-import org.klogic.core.and
-import org.klogic.utils.terms.LogicBool
+import org.klogic.core.*
 import org.klogic.utils.terms.LogicBool.Companion.toLogicBool
-import org.klogic.utils.terms.LogicList
 import org.klogic.utils.terms.LogicList.Companion.logicListOf
-import org.klogic.utils.terms.toPeanoLogicNumber
-import utils.*
+import org.klogic.utils.terms.ZeroNaturalNumber
 import utils.JGS.*
-import utils.JGS.Wildcard
+import utils.JGS.Var
 import utils.LogicInt.Companion.toLogic
+import utils.LogicOption
 
 class JGSBackward {
     @AfterEach
@@ -41,8 +29,10 @@ class JGSBackward {
     internal fun <T> Iterable<T>.toCountMap(): Map<out T, Int> = groupingBy { it }.eachCount()
 
     fun test(super_: (MutableClassTable) -> Term<Jtype<ID>>,
-             init: (MutableClassTable) -> Unit = { }, rez: Collection<Jtype<ID>>,
+             init: (MutableClassTable) -> Unit = { },
+             rez: (CLASSTABLE) -> Collection<Term<Jtype<ID>>>,
              count: Int = 10,
+             domain: context(RelationalContext) (Term<Jtype<ID>>) -> Goal = { success },
              verbose: Boolean = false) {
         val classtable = DefaultCT()
         init(classtable)
@@ -51,27 +41,73 @@ class JGSBackward {
         withEmptyContext {
             if (verbose) addUnificationListener(unificationsTracer)
             val g: (Term<Jtype<ID>>) -> Goal = {
-                NotComplete(v).check(it, super_(classtable), true.toLogicBool())
+                and(
+                    //domain(it), // gives an error about RelationalContext. TODO
+                    it `!==` Var(wildcard(), wildcard(),
+                        wildcard(), wildcard()),
+                    only_classes_interfaces_and_arrays(it),
+                    NotComplete(v).check(it, super_(classtable), true.toLogicBool()))
             }
 
             val answers = run(count, g).map { it.term }.toList()
             if (verbose) answers.forEachIndexed { i, x -> println("$i: $x") }
 
             assertEquals(count, answers.count())
-            val expectedTerm = rez.toCountMap()
+            val expectedTerm = rez(classtable).toCountMap()
             assertEquals(expectedTerm, answers.toCountMap())
         }
     }
+
+
+    @Test
+    @DisplayName("Wanna specify a domain and cut type variables.")
+    fun test0wildcards() {
+        withEmptyContext {
+            val dom: (Term<Jtype<ID>>) -> Goal = { it ->
+                conde(it `===` Class_(1.toLogic(), logicListOf()),
+                    it `===` Interface(2.toLogic(), logicListOf()),
+                    freshTypedVars { c: Term<Jtype<ID>>, d: Term<LogicOption<Jtype<ID>>> ->
+                        it `===` Var(4.toLogic(), ZeroNaturalNumber, c, d)
+                    }
+                )
+            }
+            val goal: (Term<Jtype<ID>>) -> Goal = { it ->
+                and(
+                    // I expect that next lines removes all Type Variables, but it doesn't
+                    it `!==` Var(wildcard(), wildcard(), wildcard(), wildcard()),
+                    dom(it),
+                    // and adding next lines fixes it. Hypothesis: constraints with wildcards are
+                    // not saved for future
+                    //it `!==` Var(wildcard(), wildcard(), wildcard(), wildcard()),
+                )
+            }
+            val answers = run(10, goal).map { it.term }.toList()
+            val expectedTerm = listOf(
+                Class_(1.toLogic(), logicListOf()),
+                Interface(2.toLogic(), logicListOf())
+            ).toCountMap()
+            assertEquals(expectedTerm, answers.toCountMap())
+        }
+    }
+
 
     @Test
     @DisplayName("? <: Object")
     fun test1() {
         //        val a: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> Array_(classtable.object_t) }
         val b: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable ->
-            println("AAA")
+            //println("AAA")
             classtable.object_t
         }
-        test(b, count = 2, rez = listOf(), verbose = true)
+        val expectedResult: (CLASSTABLE) -> Collection<Term<Jtype<ID>>> = { ct ->
+            listOf(ct.object_t, Array_(ct.object_t))
+        }
+        test(b, count = 3, rez = expectedResult, verbose = true,
+            domain = { it: Term<Jtype<ID>> ->
+                it `!==` Var(wildcard(), wildcard(),
+                    wildcard(), wildcard())
+            }
+        )
     }
     /*
         @Test

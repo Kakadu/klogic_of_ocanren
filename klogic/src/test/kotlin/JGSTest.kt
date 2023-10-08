@@ -94,7 +94,7 @@ class DefaultCT : MutableClassTable {
         lastId = 0;
         objectId = addClass(C(logicListOf(), top, logicListOf()))
         assert(objectId == 1)
-        object_t = TypeClass_(objectId.toLogic(), logicListOf())
+        object_t = Class_(objectId.toLogic(), logicListOf())
         cloneableId = addInterface(logicListOf(), logicListOf())
         assert(cloneableId == 2)
         cloneable_t = Interface(cloneableId.toLogic(), logicListOf())

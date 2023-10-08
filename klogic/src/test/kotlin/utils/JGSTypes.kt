@@ -83,7 +83,7 @@ object Null : Jtype<Nothing>() {
 }
 //fun <ID : Term<ID>> Null() = Null_()
 
-data class TypeArrayProto<ID : Term<ID>>(val typ: Term<Jtype<ID>>) : Jtype<ID>() {
+data class Array_<ID : Term<ID>>(val typ: Term<Jtype<ID>>) : Jtype<ID>() {
     override val subtreesToUnify: Array<Term<*>>
         get() = arrayOf(typ)
 
@@ -96,7 +96,7 @@ data class TypeArrayProto<ID : Term<ID>>(val typ: Term<Jtype<ID>>) : Jtype<ID>()
             "Expected only head and tail for constructing Cons but got more elements"
         }
 
-        @Suppress("UNCHECKED_CAST") return TypeArrayProto(head as Term<Jtype<ID>>)
+        @Suppress("UNCHECKED_CAST") return Array_(head as Term<Jtype<ID>>)
     }
 }
 
@@ -117,7 +117,7 @@ data class Intersect<ID : Term<ID>>(val args: Term<LogicList<Jtype<ID>>>) : Jtyp
     }
 }
 
-data class TypeClass_<ID : Term<ID>>(val id: Term<ID>, val args: Term<LogicList<Jarg<Jtype<ID>>>>) :
+data class Class_<ID : Term<ID>>(val id: Term<ID>, val args: Term<LogicList<Jarg<Jtype<ID>>>>) :
         Jtype<ID>() {
     override val subtreesToUnify: Array<Term<*>>
         get() = arrayOf(id, args)
@@ -132,7 +132,7 @@ data class TypeClass_<ID : Term<ID>>(val id: Term<ID>, val args: Term<LogicList<
             "Expected only head and tail for constructing Cons but got more elements"
         }
 
-        @Suppress("UNCHECKED_CAST") return TypeClass_(head as Term<ID>,
+        @Suppress("UNCHECKED_CAST") return Class_(head as Term<ID>,
                 args as Term<LogicList<Jarg<Jtype<ID>>>>)
     }
 }
@@ -162,7 +162,7 @@ data class Var<ID : Term<ID>>(val id: Term<ID>, val index: Term<PeanoLogicNumber
                               val upb: Term<Jtype<ID>>, val lwb: Term<LogicOption<Jtype<ID>>>) :
         Jtype<ID>() {
     override val subtreesToUnify: Array<Term<*>>
-        get() = arrayOf(id, index, upb,lwb )
+        get() = arrayOf(id, index, upb, lwb)
 
     @Suppress("UNCHECKED_CAST")
     override fun constructFromSubtrees(subtrees: Iterable<*>): CustomTerm<Jtype<ID>> {
@@ -174,15 +174,12 @@ data class Var<ID : Term<ID>>(val id: Term<ID>, val index: Term<PeanoLogicNumber
         val lwb = iterator.next() as Term<LogicOption<Jtype<ID>>>
 
         require(!iterator.hasNext()) {
-            "Expected only head and tail for constructing Cons but got more elements"
+            "Expected only four arguments for constructing Java Variable, but got more elements"
         }
         return Var(head as Term<ID>, index, upb, lwb)
     }
 }
 
-
-typealias Array_<ID> = TypeArrayProto<ID>
-typealias Class_<ID> = TypeClass_<ID>
 typealias Interface<ID> = TypeInterface<ID>
 
 sealed class Decl<ID : Term<ID>> : CustomTerm<Decl<ID>>
