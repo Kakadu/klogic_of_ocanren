@@ -1,7 +1,7 @@
 (rule
  (deps
   %{project_root}/bin/klogic_of_ocanren.exe
-  ../../../../../.oleg_numbers.objs/byte/oleg_numbers.cmo
+  %{cmo:../../../../../oleg_numbers}
   ;
   )
  (target OlegNumbers.kt)
@@ -16,7 +16,7 @@
 (rule
  (deps
   %{project_root}/bin/klogic_of_ocanren.exe
-  ../../../../../JGS/.JGS.objs/byte/jGS.cmo
+  %{cmo:../../../../../JGS/JGS}
   ;
   )
  (target JGS.kt)
@@ -31,7 +31,7 @@
 (rule
  (deps
   %{project_root}/bin/klogic_of_ocanren.exe
-  ../../../../../JGS/.JGS.objs/byte/closure.cmo
+  %{cmo:../../../../../JGS/closure}
   ;
   )
  (target Closure.kt)
@@ -46,7 +46,7 @@
 (rule
  (deps
   %{project_root}/bin/klogic_of_ocanren.exe
-  ../../../../../JGS/.JGS.objs/byte/jGS_Helpers.cmo
+  %{cmo:../../../../../JGS/jGS_Helpers}
   ;
   )
  (target JGS_Helpers.kt)

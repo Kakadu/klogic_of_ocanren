@@ -31,6 +31,10 @@ fun  pause(f: () -> Goal): Goal = { st -> ThunkStream { f()(st) } }
 
 context(RelationalContext)
 fun <A: Term<A>> wc(f : (Term<A>) -> Goal ) : Goal = f(wildcard())
+
+// short alias for fresh type variables uses only one (i.e. wildcards in unifications)
+context(RelationalContext)
+fun <A: Term<A>> _f(): Term<A> = freshTypedVar()
 |}]
 
 [@@@klogic.epilogue {|// Put epilogue here |}]

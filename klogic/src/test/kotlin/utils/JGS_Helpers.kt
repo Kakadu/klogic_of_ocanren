@@ -22,14 +22,9 @@ import utils.LogicOption
 // There are 1 relations
 context(RelationalContext)
 fun  only_classes_interfaces_and_arrays(q: Term<Jtype<LogicInt>>): Goal =
-pause { and(q `!==` Null(),
-            wc {__JGS_JGS_Helpers_ml_c56 : Term<LogicList<Jtype<LogicInt>>> ->
-            (q `!==` Intersect(__JGS_JGS_Helpers_ml_c56))},
-            wc {__JGS_JGS_Helpers_ml_c77 : Term<LogicInt> ->
-            wc {__JGS_JGS_Helpers_ml_c80 : Term<PeanoLogicNumber> ->
-            wc {__JGS_JGS_Helpers_ml_c83 : Term<Jtype<LogicInt>> ->
-            wc {__JGS_JGS_Helpers_ml_c86 : Term<LogicOption<Jtype<LogicInt>>> ->
-            (q `!==` Var(__JGS_JGS_Helpers_ml_c77, __JGS_JGS_Helpers_ml_c80,
-                     __JGS_JGS_Helpers_ml_c83, __JGS_JGS_Helpers_ml_c86))}}}})
-}
-// Put epilogue here 
+  pause { and(q `!==` Null(),
+              (q `!==` Intersect(wildcard())),
+              (q `!==` Var(wildcard(), wildcard(), wildcard(), wildcard())))
+  }// Put epilogue here 
+
+

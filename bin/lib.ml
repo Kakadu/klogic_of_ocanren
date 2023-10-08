@@ -562,7 +562,7 @@ let analyze_cmt _source_file out_file stru =
       Format.fprintf ppf "// functor\n%!";
       fprintf
         ppf
-        "@[public val %s : (%s) -> %s = { %s: %s ->@]@ "
+        "@[val %s : (%s) -> %s = { %s: %s ->@]@ "
         name
         arg_typ
         typ

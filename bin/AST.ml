@@ -583,10 +583,47 @@ let rec print_path ppf =
   | Papply (p1, p2) -> fprintf ppf "%a(%a)" print_path p1 print_path p2
 ;;
 
+module Uses_count = struct
+  type t =
+    | Unused
+    | Once
+    | Many
+end
+
+let check_uses ident ast =
+  let exception Manyuses in
+  let incr_acc = function
+    | Uses_count.Unused -> Uses_count.Once
+    | _ -> raise Manyuses
+  in
+  let acc = ref Uses_count.Unused in
+  let rec helper = function
+    | Tident p when String.equal (Path.name p) ident -> acc := incr_acc !acc
+    | otherwise -> ignore (map_ast helper otherwise)
+  in
+  match helper ast with
+  | _ -> !acc
+  | exception Manyuses -> Uses_count.Many
+;;
+
+module SS = Set.Make (String)
+
 let pp_ast_as_kotlin inh_info =
   let path_is_none path =
     (* Format.eprintf "log[path_is_none]: %a\n%!" Path.print path; *)
     String.equal (Format.asprintf "%a" Path.print path) "OCanren!.Std.none"
+  in
+  let wcs = ref SS.empty in
+  let with_wc name f =
+    wcs := SS.add name !wcs;
+    f ();
+    wcs := SS.remove name !wcs
+  in
+  let once_used = ref SS.empty in
+  let with_once_used name f =
+    once_used := SS.add name !once_used;
+    f ();
+    once_used := SS.remove name !once_used
   in
   let open Format in
   let rec helper ?(par = true) ppf = function
@@ -598,16 +635,21 @@ let pp_ast_as_kotlin inh_info =
       fprintf ppf "@[<v 2>(@[(%a)@]@,@[mplus@]@,@,@[(%a)@])@]" default l default r
     | Bind (l, r) ->
       fprintf ppf "@[<v 2>(@[(%a)@]@,@[bind@]@,@[(%a)@])@]" default l default r
-    (* | Fresh (xs, e) ->
-       fprintf ppf "@[<v>";
-        List.iter xs ~f:(fun (name, typ) ->
-          fprintf
-            ppf
-            "@[val %s : %a = freshTypedVar();@]@ "
-            name
-            (pp_typ_as_kotlin inh_info)
-            typ);
-        fprintf ppf "@[%a@]@]" helper e *)
+    | Fresh ([ (v1, vtyp) ], rhs)
+      when match rhs with
+           | Pause _ -> false
+           | _ -> true ->
+      (match check_uses v1 rhs with
+      | Uses_count.Once -> with_once_used v1 (fun () -> default ppf rhs)
+      | _ ->
+        fprintf
+          ppf
+          "@[freshTypesVars { %s: %a -> %a}]"
+          v1
+          (pp_typ_as_kotlin inh_info)
+          vtyp
+          default
+          rhs)
     | Fresh (xs, Pause e) ->
       fprintf ppf "@[@[<hov 2>freshTypedVars { ";
       pp_comma_list
@@ -617,7 +659,7 @@ let pp_ast_as_kotlin inh_info =
         xs;
       fprintf ppf " ->@]@ %a@ @[}@]@]" default e
     | Fresh (xs, e) ->
-      fprintf ppf "/* NOTE: fresh without delay */@ ";
+      (* fprintf ppf "/* NOTE: fresh without delay */@ "; *)
       fprintf ppf "@[<hov>@[freshTypedVars {";
       pp_comma_list
         (fun ppf (name, typ) ->
@@ -625,8 +667,7 @@ let pp_ast_as_kotlin inh_info =
         ppf
         xs;
       fprintf ppf " ->@]@ %a@ @[}@]@]" default e
-    | Wildcard (v, t, e) ->
-      fprintf ppf "@[wc {%s : %a ->@ %a}@]" v (pp_typ_as_kotlin inh_info) t default e
+    | Wildcard (v, _t, e) -> with_wc v (fun () -> default ppf e)
     | Unify (l, r) when par ->
       (* TODO: if left argument is an empty list, swap the arguments to make Kotlin typecheck this *)
       fprintf ppf "(%a `===` %a)" default l default r
@@ -657,16 +698,25 @@ let pp_ast_as_kotlin inh_info =
       fprintf ppf "@[%a(%a)@]" default f (pp_comma_list default) args
     | Tident p ->
       let repr = Path.name p in
-      (match Inh_info.lookup_expr_exn inh_info repr with
-      | exception Not_found -> fprintf ppf "%a" print_path p
-      | s -> fprintf ppf "%s" s)
+      if SS.mem repr !wcs
+      then fprintf ppf "wildcard()"
+      else if SS.mem repr !once_used
+      then fprintf ppf "_f()"
+      else (
+        match Inh_info.lookup_expr_exn inh_info repr with
+        | exception Not_found -> fprintf ppf "%a" print_path p
+        | s -> fprintf ppf "%s" s)
     (* | Tident p -> fprintf ppf "%a" print_ident @@ Path.name p *)
     (* | Conde xs -> fprintf ppf "@[conde(%a)@]" (pp_comma_list helper) xs *)
     | Conde xs ->
       fprintf ppf "@[<v 6>conde(";
-      List.iteri xs ~f:(fun i ->
+      List.iteri xs ~f:(fun i e ->
         if i <> 0 then fprintf ppf ",@ ";
-        nopar ppf);
+        nopar
+          ppf
+          (match e with
+          | Pause x -> x
+          | _ -> e));
       fprintf ppf ")@]"
     | Conj_multi xs ->
       (* fprintf ppf "@[and(%a)@]" (pp_comma_list helper) xs *)
@@ -675,7 +725,7 @@ let pp_ast_as_kotlin inh_info =
         if i <> 0 then fprintf ppf ",@ ";
         nopar ppf);
       fprintf ppf ")@]"
-    | Infix_conj2 (l, r) -> fprintf ppf "@[(%a and %a)@]" default l default r
+    | Infix_conj2 (l, r) -> fprintf ppf "@[and(%a,@, %a)@]" nopar l nopar r
     | T_int n -> fprintf ppf "%d.toLogic()" n
     | T_bool n -> fprintf ppf "%b.toLogicBool()" n
     | T_list_init ls ->
@@ -753,7 +803,7 @@ let pp_rvb_as_kotlin ?(override = true) inh_info ppf { Rvb.name; args; body } =
     pp_print_list
       ~pp_sep:(fun ppf () -> fprintf ppf ",@ ")
       (fun ppf (name, typ) ->
-        fprintf ppf "%a: %a" print_ident name (pp_typ_as_kotlin inh_info) typ)
+        fprintf ppf "@[%a: %a@]" print_ident name (pp_typ_as_kotlin inh_info) typ)
       ppf
   in
   let tvars =
@@ -762,10 +812,11 @@ let pp_rvb_as_kotlin ?(override = true) inh_info ppf { Rvb.name; args; body } =
       ~init:S.empty
       args
   in
-  fprintf ppf "context(RelationalContext)@ ";
+  fprintf ppf "@[<v>";
+  fprintf ppf "@[context(RelationalContext)@]@ ";
   fprintf
     ppf
-    "@[%sfun %s %a(%a): Goal =@]@,@[%a@]\n%!"
+    "@[<v 2>@[<hov 6>%sfun %s %a(%a@,@[): Goal =@]@]@ "
     (if override then "override " else "")
     (if S.is_empty tvars
      then ""
@@ -782,9 +833,9 @@ let pp_rvb_as_kotlin ?(override = true) inh_info ppf { Rvb.name; args; body } =
     print_ident
     name
     pp_args
-    args
-    (pp_ast_as_kotlin inh_info)
-    body
+    args;
+  fprintf ppf "%a" (pp_ast_as_kotlin inh_info) body;
+  fprintf ppf "@]@ @,@]"
 ;;
 
 let has_attr name xs =
