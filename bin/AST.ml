@@ -852,7 +852,7 @@ let has_attr name xs =
 ;;
 
 (* pp_typ_as_kotlin *)
-let pp_modtype_as_kotlin info name sign ppf =
+let pp_modtype_as_kotlin info name ppf sign =
   let open Format in
   let printfn fmt = Format.kfprintf (fun fmt -> fprintf fmt "@,") ppf fmt in
   let gensym =
@@ -910,4 +910,20 @@ let pp_modtype_as_kotlin info name sign ppf =
       printfn "@[val %s : %a@]" (Ident.name id) Printtyp.path path
     | _ -> printfn "@[//@]");
   printfn "@]@,}@]\n"
+;;
+
+let rec pp_functor_as_kotlin ~name ~typ ~arg_name ~arg_typ info ppf body =
+  let open Format in
+  fprintf ppf "// functor\n%!";
+  fprintf ppf "@[val %s : (%s) -> %s = { %s: %s ->@]@ " name arg_typ typ arg_name arg_typ;
+  fprintf ppf "@[<v 2>@[object: %s {@]@," typ;
+  pp_print_list (pp_item ~toplevel:false info) ppf body;
+  fprintf ppf "@]}}\n"
+
+and pp_item ~toplevel info ppf = function
+  | Inh_info.RVB rvb -> pp_rvb_as_kotlin ~override:(not toplevel) info ppf rvb
+  | Plain_kotlin s -> Format.fprintf ppf "%s" s
+  | MT_as_interface (name, sign) -> pp_modtype_as_kotlin info name ppf sign
+  | Functor1 { name; typ; arg_name; arg_typ; body } ->
+    pp_functor_as_kotlin ~name ~typ ~arg_name ~arg_typ info ppf body
 ;;
