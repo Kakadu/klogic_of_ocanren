@@ -603,8 +603,8 @@ module Verifier (CT : CLASSTABLE) : VERIFIER = struct
              [ fresh
                  (targs_b2 new_targs_b2)
                  (conde
-                    [ super_ === Std.some (class_ __ targs_b2)
-                    ; super_ === Std.some (interface __ targs_b2)
+                    [ super_ === Std.some (class_ id_b targs_b2)
+                    ; super_ === Std.some (interface  id_b targs_b2)
                     ])
                  (mapo
                     (fun arg res -> substitute_arg targs_a arg res)
