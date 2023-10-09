@@ -393,8 +393,8 @@ object: VERIFIER {
               CT.get_superclass_by_id(id_a, id_b, super_),
               conde(freshTypedVars { targs_b2: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
                       new_targs_b2: Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
-                    and(conde((super_ `===` Some(Class_(_f(), targs_b2))),
-                              (super_ `===` Some(Interface(_f(), targs_b2)))),
+                    and(conde(super_ `===` Some(Class_(id_b, targs_b2)),
+                              super_ `===` Some(Interface(id_b, targs_b2))),
                         mapo({ arg: Term<Jarg<Jtype<LogicInt>>>, res: Term<Jarg<Jtype<LogicInt>>> -> 
                              substitute_arg(targs_a, arg, res) },
                         targs_b2, new_targs_b2),
