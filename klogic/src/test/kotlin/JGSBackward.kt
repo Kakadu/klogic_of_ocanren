@@ -3,13 +3,18 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.klogic.core.*
+import org.klogic.utils.terms.LogicBool
 import org.klogic.utils.terms.LogicBool.Companion.toLogicBool
 import org.klogic.utils.terms.LogicList.Companion.logicListOf
 import org.klogic.utils.terms.ZeroNaturalNumber
 import utils.JGS.*
+import utils.JGS.Closure.CLOSURE
+import utils.JGS.Closure.Closure
 import utils.JGS.Var
+import utils.LogicInt
 import utils.LogicInt.Companion.toLogic
 import utils.LogicOption
+
 
 class JGSBackward {
     @AfterEach
@@ -21,33 +26,55 @@ class JGSBackward {
         //if (System.getenv("SILENT_UNIFICATIONS") == null)
         val rez = if (stateAfter == null) " ~~> _|_"
         else ""
-        println("${firstTerm.walk(stateBefore.substitution)} `===` ${
-            secondTerm.walk(stateBefore.substitution)
-        }$rez")
+        println(
+            "${firstTerm.walk(stateBefore.substitution)} `===` ${
+                secondTerm.walk(stateBefore.substitution)
+            }$rez"
+        )
     }
 
     internal fun <T> Iterable<T>.toCountMap(): Map<out T, Int> = groupingBy { it }.eachCount()
 
-    fun test(super_: (MutableClassTable) -> Term<Jtype<ID>>,
-             init: (MutableClassTable) -> Unit = { },
-             rez: (CLASSTABLE) -> Collection<Term<Jtype<ID>>>,
-             count: Int = 10,
-             domain: context(RelationalContext) (Term<Jtype<ID>>) -> Goal = { success },
-             verbose: Boolean = false) {
+    context(RelationalContext)
+    fun foo2(q: Term<LogicInt>): Goal = success
+
+    fun demo() {
+        val foo: context(RelationalContext)  (Term<LogicInt>) -> Goal = {
+            success
+        }
+        withEmptyContext {
+            // compiles
+            // val answers: List<ReifiedTerm<LogicInt>> = run(1, { foo2(it) } )
+            // compilation error
+            // inferred type is Term<LogicInt> but RelationalContext was expected
+//            val answers: List<ReifiedTerm<LogicInt>> = run(1, { foo(it) } )
+        }
+    }
+
+    fun test(
+        goal: (MutableClassTable, VERIFIER) -> (Term<Jtype<ID>>) -> Goal,
+        rez: (CLASSTABLE) -> Collection<Term<Jtype<ID>>>,
+        count: Int = 10,
+        //domain: context(RelationalContext) (Term<Jtype<ID>>) -> Goal = { success },
+        verbose: Boolean = false
+    ) {
         val classtable = DefaultCT()
-        init(classtable)
+        //init(classtable)
         val v = Verifier(classtable)
 
+        val g = goal(classtable, v)
         withEmptyContext {
             if (verbose) addUnificationListener(unificationsTracer)
-            val g: (Term<Jtype<ID>>) -> Goal = {
-                and(
-                    //domain(it), // gives an error about RelationalContext. TODO
-                    it `!==` Var(wildcard(), wildcard(),
-                        wildcard(), wildcard()),
-                    only_classes_interfaces_and_arrays(it),
-                    NotComplete(v).check(it, super_(classtable), true.toLogicBool()))
-            }
+
+//            val g: (Term<Jtype<ID>>) -> Goal = {
+//                and(
+//                    //domain(it), // gives an error about RelationalContext. TODO
+//                    // Type mismatch: inferred type is Term<Jtype<ID /* = LogicInt */>> but RelationalContext was expected
+//                    it `!==` Var(wildcard(), wildcard(),
+//                        wildcard(), wildcard()),
+//                    only_classes_interfaces_and_arrays(it),
+//                    NotComplete(v).check(it, super_(classtable), true.toLogicBool()))
+//            }
 
             val answers = run(count, g).map { it.term }.toList()
             if (verbose) answers.forEachIndexed { i, x -> println("$i: $x") }
@@ -75,10 +102,7 @@ class JGSBackward {
                 and(
                     // I expect that next lines removes all Type Variables, but it doesn't
                     it `!==` Var(wildcard(), wildcard(), wildcard(), wildcard()),
-                    dom(it),
-                    // and adding next lines fixes it. Hypothesis: constraints with wildcards are
-                    // not saved for future
-                    //it `!==` Var(wildcard(), wildcard(), wildcard(), wildcard()),
+                    dom(it)
                 )
             }
             val answers = run(10, goal).map { it.term }.toList()
@@ -90,24 +114,106 @@ class JGSBackward {
         }
     }
 
+    enum class ClosureType {
+        Subtyping, SuperTyping
+    }
+
+    abstract class MakeClosure(
+        val closureBuilder: CLOSURE,
+        val ct: CLASSTABLE,
+        val closureType: ClosureType,
+        val verifier: VERIFIER,
+        val ctx: RelationalContext
+    ) {
+
+        fun direct(ta: Term<Jtype<ID>>, tb: Term<Jtype<ID>>): Goal {
+            with (ctx) {
+                return closureBuilder.minus_less_minus( // ERROR. No required context receiver found:
+                    { a, b, c, d -> verifier.minus_less_minus(a, b, c, d) },
+                    { a, b -> closure(a, b) },
+                    ta,
+                    tb
+                )
+            }
+        }
+
+        fun isCorrect(t: Term<Jtype<ID>>): Goal {
+            with(ctx) {
+                return closureBuilder.is_correct_type({ a, b -> closure(a, b) }, t)
+            }
+        }
+
+
+        fun closure(ta: Term<Jtype<ID>>, tb: Term<Jtype<ID>>): Goal {
+            with(ctx) {
+                return when (closureType) {
+                    ClosureType.Subtyping ->
+                        closureBuilder.less_minus_less({ a, b -> direct(a, b) }, success, ta, tb)
+
+                    ClosureType.SuperTyping ->
+                        TODO("Not implemented")
+                }
+            }
+        }
+        // typ: ClosureType, constraint: Goal,
+    }
 
     @Test
     @DisplayName("? <: Object")
     fun test1() {
-        //        val a: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> Array_(classtable.object_t) }
         val b: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable ->
-            //println("AAA")
+            classtable.object_t
+        }
+        val expectedResult: (CLASSTABLE) -> Collection<Term<Jtype<ID>>> = { ct ->
+            listOf(
+                //ct.object_t,
+                Array_(ct.object_t)
+            )
+        }
+        val verbose = false
+        val count = 10
+        val classtable = DefaultCT()
+        val v = Verifier(classtable)
+        val closureBuilder = Closure(classtable)
+        withEmptyContext {
+
+//            fun closureSubtyping
+//            fun closure (ta: Term<Jtype<ID>>, tb: Term<Jtype<ID>>): Goal {
+//                v.le
+//            }
+            val g = { q: Term<Jtype<ID>> ->
+                withEmptyContext {
+                    and(
+                        only_classes_interfaces_and_arrays(q),
+                        NotComplete(v).check(q, classtable.object_t, true.toLogicBool())
+                    )
+                }
+            }
+            val answers = run(count, g).map { it.term }.toList()
+            if (verbose) answers.forEachIndexed { i, x -> println("$i: $x") }
+
+//            assertEquals(count, answers.count())
+            val expectedTerm = expectedResult(classtable).toCountMap()
+            assertEquals(expectedTerm, answers.toCountMap())
+        }
+
+    }
+
+    @Test
+    @DisplayName("Object[] <: ?")
+    fun test2() {
+        val b: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable ->
             classtable.object_t
         }
         val expectedResult: (CLASSTABLE) -> Collection<Term<Jtype<ID>>> = { ct ->
             listOf(ct.object_t, Array_(ct.object_t))
         }
-        test(b, count = 3, rez = expectedResult, verbose = true,
-            domain = { it: Term<Jtype<ID>> ->
-                it `!==` Var(wildcard(), wildcard(),
-                    wildcard(), wildcard())
-            }
-        )
+//        test(b, count = 2, rez = expectedResult, verbose = false,
+//            domain = { it: Term<Jtype<ID>> ->
+//                it `!==` Var(wildcard(), wildcard(),
+//                    wildcard(), wildcard())
+//            }
+//        )
     }
     /*
         @Test

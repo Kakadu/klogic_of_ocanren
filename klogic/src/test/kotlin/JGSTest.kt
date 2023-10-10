@@ -2,17 +2,9 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.klogic.core.RelationalContext
-//import org.klogic.core.*
-import org.klogic.core.Term
-import org.klogic.core.UnificationListener
-import org.klogic.core.reified
-import org.klogic.core.Goal
+import org.klogic.core.*
 import org.klogic.core.Var
-import org.klogic.core.debugVar
-import org.klogic.core.failure
-import org.klogic.core.`|||`
-import org.klogic.core.and
+//import org.klogic.core.*
 import org.klogic.utils.terms.LogicBool
 import org.klogic.utils.terms.LogicBool.Companion.toLogicBool
 import org.klogic.utils.terms.LogicList
@@ -20,8 +12,10 @@ import org.klogic.utils.terms.LogicList.Companion.logicListOf
 import org.klogic.utils.terms.toPeanoLogicNumber
 import utils.*
 import utils.JGS.*
+import utils.JGS.Var
 import utils.JGS.Wildcard
 import utils.LogicInt.Companion.toLogic
+import utils.freshTypedVars
 
 typealias ID = LogicInt
 
@@ -133,7 +127,11 @@ class DefaultCT : MutableClassTable {
                     is Wildcard<*> -> TODO("Should not be reachable")
                     else -> TODO("Should not be reachable 100%")
                 }
-
+//                is I -> when (it.supers) {
+//                    is CustomTerm<LogicList<Jtype<ID>>> -> it.supers.asReified().toList().map { it -> it as Jtype<ID> }
+//                    is org.klogic.core.UnboundedValue<*> -> TODO("")
+//
+//                }
                 is C -> when (it.supers) {
                     is LogicList<Jtype<ID>> -> it.supers.toList().map { it as Jtype<ID> }
 
@@ -236,6 +234,14 @@ class JGSTest {
         val a: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> Array_(classtable.object_t) }
         val b: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> classtable.object_t }
         testForward(a, b, rez = true)
+        // false because NotComplete can't calculate this.
+    }
+    @Test
+    @DisplayName("Object[][] <: Object")
+    fun test15() {
+        val a: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> Array_(Array_(classtable.object_t)) }
+        val b: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> classtable.object_t }
+        testForward(a, b, rez = false)
     }
 
     @Test
