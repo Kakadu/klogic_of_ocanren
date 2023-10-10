@@ -4,7 +4,6 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.klogic.core.*
 import org.klogic.core.Var
-//import org.klogic.core.*
 import org.klogic.utils.terms.LogicBool
 import org.klogic.utils.terms.LogicBool.Companion.toLogicBool
 import org.klogic.utils.terms.LogicList
@@ -12,7 +11,6 @@ import org.klogic.utils.terms.LogicList.Companion.logicListOf
 import org.klogic.utils.terms.toPeanoLogicNumber
 import utils.*
 import utils.JGS.*
-import utils.JGS.Var
 import utils.JGS.Wildcard
 import utils.LogicInt.Companion.toLogic
 import utils.freshTypedVars
@@ -78,7 +76,7 @@ class DefaultCT : MutableClassTable {
 
     override fun makeTVar(index: Int, upb: Term<Jtype<ID>>): Jtype<ID> {
         val id = newId()
-        return Var(id.toLogic(), index.toPeanoLogicNumber(), upb, None())
+        return utils.JGS.Var(id.toLogic(), index.toPeanoLogicNumber(), upb, None())
     }
 
 
@@ -123,7 +121,7 @@ class DefaultCT : MutableClassTable {
                 is I -> when (it.supers) {
                     is LogicList<Jtype<ID>> -> it.supers.toList().map { it -> it as Jtype<ID> }
 
-                    is Var -> TODO("")
+                    is org.klogic.core.Var -> TODO("")
                     is Wildcard<*> -> TODO("Should not be reachable")
                     else -> TODO("Should not be reachable 100%")
                 }
