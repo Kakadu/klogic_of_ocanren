@@ -67,8 +67,10 @@ class DefaultCT : MutableClassTable {
         return lastId
     }
 
-    override fun addInterface(params: Term<LogicList<Jtype<ID>>>,
-                              supers: Term<LogicList<Jtype<ID>>>): Int {
+    override fun addInterface(
+        params: Term<LogicList<Jtype<ID>>>,
+        supers: Term<LogicList<Jtype<ID>>>
+    ): Int {
         data[newId()] = I(params, supers)
         return lastId
 
@@ -101,7 +103,7 @@ class DefaultCT : MutableClassTable {
 
     context(RelationalContext)
     override fun decl_by_id(v1: Term<LogicInt>, rez: Term<Decl<LogicInt>>): Goal {
-        println("$v1, $rez")
+        println("decl_by_id: $v1, $rez")
         return debugVar(v1, { id -> id.reified() }) { it ->
             val v = it.term
             when (v) {
@@ -114,8 +116,10 @@ class DefaultCT : MutableClassTable {
     }
 
     context(RelationalContext)
-    fun getSuperclassByIdFreeFree(subId: Term<LogicInt>, superId: Term<LogicInt>,
-                                  rez: Term<Jtype<LogicInt>>): Goal {
+    fun getSuperclassByIdFreeFree(
+        subId: Term<LogicInt>, superId: Term<LogicInt>,
+        rez: Term<Jtype<LogicInt>>
+    ): Goal {
         val parents: (Decl<ID>) -> List<Jtype<ID>> = { it ->
             when (it) {
                 is I -> when (it.supers) {
@@ -155,11 +159,15 @@ class DefaultCT : MutableClassTable {
 
                 parentsList.fold(acc) { acc, jtyp ->
                     when (jtyp) {
-                        is Interface -> acc `|||` and(jtyp.id `===` superId,
-                                curId.toLogic() `===` subId, rez `===` jtyp)
+                        is Interface -> acc `|||` and(
+                            jtyp.id `===` superId,
+                            curId.toLogic() `===` subId, rez `===` jtyp
+                        )
 
-                        is Class_ -> acc `|||` and(jtyp.id `===` superId,
-                                curId.toLogic() `===` subId, rez `===` jtyp)
+                        is Class_ -> acc `|||` and(
+                            jtyp.id `===` superId,
+                            curId.toLogic() `===` subId, rez `===` jtyp
+                        )
 
                         else -> TODO("ancestor of the interface should be an interface")
                     }
@@ -168,23 +176,32 @@ class DefaultCT : MutableClassTable {
         }
     }
 
-    context(RelationalContext) override fun get_superclass_by_id(subId: Term<LogicInt>,
-                                                                 superId: Term<LogicInt>,
-                                                                 rez: Term<LogicOption<Jtype<LogicInt>>>): Goal = freshTypedVars { answerJtyp: Term<Jtype<LogicInt>> ->
-        and(rez `===` Some(answerJtyp), getSuperclassByIdFreeFree(subId, superId, answerJtyp))
+    context(RelationalContext) override fun get_superclass_by_id(
+        subId: Term<LogicInt>,
+        superId: Term<LogicInt>,
+        rez: Term<LogicOption<Jtype<LogicInt>>>
+    ): Goal {
+        println("get_superclass_by_id $subId $superId ~~> $rez\n")
+        return freshTypedVars { answerJtyp: Term<Jtype<LogicInt>> ->
+            and(rez `===` Some(answerJtyp), getSuperclassByIdFreeFree(subId, superId, answerJtyp))
+        }
     }
 }
 
 
+
 data class NotComplete(val v: VERIFIER) {
     context(RelationalContext)
-    fun smallFish(ta: Term<Jtype<LogicInt>>, tb: Term<Jtype<LogicInt>>,
-                  rez: Term<LogicBool>): Goal = this.check(ta, tb, rez)
+    fun smallFish(
+        ta: Term<Jtype<LogicInt>>, tb: Term<Jtype<LogicInt>>,
+        rez: Term<LogicBool>
+    ): Goal = this.check(ta, tb, rez)
 
     context(RelationalContext)
     fun check(ta: Term<Jtype<LogicInt>>, tb: Term<Jtype<LogicInt>>, rez: Term<LogicBool>): Goal {
         return v.minus_less_minus(
-                { a, b, c -> smallFish(a, b, c) }, ta, tb, rez)
+            { a, b, c -> smallFish(a, b, c) }, ta, tb, rez
+        )
     }
 }
 
@@ -198,15 +215,19 @@ class JGSTest {
         //if (System.getenv("SILENT_UNIFICATIONS") == null)
         val rez = if (stateAfter == null) " ~~> _|_"
         else ""
-        println("${firstTerm.walk(stateBefore.substitution)} `===` ${
-            secondTerm.walk(stateBefore.substitution)
-        }$rez")
+        println(
+            "${firstTerm.walk(stateBefore.substitution)} `===` ${
+                secondTerm.walk(stateBefore.substitution)
+            }$rez"
+        )
     }
 
-    fun testForward(a: (MutableClassTable) -> Term<Jtype<ID>>,
-                    b: (MutableClassTable) -> Term<Jtype<ID>>,
-                    init: (MutableClassTable) -> Unit = { }, rez: Boolean,
-                    verbose: Boolean = false) {
+    fun testForward(
+        a: (MutableClassTable) -> Term<Jtype<ID>>,
+        b: (MutableClassTable) -> Term<Jtype<ID>>,
+        init: (MutableClassTable) -> Unit = { }, rez: Boolean,
+        verbose: Boolean = false
+    ) {
         val classtable = DefaultCT()
         init(classtable)
         val v = Verifier(classtable)
@@ -234,6 +255,7 @@ class JGSTest {
         testForward(a, b, rez = true)
         // false because NotComplete can't calculate this.
     }
+
     @Test
     @DisplayName("Object[][] <: Object")
     fun test15() {
@@ -340,23 +362,40 @@ class JGSTest {
 
             val eId = ct.addClass(logicListOf(ct.object_t, ct.object_t), ct.object_t, logicListOf())
 
-            val fId = ct.addClass(logicListOf(ct.object_t, ct.object_t),
-                    Class_(eId.toLogic(),
-                            logicListOf(Type(Class_(dId.toLogic(),
-                                    logicListOf(Type(ct.makeTVar(1, ct.object_t))))),
-                                    Type(ct.makeTVar(0, ct.object_t))
-                            )),
-                    logicListOf())
-            left = Class_(fId.toLogic(),
+            val fId = ct.addClass(
+                logicListOf(ct.object_t, ct.object_t),
+                Class_(
+                    eId.toLogic(),
                     logicListOf(
-                            Type(a!!), Type(b!!)
-                    ))
-            right = Class_(eId.toLogic(),
-                    logicListOf(
-                            Type(Class_(dId.toLogic(),
-                                    logicListOf(Type(Class_(bId.toLogic(), logicListOf()))))),
-                            Type(a!!)
-                    ))
+                        Type(
+                            Class_(
+                                dId.toLogic(),
+                                logicListOf(Type(ct.makeTVar(1, ct.object_t)))
+                            )
+                        ),
+                        Type(ct.makeTVar(0, ct.object_t))
+                    )
+                ),
+                logicListOf()
+            )
+            left = Class_(
+                fId.toLogic(),
+                logicListOf(
+                    Type(a!!), Type(b!!)
+                )
+            )
+            right = Class_(
+                eId.toLogic(),
+                logicListOf(
+                    Type(
+                        Class_(
+                            dId.toLogic(),
+                            logicListOf(Type(Class_(bId.toLogic(), logicListOf())))
+                        )
+                    ),
+                    Type(a!!)
+                )
+            )
 
         }
         testForward({ left!! }, { right!! }, init, rez = true, verbose = false)

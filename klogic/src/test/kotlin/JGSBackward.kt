@@ -72,10 +72,11 @@ class JGSBackward {
         private val verifier: VERIFIER,
         private val ctx: RelationalContext
     ) {
-
-        fun direct(ta: Term<Jtype<ID>>, tb: Term<Jtype<ID>>): Goal {
-            with(ctx) {
-                return closureBuilder.minus_less_minus( // ERROR. No required context receiver found:
+        fun direct(ta: Term<Jtype<ID>>, tb: Term<Jtype<ID>>): Goal = { st ->
+            println("direct:  ${st.reify(ta)}")
+            println("         ${st.reify(tb)}")
+            (with(ctx) {
+                closureBuilder.minus_less_minus( // ERROR. No required context receiver found:
                     // this function is passed as parameter in OCaml, but here we are trying to inline it
                     // see run_json2.ml line 230
                     { a, b, c, d -> verifier.minus_less_minus(a, b, c, d) },
@@ -84,7 +85,7 @@ class JGSBackward {
                     ta,
                     tb
                 )
-            }
+            }(st))
         }
 
         fun isCorrect(t: Term<Jtype<ID>>): Goal {
@@ -174,5 +175,34 @@ class JGSBackward {
             )
         }
         testSingleConstraint(expectedResult, count = 1, ClosureType.Subtyping, { Array_(Array_(it.cloneable_t)) }, verbose = false)
+    }
+
+    @Test
+    @DisplayName("hack")
+    fun testHack1() {
+        val expectedResult: (CLASSTABLE) -> Collection<Term<Jtype<ID>>> = { ct ->
+            listOf(
+//                Array_(Null) as Jtype<ID>
+            )
+        }
+        val count = 1
+        val classTable = DefaultCT()
+        val v = Verifier(classTable)
+        val closureBuilder = Closure(classTable)
+        withEmptyContext {
+            val g = { q: Term<Jtype<ID>> ->
+                and(
+                    only_classes_interfaces_and_arrays(q),
+                    MakeClosure(closureBuilder, classTable, ClosureType.Subtyping, v, this)
+                        .closure(Class_(2.toLogic(), logicListOf()), classTable.cloneable_t)
+                )
+            }
+            val answers = run(count, g).map { it.term }.toList()
+//            answers.forEachIndexed { i, x -> println("$i: $x") }
+
+            assertEquals(count, answers.count())
+            val expectedTerm = expectedResult(classTable).toCountMap()
+            assertEquals(expectedTerm, answers.toCountMap())
+        }
     }
 }

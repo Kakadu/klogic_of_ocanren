@@ -202,7 +202,9 @@ val Closure: (CLASSTABLE) -> CLOSURE = { CT: CLASSTABLE ->
             direct_subtyping: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>) -> Goal,
             query_constr: Goal, ta: Term<Jtype<LogicInt>>,
             tb: Term<Jtype<LogicInt>>
-        ): Goal =
+        ): Goal = { st ->
+            println("<-< ${st.reify(ta)}")
+            println("    ${st.reify(tb)}")
             pause {
                 and(
                     query_constr,
@@ -223,7 +225,8 @@ val Closure: (CLASSTABLE) -> CLOSURE = { CT: CLASSTABLE ->
                             )
                         })
                 )
-            }
+            }(st)
+        }
 
 
         context(RelationalContext)
