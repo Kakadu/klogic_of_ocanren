@@ -103,7 +103,7 @@ class DefaultCT : MutableClassTable {
 
     context(RelationalContext)
     override fun decl_by_id(v1: Term<LogicInt>, rez: Term<Decl<LogicInt>>): Goal {
-        println("decl_by_id: $v1, $rez")
+//        println("decl_by_id: $v1, $rez")
         return debugVar(v1, { id -> id.reified() }) { it ->
             val v = it.term
             when (v) {
