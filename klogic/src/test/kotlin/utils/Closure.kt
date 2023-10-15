@@ -40,39 +40,41 @@ fun <B : Term<B>, A : Term<A>> list_same_length(xs: Term<LogicList<A>>,
 
 // CLOSURE 
 interface CLOSURE {
-  // direct_subtyping
+  
   context(RelationalContext)
   fun direct_subtyping(v1: (Term<Jtype<LogicInt>>, Goal, Goal) -> Goal,
   v2: ((Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal, Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,
   v3: Goal, v4: Term<Jtype<LogicInt>>, v5: Term<Jtype<LogicInt>> ): Goal
-  // closure
+  
   context(RelationalContext)
   fun closure(v6: (Term<Jtype<LogicInt>>, Goal, Goal) -> Goal,
   v7: ((Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal, Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,
   v8: Goal, v9: Term<Jtype<LogicInt>>, v10: Term<Jtype<LogicInt>> ): Goal
-  // is_correct_type
+  
+  //  Functions [is_correct_type], [(-<-)], [( <-< )] are not required to be public for OCaml,
+  //       but the way we put 'override' identifier in Kotlin requires making it visible 
   context(RelationalContext)
   fun is_correct_type(
   v11: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>) -> Goal,
   v12: Term<Jtype<LogicInt>> ): Goal
-  // minus_less_minus
+  
   context(RelationalContext)
   fun minus_less_minus(
   v13: ((Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal, Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,
   v14: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>) -> Goal,
   v15: (Term<Jtype<LogicInt>>) -> Goal, v16: Term<Jtype<LogicInt>>,
   v17: Term<Jtype<LogicInt>> ): Goal
-  // greater_minus_greater
+  
   context(RelationalContext)
   fun greater_minus_greater(
   v18: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>) -> Goal, v19: Goal,
   v20: Term<Jtype<LogicInt>>, v21: Term<Jtype<LogicInt>> ): Goal
-  // less_minus_less
+  
   context(RelationalContext)
   fun less_minus_less(
   v22: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>) -> Goal, v23: Goal,
   v24: Term<Jtype<LogicInt>>, v25: Term<Jtype<LogicInt>> ): Goal
-  // less_minus_greater
+  
   context(RelationalContext)
   fun less_minus_greater(v26: (Term<Jtype<LogicInt>>, Goal, Goal) -> Goal,
   v27: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>) -> Goal, v28: Goal,

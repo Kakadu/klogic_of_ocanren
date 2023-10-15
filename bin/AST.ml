@@ -851,7 +851,19 @@ let has_attr name xs =
   | Not_found -> false
 ;;
 
-(* pp_typ_as_kotlin *)
+let lookup_doc_attr =
+  List.find_map ~f:(function
+    | { Parsetree.attr_name = { txt = "ocaml.doc" }; attr_payload = PStr stru; attr_loc }
+      ->
+      Ppxlib.Ast_pattern.(
+        parse (pstr_eval (pexp_constant (pconst_string __ drop drop)) drop ^:: nil))
+        attr_loc
+        stru
+        ~on_error:(fun _ -> None)
+        (fun s -> Some s)
+    | _ -> None)
+;;
+
 let pp_modtype_as_kotlin info name ppf sign =
   let open Format in
   let printfn fmt = Format.kfprintf (fun fmt -> fprintf fmt "@,") ppf fmt in
@@ -864,25 +876,32 @@ let pp_modtype_as_kotlin info name ppf sign =
   fprintf ppf "// %s \n%!" name;
   printfn "@[@[<v 2>@[interface %s {@]" name;
   List.iter sign.Typedtree.sig_items ~f:(fun sitem ->
+    printfn "@[@]";
     match sitem.sig_desc with
     | Tsig_value
         { val_name = { txt = name; _ }; val_val = { val_type; _ }; val_attributes }
       when has_attr "klogic_val" val_attributes ->
       printfn "@[val %s : %a@]" name (pp_typ_as_kotlin info) val_type
-    | Tsig_value { val_name = { txt = name; _ }; val_val = { val_type; _ }; _ } ->
+    | Tsig_value
+        { val_name = { txt = name; _ }; val_val = { val_type; _ }; val_attributes; _ } ->
       let args, ret = unparse_arrows val_type in
       let args =
         match args with
         | [ t ] when String.equal (Format.asprintf "%a" Printtyp.type_expr t) "unit" -> []
         | _ -> args
       in
-      printfn "@[// %a@]" print_ident name;
-      (* TODO: generate varnames *)
       let tvars =
+        (* TODO: Maybe generate varnames? *)
         List.fold_left
           ~f:(fun acc typ -> S.union acc (collect_type_variables typ))
           ~init:S.empty
           args
+      in
+      let () =
+        match lookup_doc_attr val_attributes with
+        | None -> ()
+        | Some str ->
+          String.split_on_char ~sep:'\n' str |> List.iter ~f:(printfn "@[// %s@]")
       in
       printfn "context(RelationalContext)";
       printfn
