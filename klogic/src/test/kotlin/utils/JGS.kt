@@ -181,65 +181,68 @@ fun <ID : Term<ID>> substitute_arg(subst: Term<LogicList<Jarg<Jtype<ID>>>>,
 
 // CLASSTABLE 
 interface CLASSTABLE {
-  // decl_by_id
+  
   context(RelationalContext)
   fun decl_by_id(v1: Term<LogicInt>, v2: Term<Decl<LogicInt>> ): Goal
-  // get_superclass_by_id
+  
   context(RelationalContext)
   fun get_superclass_by_id(v3: Term<LogicInt>, v4: Term<LogicInt>,
   v5: Term<LogicOption<Jtype<LogicInt>>> ): Goal
+  
   val object_t : Term<Jtype<LogicInt>>
+  
   val cloneable_t : Term<Jtype<LogicInt>>
+  
   val serializable_t : Term<Jtype<LogicInt>>
-  // new_var
+  
   context(RelationalContext)
   fun new_var( ): Term<LogicInt>
   }
 
 // VERIFIER 
 interface VERIFIER {
-  // params
+  
   context(RelationalContext)
   fun params(v1: Term<LogicInt>, v2: Term<LogicList<Jtype<LogicInt>>> ): Goal
-  // raw_helper
+  
   context(RelationalContext)
   fun raw_helper(v3: Term<LogicInt>, v4: Term<PeanoLogicNumber>,
   v5: Term<Jarg<Jtype<LogicInt>>>, v6: Term<ClosureConversionType<LogicInt>>
   ): Goal
-  // subst_helper
+  
   context(RelationalContext)
   fun subst_helper(v7: Term<ClosureConversionType<LogicInt>>,
   v8: Term<Jarg<Jtype<LogicInt>>> ): Goal
-  // targs_helper
+  
   context(RelationalContext)
   fun targs_helper(v9: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
   v10: Term<ClosureConversionType<LogicInt>>,
   v11: Term<Jarg<Jtype<LogicInt>>> ): Goal
-  // targs_pred
+  
   context(RelationalContext)
   fun targs_pred(
   v12: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,
   v13: Term<Jarg<Jtype<LogicInt>>>, v14: Term<LogicBool> ): Goal
-  // capture_conversion
+  
   context(RelationalContext)
   fun capture_conversion(
   v15: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,
   v16: Term<LogicInt>, v17: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
   v18: Term<LogicOption<LogicList<Jarg<Jtype<LogicInt>>>>> ): Goal
-  // less_equal_less
+  
   context(RelationalContext)
   fun less_equal_less(
   v19: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,
   v20: Term<Jarg<Jtype<LogicInt>>>, v21: Term<Jarg<Jtype<LogicInt>>>,
   v22: Term<LogicBool> ): Goal
-  // class_int_sub
+  
   context(RelationalContext)
   fun class_int_sub(
   v23: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,
   v24: Term<LogicInt>, v25: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
   v26: Term<LogicInt>, v27: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
   v28: Term<LogicBool> ): Goal
-  // minus_less_minus
+  
   context(RelationalContext)
   fun minus_less_minus(
   v29: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,

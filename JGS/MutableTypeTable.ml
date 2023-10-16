@@ -5,8 +5,10 @@ open JGS_Helpers
 (**************************************************************************************************)
 (*************************** Functional-relational fuctor parameter *******************************)
 (**************************************************************************************************)
-
-module type SAMPLE_CLASSTABLE = sig
+type decl = int JGS.Decl.ground
+type jtype = int JGS.Jtype.ground
+(*
+   module type SAMPLE_CLASSTABLE = sig
   val decl_by_id : int -> decl
   val get_superclass : int -> int -> jtype option
   val object_t : jtype
@@ -292,4 +294,4 @@ module SampleCT () : SAMPLE_CLASSTABLE = struct
 
     let new_var _ x = x === !!(new_id ())
   end
-end
+end *)

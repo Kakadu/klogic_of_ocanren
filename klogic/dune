@@ -25,16 +25,20 @@
   ;./README.md
   ./build.gradle.kts
   ./settings.gradle.kts
-  ./src/test/kotlin/TestRunner.kt
-  ;./src/test/kotlin/ReversoTest.kt
-  ./src/test/kotlin/AppendoTest.kt
-  ./src/test/kotlin/OlegNumbersTest.kt
-  ./src/test/kotlin/JGSTest.kt
-  ./src/test/kotlin/utils/Utils.kt
+  ./src/test/kotlin/utils/Closure.kt
+  ./src/test/kotlin/utils/JGS_Helpers.kt
+  ./src/test/kotlin/utils/JGS.kt
+  ./src/test/kotlin/utils/JGSTypes.kt
   ./src/test/kotlin/utils/LogicInt.kt
   ./src/test/kotlin/utils/OlegNumbers.kt
   ./src/test/kotlin/utils/Option.kt
-  ;./gradlew.bat
+  ./src/test/kotlin/utils/Utils.kt
+  ./src/test/kotlin/AppendoTest.kt
+  ./src/test/kotlin/JGSForward.kt
+  ./src/test/kotlin/JGSBackward.kt
+  ./src/test/kotlin/JGSstandard.kt
+  ./src/test/kotlin/OlegNumbersTest.kt
+  ./src/test/kotlin/TestRunner.kt
   ;
   )
  ; dune doesn't allow to build files out of current directory, so we need extra copying
