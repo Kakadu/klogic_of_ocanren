@@ -186,8 +186,9 @@ interface CLASSTABLE {
   fun decl_by_id(v1: Term<LogicInt>, v2: Term<Decl<LogicInt>> ): Goal
   
   context(RelationalContext)
-  fun get_superclass_by_id(v3: Term<LogicInt>, v4: Term<LogicInt>,
-  v5: Term<LogicOption<Jtype<LogicInt>>> ): Goal
+  fun get_superclass_by_id(v3: Term<LogicInt>, v4: Term<Jtype_kind>,
+  v5: Term<LogicInt>, v6: Term<Jtype_kind>,
+  v7: Term<LogicOption<Jtype<LogicInt>>> ): Goal
   
   val object_t : Term<Jtype<LogicInt>>
   
@@ -240,14 +241,15 @@ interface VERIFIER {
   fun class_int_sub(
   v23: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,
   v24: Term<LogicInt>, v25: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
-  v26: Term<LogicInt>, v27: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
-  v28: Term<LogicBool> ): Goal
+  v26: Term<Jtype_kind>, v27: Term<LogicInt>,
+  v28: Term<LogicList<Jarg<Jtype<LogicInt>>>>, v29: Term<Jtype_kind>,
+  v30: Term<LogicBool> ): Goal
   
   context(RelationalContext)
   fun minus_less_minus(
-  v29: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,
-  v30: Term<Jtype<LogicInt>>, v31: Term<Jtype<LogicInt>>,
-  v32: Term<LogicBool> ): Goal
+  v31: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,
+  v32: Term<Jtype<LogicInt>>, v33: Term<Jtype<LogicInt>>,
+  v34: Term<LogicBool> ): Goal
   }
 
 // functor
@@ -379,10 +381,11 @@ object: VERIFIER {
   override fun  class_int_sub(less_minus_less: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,
         id_a: Term<LogicInt>,
         targs_a: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
-        id_b: Term<LogicInt>,
-        targs_b: Term<LogicList<Jarg<Jtype<LogicInt>>>>, res: Term<LogicBool>
-        ): Goal =
+        kind_a: Term<Jtype_kind>, id_b: Term<LogicInt>,
+        targs_b: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
+        kind_b: Term<Jtype_kind>, res: Term<LogicBool>): Goal =
     conde(and(id_a `===` id_b,
+              kind_a `===` kind_b,
               fold_left2o({ acc: Term<LogicBool>, ta: Term<Jarg<Jtype<LogicInt>>>, 
                           tb: Term<Jarg<Jtype<LogicInt>>>, res: Term<LogicBool> -> 
                           conde(and(acc `===` false.toLogicBool(),
@@ -393,11 +396,13 @@ object: VERIFIER {
               true.toLogicBool(), targs_a, targs_b, res)),
           freshTypedVars { super_: Term<LogicOption<Jtype<LogicInt>>> ->
           and(id_a `!==` id_b,
-              CT.get_superclass_by_id(id_a, id_b, super_),
+              CT.get_superclass_by_id(id_a, kind_a, id_b, kind_b, super_),
               conde(freshTypedVars { targs_b2: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
                       new_targs_b2: Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
-                    and(conde(super_ `===` Some(Class_(id_b, targs_b2)),
-                              super_ `===` Some(Interface(id_b, targs_b2))),
+                    and(conde(and(super_ `===` Some(Class_(id_b, targs_b2)),
+                                  kind_b `===` Class_kind()),
+                              and(super_ `===` Some(Interface(id_b, targs_b2)),
+                                  kind_b `===` Interface_kind())),
                         mapo({ arg: Term<Jarg<Jtype<LogicInt>>>, res: Term<Jarg<Jtype<LogicInt>>> -> 
                              substitute_arg(targs_a, arg, res) },
                         targs_b2, new_targs_b2),
@@ -425,11 +430,17 @@ object: VERIFIER {
                     freshTypedVars { targs_a: Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
                     and(converted `===` Some(targs_a),
                         conde(freshTypedVars { id_b: Term<LogicInt>,
-                                targs_b: Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
-                              and(conde(type_b `===` Interface(id_b, targs_b),
-                                        type_b `===` Class_(id_b, targs_b)),
+                                targs_b: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
+                                kind_b: Term<Jtype_kind/*237*/> ->
+                              and(conde(and(type_b `===` Interface(id_b,
+                                                         targs_b),
+                                            kind_b `===` Interface_kind()),
+                                        and(type_b `===` Class_(id_b,
+                                                         targs_b),
+                                            kind_b `===` Class_kind())),
                                   class_int_sub(less_minus_less, id_a,
-                                  targs_a, id_b, targs_b, res))
+                                  targs_a, Class_kind(), id_b, targs_b,
+                                  kind_b, res))
                               },
                               freshTypedVars { typ: Term<Jtype<LogicInt>> ->
                               and((type_b `===` Var(_f(), _f(), _f(),
@@ -458,10 +469,18 @@ object: VERIFIER {
                     freshTypedVars { targs_a: Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
                     and(converted `===` Some(targs_a),
                         conde(freshTypedVars { id_b: Term<LogicInt>,
-                                targs_b: Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
-                              and(type_b `===` Interface(id_b, targs_b),
+                                targs_b: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
+                                kind_b: Term<Jtype_kind/*237*/> ->
+                              and(conde(and(type_b `===` Interface(id_b,
+                                                         targs_b),
+                                            kind_b `===` Interface_kind()),
+                                        and(type_b `===` CT.object_t,
+                                            type_b `===` Class_(id_b,
+                                                         targs_b),
+                                            kind_b `===` Class_kind())),
                                   class_int_sub(less_minus_less, id_a,
-                                  targs_a, id_b, targs_b, res))
+                                  targs_a, Interface_kind(), id_b, targs_b,
+                                  kind_b, res))
                               },
                               freshTypedVars { typ: Term<Jtype<LogicInt>> ->
                               and((type_b `===` Var(_f(), _f(), _f(),
