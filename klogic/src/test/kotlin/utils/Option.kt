@@ -92,3 +92,5 @@ data class Some<T : Term<T>>(val head: Term<T>) : LogicOption<T>() {
     //    }
 
 }
+
+fun <T : Term<T>> T?.toOption(): LogicOption<T> = if (this == null) None.noneLogic() else Some(this)

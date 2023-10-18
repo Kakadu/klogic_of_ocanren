@@ -25,6 +25,9 @@ dependencies {
             "com.github.UnitTestBot.klogic:klogic-core:df988d091aa17312f9a488ed0705ab0c87d89d28") // core
     testImplementation(
             "com.github.UnitTestBot.klogic:klogic-utils:df988d091aa17312f9a488ed0705ab0c87d89d28") // util terms
+
+    implementation("org.jacodb:jacodb-core:1.3.1")
+    implementation("org.jacodb:jacodb-analysis:1.3.1")
 }
 
 tasks.withType<KotlinCompile> {

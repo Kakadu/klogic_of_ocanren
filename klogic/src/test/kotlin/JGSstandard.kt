@@ -1,3 +1,4 @@
+import org.jgs.classtable.extractClassesTable
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.klogic.core.Term
@@ -9,5 +10,8 @@ class JGSstandard {
     @Test
     @DisplayName("111")
     fun test1() {
+        val ct = extractClassesTable()
+        println ( ct.classNames );
+        println ( ct.table);
     }
 }

@@ -71,7 +71,24 @@ data class ArgWildcardProto<JTYP : Term<JTYP>>(
 //typealias Targ<T> = ArgTypeProto<T >
 typealias Wildcard<T> = ArgWildcardProto<T>
 
-sealed class Jtype<ID : Term<ID>> : CustomTerm<Jtype<ID>> {}
+sealed class Jtype<ID : Term<ID>> : CustomTerm<Jtype<ID>>
+
+sealed class PrimitiveType<ID : Term<ID>>(val jvmName: String) : Jtype<ID>() {
+    object PrimitiveByte : PrimitiveType<Nothing>("byte")
+    object PrimitiveShort : PrimitiveType<Nothing>("short")
+    object PrimitiveInt : PrimitiveType<Nothing>("int")
+    object PrimitiveLong : PrimitiveType<Nothing>("long")
+    object PrimitiveFloat : PrimitiveType<Nothing>("float")
+    object PrimitiveDouble : PrimitiveType<Nothing>("double")
+    object PrimitiveBoolean : PrimitiveType<Nothing>("boolean")
+    object PrimitiveChar : PrimitiveType<Nothing>("int")
+    object PrimitiveVoid : PrimitiveType<Nothing>("void")
+
+    override val subtreesToUnify: Array<*>
+        get() = arrayOf<Any>()
+
+    override fun constructFromSubtrees(subtrees: Iterable<*>): CustomTerm<Jtype<ID>> = this
+}
 
 object Null : Jtype<Nothing>() {
     override val subtreesToUnify: Array<*> = emptyArray<Any?>()
