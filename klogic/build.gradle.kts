@@ -28,6 +28,8 @@ dependencies {
 
     implementation("org.jacodb:jacodb-core:1.3.1")
     implementation("org.jacodb:jacodb-analysis:1.3.1")
+
+    implementation("org.jgrapht:jgrapht-core:1.5.2")
 }
 
 tasks.withType<KotlinCompile> {
@@ -55,4 +57,7 @@ tasks.test {
         outputs.upToDateWhen { false }
         showStandardStreams = true
     }
+
+    minHeapSize = "512m"
+    maxHeapSize = "2048m"
 }

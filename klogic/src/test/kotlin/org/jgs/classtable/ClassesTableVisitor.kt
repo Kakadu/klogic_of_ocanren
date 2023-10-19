@@ -46,29 +46,42 @@ import utils.None
 import utils.toOption
 import java.io.File
 
+val EmptyClassTable = ClassesTable(classNames = (mutableMapOf<JcClassOrInterface, Int>()), table = mutableMapOf<Int, Decl<LogicInt>>())
+
 data class ClassesTable(
-    val classNames: MutableMap<JcClassOrInterface, Int>,
-    val table: MutableMap<Int, Decl<LogicInt>>
+        val classNames: MutableMap<JcClassOrInterface, Int>,
+        val table: MutableMap<Int, Decl<LogicInt>>
 ) {
-    private fun JcClassOrInterface.mkId(): Int = classNames.getOrPut(this) { classNames.size }
+    private var lastID = 10
+    private fun JcClassOrInterface.mkId(name: String): Int {
+        return when (name) {
+            "java.lang.Object" -> 1
+            "java.lang.Cloneable" -> 2
+            "java.io.Serializable" -> 3
+            else -> {
+                lastID++;
+                lastID
+            }
+        }
+    }
 
     private fun Jtype<LogicInt>.toJvmTypeArgument(): Jarg<Jtype<LogicInt>> = Type(this)
 
     fun JcClassOrInterface.toDeclaration(classpath: JcClasspath) {
         val type = toType()
         val typeParams =
-            type.typeParameters.mapIndexed { index, param -> param.toJtype(index, classpath, depth = 0) }.toLogicList()
+                type.typeParameters.mapIndexed { index, param -> param.toJtype(index, classpath, depth = 0) }.toLogicList()
         val supers = type.interfaces.map { it.toJtype(classpath, depth = 0) }.toLogicList()
 
         val decl = when {
             isInterface -> I(typeParams, supers)
             else -> C(
-                typeParams,
-                type.superType?.toJtype(classpath, depth = 0) ?: classpath.objectClass.toJtype(classpath, 0),
-                supers
+                    typeParams,
+                    type.superType?.toJtype(classpath, depth = 0) ?: classpath.objectClass.toJtype(classpath, 0),
+                    supers
             )
         }
-        table[mkId()] = decl
+        table[mkId(this.simpleName)] = decl
     }
 
     fun JcClassType.toJtype(classpath: JcClasspath, depth: Int): Jtype<LogicInt> {
@@ -76,8 +89,8 @@ data class ClassesTable(
             param.toJvmTypeArgument(index, classpath, depth + 1)
         }.toLogicList()
 
-        val id = jcClass.mkId().toLogic()
-        return if (jcClass.isInterface) TypeInterface(id, typeParams) else Class_(id, typeParams)
+        val id = jcClass.mkId(this.typeName).toLogic()
+        return if (jcClass.isInterface) TypeInterface(id, typeParams, this.typeName) else Class_(id, typeParams, this.typeName)
     }
 
     private fun JcType.toJtype(index: Int, classpath: JcClasspath, depth: Int): Jtype<LogicInt> = when (this) {
@@ -101,19 +114,19 @@ data class ClassesTable(
     }
 
     private fun JcRefType.toJvmTypeArgument(index: Int, classpath: JcClasspath, depth: Int): Jarg<Jtype<LogicInt>> =
-        when (this) {
-            is JcArrayType -> Array_(elementType.toJtype(index, classpath, depth + 1)).toJvmTypeArgument()
-            is JcClassType -> toJtype(classpath, depth + 1).toJvmTypeArgument()
-            is JcTypeVariable -> toJtype(index, classpath, depth + 1).toJvmTypeArgument()
-            is JcBoundedWildcard -> toJvmTypeArgument(index, classpath, depth + 1)
-            is JcUnboundWildcard -> Wildcard(None.noneLogic())
-            else -> error("Unknown ref type $this")
-        }
+            when (this) {
+                is JcArrayType -> Array_(elementType.toJtype(index, classpath, depth + 1)).toJvmTypeArgument()
+                is JcClassType -> toJtype(classpath, depth + 1).toJvmTypeArgument()
+                is JcTypeVariable -> toJtype(index, classpath, depth + 1).toJvmTypeArgument()
+                is JcBoundedWildcard -> toJvmTypeArgument(index, classpath, depth + 1)
+                is JcUnboundWildcard -> Wildcard(None.noneLogic())
+                else -> error("Unknown ref type $this")
+            }
 
     private fun JcBoundedWildcard.toJvmTypeArgument(
-        index: Int,
-        classpath: JcClasspath,
-        depth: Int
+            index: Int,
+            classpath: JcClasspath,
+            depth: Int
     ): Jarg<Jtype<LogicInt>> {
         require(lowerBounds.isEmpty() != upperBounds.isEmpty())
 
@@ -162,8 +175,16 @@ data class ClassesTable(
             param.toJvmTypeArgument(index, classpath, depth + 1)
         }.toLogicList()
 
-        val id = mkId().toLogic()
-        return if (isInterface) TypeInterface(id, typeParams) else Class_(id, typeParams)
+        return when (this.simpleName) {
+            "java.lang.Object" -> Class_(0.toLogic(), typeParams, this.simpleName)
+            "java.lang.Cloneable" -> TypeInterface(1.toLogic(), typeParams, this.simpleName)
+            "java.io.Serializable" -> TypeInterface(2.toLogic(), typeParams, this.simpleName)
+            else -> {
+                val id = mkId(this.simpleName).toLogic()
+                if (isInterface) TypeInterface(id, typeParams, this.simpleName) else
+                    Class_(id, typeParams, this.simpleName)
+            }
+        }
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -181,19 +202,19 @@ data class ClassesTable(
     } as Jtype<LogicInt>
 
     private fun toJvmDeclarationsSafe(
-        classes: List<JcClassOrInterface>,
-        classpath: JcClasspath,
+            classes: List<JcClassOrInterface>,
+            classpath: JcClasspath,
     ) = classes.forEach {
         runCatching { it.toDeclaration(classpath) }
-            .onFailure { error ->
-                println("Class ${it.name} | $error")
-            }
+                .onFailure { error ->
+                    println("Class ${it.name} | $error")
+                }
     }
 
     companion object {
         fun makeClassesTable(
-            classes: List<JcClassOrInterface>,
-            classpath: JcClasspath,
+                classes: List<JcClassOrInterface>,
+                classpath: JcClasspath,
         ): ClassesTable {
             val table = ClassesTable(hashMapOf(), hashMapOf())
             table.toJvmDeclarationsSafe(classes, classpath)
@@ -203,11 +224,11 @@ data class ClassesTable(
 }
 
 fun extractClassesTable(cpFiles: List<File> = emptyList()): ClassesTable =
-    extractClassesTableTask(cpFiles).use { (classes, classpath) ->
-        ClassesTable.makeClassesTable(classes, classpath)
-    }.also {
-        println(it.table.size)
-    }
+        extractClassesTableTask(cpFiles).use { (classes, classpath) ->
+            ClassesTable.makeClassesTable(classes.sortedBy { it.name }, classpath)
+        }.also {
+            println(it.table.size)
+        }
 
 fun main() {
     extractClassesTable()

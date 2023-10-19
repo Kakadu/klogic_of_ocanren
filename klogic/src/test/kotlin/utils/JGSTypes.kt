@@ -1,4 +1,4 @@
-@file:Suppress("ClassName")
+@file:Suppress("ClassName", "PropertyName")
 
 package utils.JGS
 
@@ -134,8 +134,12 @@ data class Intersect<ID : Term<ID>>(val args: Term<LogicList<Jtype<ID>>>) : Jtyp
     }
 }
 
-data class Class_<ID : Term<ID>>(val id: Term<ID>, val args: Term<LogicList<Jarg<Jtype<ID>>>>) :
+data class Class_<ID : Term<ID>>(val id: Term<ID>,
+                                 val args: Term<LogicList<Jarg<Jtype<ID>>>>,
+                                 val humanName_: String = "") :
         Jtype<ID>() {
+    val  humanName: String = humanName_
+
     override val subtreesToUnify: Array<Term<*>>
         get() = arrayOf(id, args)
 
@@ -156,7 +160,10 @@ data class Class_<ID : Term<ID>>(val id: Term<ID>, val args: Term<LogicList<Jarg
 
 // Interface is the same as Class but Interface. Maybe we should join this two concepts
 data class TypeInterface<ID : Term<ID>>(val id: Term<ID>,
-                                        val args: Term<LogicList<Jarg<Jtype<ID>>>>) : Jtype<ID>() {
+                                        val args: Term<LogicList<Jarg<Jtype<ID>>>>,
+        val hname:String = ""
+) : Jtype<ID>() {
+    val humanName : String = hname
     override val subtreesToUnify: Array<Term<*>>
         get() = arrayOf(id, args)
 
@@ -199,13 +206,19 @@ data class Var<ID : Term<ID>>(val id: Term<ID>, val index: Term<PeanoLogicNumber
 
 typealias Interface<ID> = TypeInterface<ID>
 
-sealed class Decl<ID : Term<ID>> : CustomTerm<Decl<ID>>
+sealed class Decl<ID : Term<ID>>() : CustomTerm<Decl<ID>> {
+//    val humanName : String = ""
+    abstract fun humanName() : String
+}
 
 data class C<ID : Term<ID>>(
         val params: Term<LogicList<Jtype<ID>>>,
         val superClass: Term<Jtype<ID>>,
         val supers: Term<LogicList<Jtype<ID>>>,
+        val humanName: String = ""
 ) : Decl<ID>() {
+    override fun humanName(): String  = humanName
+
     override val subtreesToUnify: Array<Term<*>>
         get() = arrayOf(params, superClass, supers)
 
@@ -228,7 +241,9 @@ data class C<ID : Term<ID>>(
 data class I<ID : Term<ID>>(
         val params: Term<LogicList<Jtype<ID>>>,
         val supers: Term<LogicList<Jtype<ID>>>,
+        val humanName: String = ""
 ) : Decl<ID>() {
+    override fun humanName(): String  = humanName
     override val subtreesToUnify: Array<Term<*>>
         get() = arrayOf(params, supers)
 
