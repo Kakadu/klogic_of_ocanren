@@ -92,10 +92,22 @@ data class ClassesTable(
                 supers
             )
         }
+        if (idOfName.containsKey(this.simpleName)) {
+            return
+        }
+
+
         val id = mkId(this.simpleName)
+//            if (table.containsKey(id)) {
+//                println("Current value: ${table[id]} with name = ${}")
+//                println("New value: ${decl}")
+//                assert(!table.containsKey(id)) { String.format("Duplicate ID generated: $id") }
+//            }
         table[id] = decl
         assert(idOfName[this.simpleName] == id)
         table.containsKey(id)
+
+
     }
 
     fun JcClassType.toJtype(classpath: JcClasspath, depth: Int): Jtype<LogicInt> {
@@ -236,6 +248,9 @@ data class ClassesTable(
         ): ClassesTable {
             val table = ClassesTable(hashMapOf(), hashMapOf())
             table.toJvmDeclarationsSafe(classes, classpath)
+            assert(table.table.containsKey(1)) { "No object with ID=1 generated" }
+            assert(table.table.containsKey(2)) { "No object with ID=2 generated" }
+            assert(table.table.containsKey(3)) { "No object with ID=3 generated" }
             return table
         }
     }

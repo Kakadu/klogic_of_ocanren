@@ -36,7 +36,7 @@ class JGSBackward {
         )
     }
 
-    internal fun <T> Iterable<T>.toCountMap(): Map<out T, Int> = groupingBy { it }.eachCount()
+    fun <T> Iterable<T>.toCountMap(): Map<out T, Int> = groupingBy { it }.eachCount()
 
     @Test
     @DisplayName("Wanna specify a domain and cut type variables.")
