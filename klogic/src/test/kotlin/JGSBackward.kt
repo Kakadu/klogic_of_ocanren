@@ -19,6 +19,7 @@ typealias DirectT = (
     v29: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal, v30: Term<Jtype<LogicInt>>, v31: Term<Jtype<LogicInt>>, v32: Term<LogicBool>
 ) -> Goal
 
+@Suppress("NAME_SHADOWING")
 class JGSBackward {
     @AfterEach
     fun clear() {

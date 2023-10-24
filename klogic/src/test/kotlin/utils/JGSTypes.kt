@@ -49,12 +49,12 @@ data class Type<ID : Term<ID>>(val typ: Term<ID>) : Jarg<ID>() {
     }
 }
 
-data class ArgWildcardProto<JTYP : Term<JTYP>>(
-        val typ: Term<LogicOption<LogicPair<Polarity, JTYP>>>) : Jarg<JTYP>() {
+data class ArgWildcardProto<ID : Term<ID>>(
+    val typ: Term<LogicOption<LogicPair<Polarity, ID>>>) : Jarg<ID>() {
     override val subtreesToUnify: Array<Term<*>>
         get() = arrayOf(typ)
 
-    override fun constructFromSubtrees(subtrees: Iterable<*>): CustomTerm<Jarg<JTYP>> {
+    override fun constructFromSubtrees(subtrees: Iterable<*>): CustomTerm<Jarg<ID>> {
         // We use by-hand iteration here to avoid losing performance.
         val iterator = subtrees.iterator()
         val head = iterator.next()
@@ -64,7 +64,7 @@ data class ArgWildcardProto<JTYP : Term<JTYP>>(
         }
 
         @Suppress("UNCHECKED_CAST") return ArgWildcardProto(
-                head as Term<LogicOption<LogicPair<Polarity, JTYP>>>)
+            head as Term<LogicOption<LogicPair<Polarity, ID>>>)
     }
 }
 
@@ -137,8 +137,8 @@ data class Intersect<ID : Term<ID>>(val args: Term<LogicList<Jtype<ID>>>) : Jtyp
 data class Class_<ID : Term<ID>>(val id: Term<ID>,
                                  val args: Term<LogicList<Jarg<Jtype<ID>>>>,
                                  val humanName_: String = "") :
-        Jtype<ID>() {
-    val  humanName: String = humanName_
+    Jtype<ID>() {
+    val humanName: String = humanName_
 
     override val subtreesToUnify: Array<Term<*>>
         get() = arrayOf(id, args)
@@ -154,16 +154,16 @@ data class Class_<ID : Term<ID>>(val id: Term<ID>,
         }
 
         @Suppress("UNCHECKED_CAST") return Class_(head as Term<ID>,
-                args as Term<LogicList<Jarg<Jtype<ID>>>>)
+            args as Term<LogicList<Jarg<Jtype<ID>>>>)
     }
 }
 
 // Interface is the same as Class but Interface. Maybe we should join this two concepts
-data class TypeInterface<ID : Term<ID>>(val id: Term<ID>,
-                                        val args: Term<LogicList<Jarg<Jtype<ID>>>>,
-        val hname:String = ""
+data class Interface<ID : Term<ID>>(val id: Term<ID>,
+                                    val args: Term<LogicList<Jarg<Jtype<ID>>>>,
+                                    val hname: String = ""
 ) : Jtype<ID>() {
-    val humanName : String = hname
+    val humanName: String = hname
     override val subtreesToUnify: Array<Term<*>>
         get() = arrayOf(id, args)
 
@@ -177,14 +177,14 @@ data class TypeInterface<ID : Term<ID>>(val id: Term<ID>,
             "Expected only head and tail for constructing Cons but got more elements"
         }
 
-        @Suppress("UNCHECKED_CAST") return TypeInterface(head as Term<ID>,
-                args as Term<LogicList<Jarg<Jtype<ID>>>>)
+        @Suppress("UNCHECKED_CAST") return Interface(head as Term<ID>,
+            args as Term<LogicList<Jarg<Jtype<ID>>>>)
     }
 }
 
 data class Var<ID : Term<ID>>(val id: Term<ID>, val index: Term<PeanoLogicNumber>,
                               val upb: Term<Jtype<ID>>, val lwb: Term<LogicOption<Jtype<ID>>>) :
-        Jtype<ID>() {
+    Jtype<ID>() {
     override val subtreesToUnify: Array<Term<*>>
         get() = arrayOf(id, index, upb, lwb)
 
@@ -204,20 +204,18 @@ data class Var<ID : Term<ID>>(val id: Term<ID>, val index: Term<PeanoLogicNumber
     }
 }
 
-typealias Interface<ID> = TypeInterface<ID>
-
 sealed class Decl<ID : Term<ID>>() : CustomTerm<Decl<ID>> {
-//    val humanName : String = ""
-    abstract fun humanName() : String
+    //    val humanName : String = ""
+    abstract fun humanName(): String
 }
 
 data class C<ID : Term<ID>>(
-        val params: Term<LogicList<Jtype<ID>>>,
-        val superClass: Term<Jtype<ID>>,
-        val supers: Term<LogicList<Jtype<ID>>>,
-        val humanName: String = ""
+    val params: Term<LogicList<Jtype<ID>>>,
+    val superClass: Term<Jtype<ID>>,
+    val supers: Term<LogicList<Jtype<ID>>>,
+    val humanName: String = ""
 ) : Decl<ID>() {
-    override fun humanName(): String  = humanName
+    override fun humanName(): String = humanName
 
     override val subtreesToUnify: Array<Term<*>>
         get() = arrayOf(params, superClass, supers)
@@ -234,16 +232,16 @@ data class C<ID : Term<ID>>(
         }
 
         @Suppress("UNCHECKED_CAST") return C(params as Term<LogicList<Jtype<ID>>>,
-                superClass as Term<Jtype<ID>>, supers as Term<LogicList<Jtype<ID>>>)
+            superClass as Term<Jtype<ID>>, supers as Term<LogicList<Jtype<ID>>>)
     }
 }
 
 data class I<ID : Term<ID>>(
-        val params: Term<LogicList<Jtype<ID>>>,
-        val supers: Term<LogicList<Jtype<ID>>>,
-        val humanName: String = ""
+    val params: Term<LogicList<Jtype<ID>>>,
+    val supers: Term<LogicList<Jtype<ID>>>,
+    val humanName: String = ""
 ) : Decl<ID>() {
-    override fun humanName(): String  = humanName
+    override fun humanName(): String = humanName
     override val subtreesToUnify: Array<Term<*>>
         get() = arrayOf(params, supers)
 
@@ -258,15 +256,15 @@ data class I<ID : Term<ID>>(
         }
 
         @Suppress("UNCHECKED_CAST") return I(params as Term<LogicList<Jtype<ID>>>,
-                supers as Term<LogicList<Jtype<ID>>>)
+            supers as Term<LogicList<Jtype<ID>>>)
     }
 }
 
 sealed class ClosureConversion<ID : Term<ID>> : CustomTerm<ClosureConversion<ID>> {}
 
 data class CC_inter<ID : Term<ID>>(
-        val one: Term<Jtype<ID>>,
-        val another: Term<Jtype<ID>>,
+    val one: Term<Jtype<ID>>,
+    val another: Term<Jtype<ID>>,
 ) : ClosureConversion<ID>() {
     override val subtreesToUnify: Array<Term<*>>
         get() = arrayOf(one, another)
@@ -282,7 +280,7 @@ data class CC_inter<ID : Term<ID>>(
         }
 
         @Suppress("UNCHECKED_CAST") return CC_inter(one as Term<Jtype<ID>>,
-                another as Term<Jtype<ID>>)
+            another as Term<Jtype<ID>>)
     }
 }
 
@@ -304,7 +302,7 @@ data class CC_subst<ID : Term<ID>>(val one: Term<Jtype<ID>>) : ClosureConversion
 
     companion object {
         fun <ID : Term<ID>> cc_inter(one: Term<Jtype<ID>>, another: Term<Jtype<ID>>):
-                CC_inter<ID> = CC_inter(one, another)
+            CC_inter<ID> = CC_inter(one, another)
     }
 }
 
@@ -314,7 +312,7 @@ data class CC_type<ID : Term<ID>>(val one: Term<Jtype<ID>>) : ClosureConversionT
         get() = arrayOf(one)
 
     override fun constructFromSubtrees(
-            subtrees: Iterable<*>): CustomTerm<ClosureConversionType<ID>> {
+        subtrees: Iterable<*>): CustomTerm<ClosureConversionType<ID>> {
         // We use by-hand iteration here to avoid losing performance.
         val iterator = subtrees.iterator()
         val one = iterator.next()
@@ -330,12 +328,12 @@ data class CC_type<ID : Term<ID>>(val one: Term<Jtype<ID>>) : ClosureConversionT
 data class CC_var<ID : Term<ID>>(val id: Term<ID>, val index: Term<PeanoLogicNumber>,
                                  val subst: Term<ClosureConversion<ID>>,
                                  val bound: Term<LogicOption<Jtype<ID>>>) :
-        ClosureConversionType<ID>() {
+    ClosureConversionType<ID>() {
     override val subtreesToUnify: Array<Term<*>>
         get() = arrayOf(id, index, subst, bound)
 
     override fun constructFromSubtrees(
-            subtrees: Iterable<*>): CustomTerm<ClosureConversionType<ID>> {
+        subtrees: Iterable<*>): CustomTerm<ClosureConversionType<ID>> {
         // We use by-hand iteration here to avoid losing performance.
         val iterator = subtrees.iterator()
         val id = iterator.next()
@@ -348,6 +346,6 @@ data class CC_var<ID : Term<ID>>(val id: Term<ID>, val index: Term<PeanoLogicNum
         }
 
         @Suppress("UNCHECKED_CAST") return CC_var(id as Term<ID>, index as Term<PeanoLogicNumber>,
-                subst as Term<ClosureConversion<ID>>, bound as Term<LogicOption<Jtype<ID>>>)
+            subst as Term<ClosureConversion<ID>>, bound as Term<LogicOption<Jtype<ID>>>)
     }
 }
