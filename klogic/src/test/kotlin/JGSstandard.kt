@@ -387,7 +387,7 @@ class JGSstandard {
                             b.append(">")
                         }
 
-                        else -> b.append(t, t.javaClass)
+                        else -> b.append("/*TODO*/", t, t.javaClass)
                     }
                 }
 
