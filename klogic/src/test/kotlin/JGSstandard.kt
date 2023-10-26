@@ -24,7 +24,9 @@ import utils.Some
 import utils.freshTypedVars
 import kotlin.system.measureTimeMillis
 import JGSBackward.ClosureType
+import org.klogic.utils.terms.LogicList.Companion.logicListOf
 import org.klogic.utils.terms.LogicPair
+import org.klogic.utils.terms.logicTo
 
 class JGSstandard {
     fun <T> Iterable<T>.toCountMap(): Map<out T, Int> = groupingBy { it }.eachCount()
@@ -97,26 +99,29 @@ class JGSstandard {
         }
         println("Graph prepareted")
         println(" Total ${ct.table.size} classes")
+        println(" Orphaned types: ${ct.missingTypes} ")
+
         println("Id of 'java.lang.Object' =  ${ct.idOfName["java.lang.Object"]}")
         println(" Object with id=1 is ${ct.table[1]}")
+        println(" Object with id=7671 is ${ct.table[7671]}")
         return (ct to directedGraph)
     }
 
     fun testSingleConstraint(expectedResult: (CLASSTABLE) -> Collection<String>, count: Int = 10,
-                             boundKind: JGSBackward.ClosureType = JGSBackward.ClosureType.Subtyping,
-                             bound: (CLASSTABLE) -> Term<Jtype<ID>>, verbose: Boolean = false) {
+                             boundKind: ClosureType = ClosureType.Subtyping,
+                             bound: (ConvenientCT) -> Term<Jtype<ID>>, verbose: Boolean = false) {
         val classTable = BigCT(data.second, data.first)
         val v = Verifier(classTable)
         val closureBuilder = Closure(classTable)
         withEmptyContext {
             val g = { q: Term<Jtype<ID>> ->
                 and(only_classes_interfaces_and_arrays(q), (when (boundKind) {
-                    JGSBackward.ClosureType.Subtyping -> JGSBackward.MakeClosure2(closureBuilder)
+                    ClosureType.Subtyping -> JGSBackward.MakeClosure2(closureBuilder)
                         .closure({ a, b, c, d ->
                             v.minus_less_minus(a, b, c, d)
                         }, q, bound(classTable))
 
-                    JGSBackward.ClosureType.SuperTyping -> TODO()
+                    ClosureType.SuperTyping -> TODO()
                 }))
             }
             val answers = run(count, g).map { it.term }.toList()
@@ -145,30 +150,67 @@ class JGSstandard {
     }
 
     @Test
-    @DisplayName("Simple use of the class table")
+    @DisplayName("Subclasses of Object")
     fun test2() {
         val expectedResult: (CLASSTABLE) -> Collection<String> = { ct ->
             listOf( //                ct.object_t, Array_(ct.object_t), Array_(Array_(ct.object_t)), Array_(Null) as Jtype<ID>
             )
         }
-        testSingleConstraint(expectedResult, count = 14,
+        testSingleConstraint(expectedResult, count = 999,
             ClosureType.Subtyping, { it.object_t },
             verbose = false)
     }
 
+    @Test
+    @DisplayName("Subclasses of List<Object>")
+    fun test3() {
+        val expectedResult: (CLASSTABLE) -> Collection<String> = { ct ->
+            listOf( //                ct.object_t, Array_(ct.object_t), Array_(Array_(ct.object_t)), Array_(Null) as Jtype<ID>
+            )
+        }
+        testSingleConstraint(expectedResult, count = 44,
+                ClosureType.Subtyping, { ct ->
+                    val humanName = "java.util.List<A>"
 
-    class BigCT : CLASSTABLE {
+//                    println( ct.data.size() );
+                    val listID = ct.idOfName(humanName)!!
+                    //C(LogicList.logicListOf(ct.object_t), ct.object_t, LogicList.logicListOf(),                            humanName = humanName)
+                    Class_(listID, logicListOf(Type(ct.object_t)), humanName_ = humanName)
+
+                },
+                verbose = false)
+    }
+
+
+    interface ConvenientCT : CLASSTABLE {
+        fun idOfName(name: String): ID?
+    }
+
+    class BigCT : ConvenientCT {
         private var lastId: Int = 0
-        fun newId(): Int {
+        private fun newId(): Int {
             lastId++;
             return lastId;
         }
 
         private val graph: DirectedAcyclicGraph<Int, DefaultEdge>
-        private val data: ClassesTable
+        public val data: ClassesTable
         private val objectId: Int
         private val cloneableId: Int
         private val serializableId: Int
+
+
+        override fun idOfName(name: String): ID? {
+            println("idOfName? $name when there are ${data.idOfName.size}")
+            data.idOfName.forEach {
+                if (it.key.contains("java.util.List"))
+                    println(it.key)
+            }
+            return when (val d = data.idOfName[name]) {
+                null -> null
+                else -> d.toLogic()
+            }
+        }
 
         //        private val top: Term<Jtype<ID>>?
         //
@@ -199,42 +241,12 @@ class JGSstandard {
             assert(serializableId == 3)
             serializable_t = Interface(serializableId.toLogic(), LogicList.logicListOf())
             assert(ct.table.containsKey(serializableId))
-        } //        override fun addClass(c: C<ID>): Int {
-        //            data[newId()] = c
-        //            return lastId
-        //        }
-        //
-        //        override fun addClass(
-        //            params: Term<LogicList<Jtype<ID>>>,
-        //            superClass: Term<Jtype<ID>>,
-        //            supers: Term<LogicList<Jtype<ID>>>,
-        //        ): Int {
-        //            data[newId()] = C(params, superClass, supers)
-        //            return lastId
-        //        }
-        //
-        //        override fun addInterface(c: I<ID>): Int {
-        //            data[newId()] = c
-        //            return lastId
-        //        }
-        //
-        //        override fun addInterface(
-        //            params: Term<LogicList<Jtype<ID>>>,
-        //            supers: Term<LogicList<Jtype<ID>>>
-        //        ): Int {
-        //            data[newId()] = I(params, supers)
-        //            return lastId
-        //
-        //        }
-
-        //        override fun makeTVar(index: Int, upb: Term<Jtype<ID>>): Jtype<ID> {
-        //            val id = newId()
-        //            return utils.JGS.Var(id.toLogic(), index.toPeanoLogicNumber(), upb, None())
-        //        }
+        }
 
         context(RelationalContext) override fun new_var(): Term<LogicInt> {
             return newId().toLogic()
         }
+
 
         context(RelationalContext)
         override fun decl_by_id(v1: Term<LogicInt>,
@@ -244,7 +256,11 @@ class JGSstandard {
                 when (v) {
                     is Var<*> -> TODO("not implemented. Got a var")
                     is LogicInt -> if (data.table.containsKey(v.n)) rez `===` data.table.get(v.n)!!
-                    else TODO("Not implemented. Asked integer ${v.n} which is not in the table")
+                    else {
+                        println("Asking for ${data.table[v.n]}")
+                        println("Asking for ${data.table[v.n]}")
+                        TODO("Not implemented. Asked integer ${v.n} which is not in the table")
+                    }
 
                     else -> TODO("?")
                 }
@@ -260,14 +276,9 @@ class JGSstandard {
                     is I -> when (it.supers) {
                         is LogicList<Jtype<ID>> -> it.supers.toList().map { it -> it as Jtype<ID> }
 
-                        is org.klogic.core.Var -> TODO("")
-                        is Wildcard<*> -> TODO("Should not be reachable")
+                        is UnboundedValue -> TODO("Should not be reachable")
                         else -> TODO("Should not be reachable 100%")
-                    } //                is I -> when (it.supers) {
-                    //                    is CustomTerm<LogicList<Jtype<ID>>> -> it.supers.asReified().toList().map { it -> it as Jtype<ID> }
-                    //                    is org.klogic.core.UnboundedValue<*> -> TODO("")
-                    //
-                    //                }
+                    }
                     is C -> when (it.supers) {
                         is LogicList<Jtype<ID>> -> it.supers.toList().map { it as Jtype<ID> }
 
@@ -290,7 +301,6 @@ class JGSstandard {
                     val d: Term<Decl<ID>> = entry.value
                     val parentsList = parents(d as Decl<ID>)
 
-
                     parentsList.fold(acc) { acc, jtyp ->
                         when (jtyp) {
                             is Interface -> acc `|||` and(jtyp.id `===` superId,
@@ -309,11 +319,16 @@ class JGSstandard {
         context(RelationalContext) override fun get_superclass_by_id(subId: Term<LogicInt>,
                                                                      superId: Term<LogicInt>,
                                                                      rez: Term<LogicOption<Jtype<LogicInt>>>): Goal {
-            println("get_superclass_by_id $subId $superId ~~> $rez\n")
-            return freshTypedVars { answerJtyp: Term<Jtype<LogicInt>> ->
-                and(rez `===` Some(answerJtyp),
-                    getSuperclassByIdFreeFree(subId, superId, answerJtyp))
+
+            return debugVar( subId logicTo superId, reifier = {it.reified() }) {
+                println("get_superclass_by_id ${it.term} ~~> $rez\n")
+                 freshTypedVars { answerJtyp: Term<Jtype<LogicInt>> ->
+                    and(rez `===` Some(answerJtyp),
+                            getSuperclassByIdFreeFree(subId, superId, answerJtyp))
+                }
             }
+
+//
         }
 
 
@@ -337,7 +352,7 @@ class JGSstandard {
                 }
 
                 is CustomTerm<*> -> TODO()
-                is UnboundedValue<*> -> TODO()
+                is UnboundedValue<*> -> b.append("_.?")
             }
         }
 
@@ -348,9 +363,17 @@ class JGSstandard {
                     when (val t = jt.asReified()) {
                         is Intersect -> b.append("`intersect`")
                         is Class_ -> {
-                            val id: Int = t.id.asReified().n
-                            val decl: Decl<LogicInt> = data.table[id]!!
-                            b.append("Class ${decl.humanName()}")
+                            val name =
+                                    when (t.id) {
+                                        is CustomTerm -> {
+                                            val id: Int = t.id.asReified().n
+                                            val decl: Decl<LogicInt> = data.table[id]!!
+                                            decl.humanName()
+                                        }
+                                                    else -> "FUCK"
+                                    }
+
+                            b.append("Class ${name}")
                             when (t.args) {
                                 is LogicList -> {
                                     if (t.args.toList().isNotEmpty()) {
@@ -365,9 +388,17 @@ class JGSstandard {
                         }
 
                         is Interface -> {
-                            val id: Int = t.id.asReified().n
-                            val decl: Decl<LogicInt> = data.table[id]!!
-                            b.append("Interface ${decl.humanName()}")
+                            val name =
+                                    when (t.id) {
+                                        is CustomTerm -> {
+                                            val id: Int = t.id.asReified().n
+                                            val decl: Decl<LogicInt> = data.table[id]!!
+                                            decl.humanName()
+                                        }
+                                        else -> "FUCK"
+                                    }
+
+                            b.append("Interface ${name}")
                             when (t.args) {
                                 is LogicList -> {
                                     if (t.args.toList().isNotEmpty()) {

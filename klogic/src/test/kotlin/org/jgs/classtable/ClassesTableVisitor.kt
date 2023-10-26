@@ -110,6 +110,8 @@ data class ClassesTable(
         //            }
         table[id] = decl
         assert(idOfName[this.simpleName] == id)
+        if (id == 7671)
+            println("$id ~~> $decl")
         table.containsKey(id)
 
 
@@ -261,11 +263,13 @@ data class ClassesTable(
             classes: List<JcClassOrInterface>,
             classpath: JcClasspath,
         ): ClassesTable {
+            println("Classes length = ${classes.size}")
             val table = ClassesTable(hashMapOf())
             table.toJvmDeclarationsSafe(classes, classpath)
             assert(table.table.containsKey(1)) { "No object with ID=1 generated" }
             assert(table.table.containsKey(2)) { "No object with ID=2 generated" }
             assert(table.table.containsKey(3)) { "No object with ID=3 generated" }
+            println("Table's last ID = ${table.lastID}")
             return table
         }
     }

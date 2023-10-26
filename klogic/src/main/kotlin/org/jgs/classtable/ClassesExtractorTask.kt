@@ -2,7 +2,10 @@ package org.jgs.classtable
 
 import kotlinx.coroutines.runBlocking
 import org.jacodb.api.*
+import org.jacodb.api.ext.objectClass
+import org.jacodb.impl.features.InMemoryHierarchy
 import org.jacodb.impl.features.classpaths.UnknownClasses
+import org.jacodb.impl.features.hierarchyExt
 import org.jacodb.impl.jacodb
 import java.io.Closeable
 import java.io.File
@@ -28,20 +31,25 @@ data class ClassesDatabase(
     }
 }
 
+@Suppress("UNUSED_PARAMETER")
 private suspend fun extractClassesTableAsync(
     classPath: List<File>,
     vararg features: JcFeature<*, *>
 ): ClassesDatabase {
     val db = jacodb {
         useProcessJavaRuntime()
-        loadByteCode(classPath)
+        installFeatures(InMemoryHierarchy)
         installFeatures(*features)
     }
-    val classpath = db.classpath(classPath, listOf(UnknownClasses))
-    val extractor = ClassesExtractorTask()
-    classpath.execute(extractor)
 
-    return ClassesDatabase(extractor.classes, classpath, db)
+    db.awaitBackgroundJobs();
+
+    val classpath = runBlocking { db.classpath(emptyList()) }
+    val classes = runBlocking {
+        classpath.hierarchyExt().findSubClasses(classpath.objectClass, allHierarchy = true, includeOwn = true)
+    }
+
+    return ClassesDatabase(classes.toList(), classpath, db)
 }
 
 internal fun extractClassesTableTask(
