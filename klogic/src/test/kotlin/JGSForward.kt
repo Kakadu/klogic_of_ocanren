@@ -48,6 +48,10 @@ class DefaultCT : MutableClassTable {
     override val cloneable_t: Term<Jtype<LogicInt>>
     override val serializable_t: Term<Jtype<LogicInt>>
 
+    fun declOfId(n: Int): Decl<ID>? {
+        return data[n]
+    }
+
     override fun addClass(c: C<ID>): Int {
         data[newId()] = c
         return lastId
@@ -102,16 +106,24 @@ class DefaultCT : MutableClassTable {
     }
 
     context(RelationalContext)
+    fun decl_by_id_Free(v1: Term<LogicInt>, rez: Term<Decl<LogicInt>>): Goal {
+        // It seems to be called only in supertyping
+        return data.entries.fold(failure) { acc: Goal, e: MutableMap.MutableEntry<Int, Decl<ID>> ->
+            acc `|||` and(v1 `===` e.key.toLogic(), rez `===` e.value)
+        }
+    }
+
+
+    context(RelationalContext)
     override fun decl_by_id(v1: Term<LogicInt>, rez: Term<Decl<LogicInt>>): Goal {
 //        println("decl_by_id: $v1, $rez")
         return debugVar(v1, { id -> id.reified() }) { it ->
             val v = it.term
             when (v) {
-                is Var<*> -> TODO("not implemented")
+                is Var<*> -> decl_by_id_Free(v1, rez)
                 is LogicInt -> rez `===` (data[v.n] as Term<Decl<LogicInt>>)
                 else -> TODO("?")
             }
-
         }
     }
 
@@ -151,17 +163,19 @@ class DefaultCT : MutableClassTable {
         }
         return data.entries.fold(failure) { acc, entry ->
             val curId = entry.key
-            if (curId == objectId) acc
+            if (curId == objectId)
+            // avoid returning TOP
+                acc
             else {
                 val d: Term<Decl<ID>> = entry.value
                 val parentsList = parents(d as Decl<ID>)
-
 
                 parentsList.fold(acc) { acc, jtyp ->
                     when (jtyp) {
                         is Interface -> acc `|||` and(
                             jtyp.id `===` superId,
-                            curId.toLogic() `===` subId, rez `===` jtyp
+                            curId.toLogic() `===` subId,
+                            rez `===` jtyp
                         )
 
                         is Class_ -> acc `|||` and(
@@ -187,7 +201,6 @@ class DefaultCT : MutableClassTable {
         }
     }
 }
-
 
 
 data class NotComplete(val v: VERIFIER) {

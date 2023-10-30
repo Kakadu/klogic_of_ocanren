@@ -30,22 +30,22 @@ object Super : Polarity() {
 }
 
 
-sealed class Jarg<ID : Term<ID>> : CustomTerm<Jarg<ID>>
+sealed class Jarg<T : Term<T>> : CustomTerm<Jarg<T>>
 
-data class Type<ID : Term<ID>>(val typ: Term<ID>) : Jarg<ID>() {
+data class Type<ID : Term<ID>>(val typ: Term<Jtype<ID>>) : Jarg<Jtype<ID>>() {
     override val subtreesToUnify: Array<Term<*>>
         get() = arrayOf(typ)
 
-    override fun constructFromSubtrees(subtrees: Iterable<*>): CustomTerm<Jarg<ID>> {
+    override fun constructFromSubtrees(subtrees: Iterable<*>): CustomTerm<Jarg<Jtype<ID>>> {
         // We use by-hand iteration here to avoid losing performance.
         val iterator = subtrees.iterator()
         val head = iterator.next()
 
         require(!iterator.hasNext()) {
-            "Expected only head and tail for constructing Cons but got more elements"
+            "Expected only head for constructing Type but got more elements"
         }
 
-        @Suppress("UNCHECKED_CAST") return Type(head as Term<ID>)
+        @Suppress("UNCHECKED_CAST") return Type(head as Term<Jtype<ID>>)
     }
 }
 
