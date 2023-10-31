@@ -110,7 +110,7 @@ class JGSMiniStd {
     }
 
     @Test
-    @DisplayName("SuperIterfaces of AbstractCollection")
+    @DisplayName("Super Interfaces of AbstractCollection")
     fun test8() {
         var abstractCollectionTyp: Term<Jtype<ID>>? = null
 
@@ -118,12 +118,14 @@ class JGSMiniStd {
             val iIterableID = ct.addInterface(params = logicListOf(), logicListOf())
             println("iterableID = $iIterableID")
             val iCollectionID = ct.addInterface(
-                params = logicListOf(), logicListOf(Interface(iIterableID.toLogic(), logicListOf(), "Collection"))
+                params = logicListOf(), logicListOf(Interface(iIterableID.toLogic(), logicListOf()))
             )
+            ct.addName(iCollectionID, "Collection")
             val iAbsCollectionID = ct.addInterface(
                 params = logicListOf(),
-                logicListOf(Interface(iCollectionID.toLogic(), logicListOf(), "AbstractCollection"))
+                logicListOf(Interface(iCollectionID.toLogic(), logicListOf()))
             )
+            ct.addName(iAbsCollectionID, "AbstractCollection")
             println("iAbsCollectionID = $iAbsCollectionID")
             abstractCollectionTyp = Interface(iAbsCollectionID.toLogic(), logicListOf())
         }
@@ -149,18 +151,21 @@ class JGSMiniStd {
 
         val init: (MutableClassTable) -> Unit = { ct: MutableClassTable ->
             val iIterableID = ct.addInterface(params = logicListOf(), logicListOf())
+            ct.addName(iIterableID, "Iterable" )
             println("iterableID = $iIterableID")
 
             iterableTyp = Interface(iIterableID.toLogic(), logicListOf())
             val iCollectionID = ct.addInterface(
-                params = logicListOf(), logicListOf(Interface(iIterableID.toLogic(), logicListOf(), "Collection"))
+                params = logicListOf(), logicListOf(Interface(iIterableID.toLogic(), logicListOf() ))
             )
+            ct.addName(iCollectionID, "Collection" )
             val iAbsCollectionID = ct.addInterface(
                 params = logicListOf(),
-                logicListOf(Interface(iCollectionID.toLogic(), logicListOf(), "AbstractCollection"))
+                logicListOf(Interface(iCollectionID.toLogic(), logicListOf()  ))
             )
+            ct.addName(iAbsCollectionID, "AbstractCollection" )
             println("iAbsCollectionID = $iAbsCollectionID")
-//            abstractCollectionTyp = Interface(iAbsCollectionID.toLogic(), logicListOf())
+
         }
         val expectedResult: (CLASSTABLE) -> Collection<Term<Jtype<ID>>> = { ct ->
             listOf(
@@ -198,33 +203,38 @@ class JGSMiniStd {
                 ),
                 supers = logicListOf()
             )
+            ct.addName(iIterableID!!, "Iterable" )
 
             val StringID = ct.addClass(
                 params = logicListOf(),
                 superClass = ct.object_t,
                 supers = logicListOf()
             )
+            ct.addName(StringID, "String" )
 
             val IntID = ct.addClass(
                 params = logicListOf(),
                 superClass = ct.object_t,
                 supers = logicListOf()
             )
-            intType = Class_(IntID.toLogic(), logicListOf(), "Int")
-            stringType = Class_(StringID.toLogic(), logicListOf(), "String")
-            iterableObjectTyp = Interface(iIterableID!!.toLogic(), logicListOf(Type(ct.object_t)), "Iterable")
+            ct.addName(IntID, "Int")
+            intType = Class_(IntID.toLogic(), logicListOf())
+
+            stringType = Class_(StringID.toLogic(), logicListOf())
+            iterableObjectTyp = Interface(iIterableID!!.toLogic(), logicListOf(Type(ct.object_t)) )
 
             val SpecIterableIntID = ct.addClass(
                 params = logicListOf(),
                 superClass = Class_(
                     iIterableID!!.toLogic(),
-                    args = logicListOf(Type(intType!!)),
-                    humanName_ = "iterable"
+                    args = logicListOf(Type(intType!!))
                 ),
                 supers = logicListOf(ct.object_t)
             )
+
+            ct.addName(SpecIterableIntID, "SpecializedIterableInt")
             println("SpecIterableIntID = $SpecIterableIntID")
-            specIterableIntType = Class_(SpecIterableIntID.toLogic(), logicListOf(), "specializedIterableInt")
+            specIterableIntType = Class_(SpecIterableIntID.toLogic(), logicListOf() )
         }
         val expectedResult: (CLASSTABLE) -> Collection<Term<Jtype<ID>>> = { ct ->
             listOf(

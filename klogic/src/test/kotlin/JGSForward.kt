@@ -29,6 +29,8 @@ interface MutableClassTable : CLASSTABLE {
     fun addInterface(params: Term<LogicList<Jtype<ID>>>, supers: Term<LogicList<Jtype<ID>>>): Int
 
     fun makeTVar(id: Int, upb: Term<Jtype<ID>>): Jtype<ID>
+
+    fun addName(id: Int, name: String)
 }
 
 class DefaultCT : MutableClassTable {
@@ -39,6 +41,7 @@ class DefaultCT : MutableClassTable {
     }
 
     private val data: MutableMap<Int, Decl<ID>> = mutableMapOf()
+    private val names: MutableMap<Int, String> = mutableMapOf()
     private val objectId: Int
     private val cloneableId: Int
     private val serializableId: Int
@@ -83,6 +86,11 @@ class DefaultCT : MutableClassTable {
     override fun makeTVar(index: Int, upb: Term<Jtype<ID>>): Jtype<ID> {
         val id = newId()
         return utils.JGS.Var(id.toLogic(), index.toPeanoLogicNumber(), upb, None())
+    }
+
+    override fun addName(id: Int, name: String) {
+        assert(!data.contains(id))
+        names[id] = name
     }
 
 

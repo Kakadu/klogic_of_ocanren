@@ -41,20 +41,22 @@ data class ClassesTable(
     val classNames: MutableMap<JcClassOrInterface, Int>,
     val table: MutableMap<Int, Decl<LogicInt>> = mutableMapOf(
         1 to C(params = logicListOf(),
-            superClass = Class_(1.toLogic(), logicListOf(), "java.lang.Object"),
-            logicListOf(),
-            humanName = "java.lang.Object"),
+            superClass = Class_(1.toLogic(), logicListOf()),
+            logicListOf()),
         2 to I(params = logicListOf(),
-            supers = logicListOf(),
-            humanName = "java.lang.Cloneable"),
+            supers = logicListOf()),
         3 to I(params = logicListOf(),
-            supers = logicListOf(),
-            humanName = "java.io.Serializable")
+            supers = logicListOf())
         ),
     val idOfName: MutableMap<String, Int> = mutableMapOf(
         "java.lang.Object" to 1,
         "java.lang.Cloneable" to 2,
         "java.io.Serializable" to 3
+    ),
+    val nameOfId: MutableMap<Int, String> = mutableMapOf(
+        1 to "java.lang.Object",
+        2 to "java.lang.Cloneable" ,
+        3 to "java.io.Serializable"
     ),
     val missingTypes: MutableSet<String> = mutableSetOf()
 ) {
