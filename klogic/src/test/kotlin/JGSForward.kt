@@ -31,18 +31,20 @@ interface MutableClassTable : CLASSTABLE {
     fun makeTVar(id: Int, upb: Term<Jtype<ID>>): Jtype<ID>
 
     fun addName(id: Int, name: String)
-    fun nameOfId(id: Int) : String?
+    fun nameOfId(id: Int): String?
+    fun idOfName(name: String): Int?
 }
 
 class DefaultCT : MutableClassTable {
     private var lastId: Int = 0
-    fun newId(): Int {
+    private fun newId(): Int {
         lastId++;
         return lastId;
     }
 
     private val data: MutableMap<Int, Decl<ID>> = mutableMapOf()
     private val names: MutableMap<Int, String> = mutableMapOf()
+    private val IDs: MutableMap<String, Int> = mutableMapOf()
     private val objectId: Int
     private val cloneableId: Int
     private val serializableId: Int
@@ -55,8 +57,13 @@ class DefaultCT : MutableClassTable {
     fun declOfId(n: Int): Decl<ID>? {
         return data[n]
     }
-    override fun nameOfId(n: Int) : String? {
+
+    override fun nameOfId(n: Int): String? {
         return names[n]
+    }
+
+    override fun idOfName(name: String): Int? {
+        return IDs[name]
     }
 
     override fun addClass(c: C<ID>): Int {
@@ -94,9 +101,10 @@ class DefaultCT : MutableClassTable {
 
     override fun addName(id: Int, name: String) {
         if (names.contains(id)) {
-            assert (names[id] !!  == name)
+            assert(names[id]!! == name)
         }
         names[id] = name
+        IDs[name] = id
     }
 
 
@@ -133,7 +141,7 @@ class DefaultCT : MutableClassTable {
 
     context(RelationalContext)
     override fun decl_by_id(v1: Term<LogicInt>, rez: Term<Decl<LogicInt>>): Goal {
-//        println("decl_by_id: $v1, $rez")
+        //        println("decl_by_id: $v1, $rez")
         return debugVar(v1, { id -> id.reified() }) { it ->
             val v = it.term
             when (v) {
@@ -158,11 +166,11 @@ class DefaultCT : MutableClassTable {
                     is Wildcard<*> -> TODO("Should not be reachable")
                     else -> TODO("Should not be reachable 100%")
                 }
-//                is I -> when (it.supers) {
-//                    is CustomTerm<LogicList<Jtype<ID>>> -> it.supers.asReified().toList().map { it -> it as Jtype<ID> }
-//                    is org.klogic.core.UnboundedValue<*> -> TODO("")
-//
-//                }
+                //                is I -> when (it.supers) {
+                //                    is CustomTerm<LogicList<Jtype<ID>>> -> it.supers.asReified().toList().map { it -> it as Jtype<ID> }
+                //                    is org.klogic.core.UnboundedValue<*> -> TODO("")
+                //
+                //                }
                 is C -> when (it.supers) {
                     is LogicList<Jtype<ID>> -> it.supers.toList().map { it as Jtype<ID> }
 
@@ -212,7 +220,7 @@ class DefaultCT : MutableClassTable {
         superId: Term<LogicInt>,
         rez: Term<LogicOption<Jtype<LogicInt>>>
     ): Goal {
-//        println("get_superclass_by_id $subId $superId ~~> $rez\n")
+        //        println("get_superclass_by_id $subId $superId ~~> $rez\n")
         return freshTypedVars { answerJtyp: Term<Jtype<LogicInt>> ->
             and(rez `===` Some(answerJtyp), getSuperclassByIdFreeFree(subId, superId, answerJtyp))
         }
@@ -289,7 +297,9 @@ class JGSTest {
     @Test
     @DisplayName("Object[][] <: Object")
     fun test15() {
-        val a: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> Array_(Array_(classtable.object_t)) }
+        val a: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable ->
+            Array_(Array_(classtable.object_t))
+        }
         val b: (CLASSTABLE) -> Term<Jtype<ID>> = { classtable -> classtable.object_t }
         testForward(a, b, rez = false)
     }
