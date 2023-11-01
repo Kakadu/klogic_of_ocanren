@@ -9,6 +9,26 @@ import org.klogic.utils.terms.LogicPair
 import org.klogic.utils.terms.PeanoLogicNumber
 import utils.LogicOption
 
+sealed class Jtype_kind : CustomTerm<Jtype_kind>
+
+object Class_kind : Jtype_kind() {
+    override val subtreesToUnify: Array<*> = emptyArray<Any?>()
+    override fun constructFromSubtrees(subtrees: Iterable<*>): CustomTerm<Jtype_kind> = this
+    override fun toString(): String = "ClassKind"
+
+    @Suppress("UNCHECKED_CAST")
+    operator fun invoke(): Jtype_kind = this as Jtype_kind
+}
+
+object Interface_kind : Jtype_kind() {
+    override val subtreesToUnify: Array<*> = emptyArray<Any?>()
+    override fun constructFromSubtrees(subtrees: Iterable<*>): CustomTerm<Jtype_kind> = this
+    override fun toString(): String = "InterfaceKind"
+
+    @Suppress("UNCHECKED_CAST")
+    operator fun invoke(): Jtype_kind = this as Jtype_kind
+}
+
 sealed class Polarity : CustomTerm<Polarity>
 
 object Extends : Polarity() {
