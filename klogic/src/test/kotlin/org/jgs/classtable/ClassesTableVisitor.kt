@@ -34,43 +34,36 @@ import utils.None
 import utils.toOption
 import java.io.File
 
-val EmptyClassTable = ClassesTable(classNames = (mutableMapOf()), table = mutableMapOf(),
-    idOfName = mutableMapOf())
+val EmptyClassTable = ClassesTable(
+    classNames = (mutableMapOf()), table = mutableMapOf(), idOfName = mutableMapOf()
+)
 
 data class ClassesTable(
-    val classNames: MutableMap<JcClassOrInterface, Int>,
-    val table: MutableMap<Int, Decl<LogicInt>> = mutableMapOf(
-        1 to C(params = logicListOf(),
-            superClass = Class_(1.toLogic(), logicListOf()),
-            logicListOf()),
-        2 to I(params = logicListOf(),
-            supers = logicListOf()),
-        3 to I(params = logicListOf(),
-            supers = logicListOf())
-        ),
-    val idOfName: MutableMap<String, Int> = mutableMapOf(
-        "java.lang.Object" to 1,
-        "java.lang.Cloneable" to 2,
-        "java.io.Serializable" to 3
-    ),
-    val nameOfId: MutableMap<Int, String> = mutableMapOf(
-        1 to "java.lang.Object",
-        2 to "java.lang.Cloneable" ,
-        3 to "java.io.Serializable"
-    ),
-    val missingTypes: MutableSet<String> = mutableSetOf()
+    val classNames: MutableMap<JcClassOrInterface, Int>, val table: MutableMap<Int, Decl<LogicInt>> = mutableMapOf(
+        1 to C(
+            params = logicListOf(), superClass = Class_(1.toLogic(), logicListOf()), logicListOf()
+        ), 2 to I(
+            params = logicListOf(), supers = logicListOf()
+        ), 3 to I(
+            params = logicListOf(), supers = logicListOf()
+        )
+    ), val idOfName: MutableMap<String, Int> = mutableMapOf(
+        "java.lang.Object" to 1, "java.lang.Cloneable" to 2, "java.io.Serializable" to 3
+    ), val nameOfId: MutableMap<Int, String> = mutableMapOf(
+        1 to "java.lang.Object", 2 to "java.lang.Cloneable", 3 to "java.io.Serializable"
+    ), val missingTypes: MutableSet<String> = mutableSetOf()
 ) {
 
     private fun addName(name: String, id: Int) {
-        //        println ("Add name $name ~~> $id")
         assert(!idOfName.containsKey(name))
+        assert(!nameOfId.containsKey(id))
         idOfName[name] = id
+        nameOfId[id] = name
     }
 
     private var lastID = 10
     private fun JcClassOrInterface.mkId(name: String): Int {
-        return if (idOfName.containsKey(name))
-            idOfName[name]!!
+        return if (idOfName.containsKey(name)) idOfName[name]!!
         else {
             lastID++;
             addName(name, lastID)
@@ -82,58 +75,47 @@ data class ClassesTable(
 
     fun JcClassOrInterface.toDeclaration(classpath: JcClasspath) {
         val type = toType()
-        val typeParams =
-            type.typeParameters.mapIndexed { index, param ->
-                param.toJtype(index, classpath, depth = 0)
-            }.toLogicList()
+        val typeParams = type.typeParameters.mapIndexed { index, param ->
+            param.toJtype(index, classpath, depth = 0)
+        }.toLogicList()
         val supers = type.interfaces.map { it.toJtype(classpath, depth = 0) }.toLogicList()
 
         val decl = when {
-            isInterface -> I(typeParams, supers, humanName = this.simpleName)
+            isInterface -> I(typeParams, supers)
             else -> C(
-                typeParams,
-                type.superType?.toJtype(classpath, depth = 0) ?: classpath.objectClass.toJtype(
-                    classpath, 0),
-                supers,
-                humanName = this.simpleName
+                typeParams, type.superType?.toJtype(classpath, depth = 0) ?: classpath.objectClass.toJtype(
+                    classpath, 0
+                ), supers
             )
         }
-        if (idOfName.containsKey(this.simpleName)) {
-            //            when (th)
-            return
+        if (idOfName.containsKey(this.simpleName)) return
+        else {
+            val id = mkId(this.simpleName)
+            //            if (table.containsKey(id)) {
+            //                println("Current value: ${table[id]} with name = ${}")
+            //                println("New value: ${decl}")
+            //                assert(!table.containsKey(id)) { String.format("Duplicate ID generated: $id") }
+            //            }
+            table[id] = decl
+            assert(idOfName[this.simpleName] == id)
+            if (id == 7671) println("$id ~~> $decl")
+            table.containsKey(id)
         }
-
-
-        val id = mkId(this.simpleName)
-        //            if (table.containsKey(id)) {
-        //                println("Current value: ${table[id]} with name = ${}")
-        //                println("New value: ${decl}")
-        //                assert(!table.containsKey(id)) { String.format("Duplicate ID generated: $id") }
-        //            }
-        table[id] = decl
-        assert(idOfName[this.simpleName] == id)
-        if (id == 7671)
-            println("$id ~~> $decl")
-        table.containsKey(id)
-
-
     }
 
-    fun JcClassType.toJtype(classpath: JcClasspath, depth: Int): Jtype<LogicInt> {
+    private fun JcClassType.toJtype(classpath: JcClasspath, depth: Int): Jtype<LogicInt> {
         val typeParams = typeArguments.mapIndexed { index, param ->
             param.toJvmTypeArgument(index, classpath, depth + 1)
         }.toLogicList()
 
         val id = jcClass.mkId(this.typeName).toLogic()
-        return if (jcClass.isInterface) Interface(id, typeParams, this.typeName) else Class_(
-            id,
-            typeParams,
-            this.typeName
-        )
+        return if (jcClass.isInterface) Interface(id, typeParams)
+        else Class_(id, typeParams)
     }
 
-    private fun JcType.toJtype(index: Int, classpath: JcClasspath,
-                               depth: Int): Jtype<LogicInt> = when (this) {
+    private fun JcType.toJtype(
+        index: Int, classpath: JcClasspath, depth: Int
+    ): Jtype<LogicInt> = when (this) {
         is JcRefType -> toJtype(index, classpath, depth + 1)
         is JcPrimitiveType -> typeName.toPrimitiveType()
         else -> error("Unknown JcType $this")
@@ -153,23 +135,22 @@ data class ClassesTable(
         }
     }
 
-    private fun JcRefType.toJvmTypeArgument(index: Int, classpath: JcClasspath,
-                                            depth: Int): Jarg<Jtype<LogicInt>> =
-        when (this) {
-            is JcArrayType -> Array_(
-                elementType.toJtype(index, classpath, depth + 1)).toJvmTypeArgument()
+    private fun JcRefType.toJvmTypeArgument(
+        index: Int, classpath: JcClasspath, depth: Int
+    ): Jarg<Jtype<LogicInt>> = when (this) {
+        is JcArrayType -> Array_(
+            elementType.toJtype(index, classpath, depth + 1)
+        ).toJvmTypeArgument()
 
-            is JcClassType -> toJtype(classpath, depth + 1).toJvmTypeArgument()
-            is JcTypeVariable -> toJtype(index, classpath, depth + 1).toJvmTypeArgument()
-            is JcBoundedWildcard -> toJvmTypeArgument(index, classpath, depth + 1)
-            is JcUnboundWildcard -> Wildcard(None.noneLogic())
-            else -> error("Unknown ref type $this")
-        }
+        is JcClassType -> toJtype(classpath, depth + 1).toJvmTypeArgument()
+        is JcTypeVariable -> toJtype(index, classpath, depth + 1).toJvmTypeArgument()
+        is JcBoundedWildcard -> toJvmTypeArgument(index, classpath, depth + 1)
+        is JcUnboundWildcard -> Wildcard(None.noneLogic())
+        else -> error("Unknown ref type $this")
+    }
 
     private fun JcBoundedWildcard.toJvmTypeArgument(
-        index: Int,
-        classpath: JcClasspath,
-        depth: Int
+        index: Int, classpath: JcClasspath, depth: Int
     ): Jarg<Jtype<LogicInt>> {
         require(lowerBounds.isEmpty() != upperBounds.isEmpty())
 
@@ -178,8 +159,7 @@ data class ClassesTable(
                 TODO()
             }
 
-            val polarityJtypeLogicPair = Super logicTo lowerBounds.single()
-                .toJtype(index, classpath, depth + 1)
+            val polarityJtypeLogicPair = Super logicTo lowerBounds.single().toJtype(index, classpath, depth + 1)
             return Wildcard(polarityJtypeLogicPair.toOption())
         }
 
@@ -197,26 +177,31 @@ data class ClassesTable(
             typeBounds.isEmpty() -> classpath.objectClass.toJtype(classpath, depth + 1)
             typeBounds.size == 1 -> typeBounds.single().toJtype(depth + 1, classpath, index)
             else -> Intersect(
-                typeBounds.map { it.toJtype(depth + 1, classpath, index) }.toLogicList())
+                typeBounds.map { it.toJtype(depth + 1, classpath, index) }.toLogicList()
+            )
         }
 
-        return Var(symbol.hashCode().toLogic(), index.toPeanoLogicNumber(), upperBound,
-            None.noneLogic())
+        return Var(
+            symbol.hashCode().toLogic(), index.toPeanoLogicNumber(), upperBound, None.noneLogic()
+        )
     }
 
-    fun JcTypeVariableDeclaration.toJtype(index: Int, classpath: JcClasspath,
-                                          depth: Int): Jtype<LogicInt> {
+    fun JcTypeVariableDeclaration.toJtype(
+        index: Int, classpath: JcClasspath, depth: Int
+    ): Jtype<LogicInt> {
         val typeBounds = bounds
 
         val upperBound = when {
             typeBounds.isEmpty() -> classpath.objectClass.toJtype(classpath, depth + 1)
             typeBounds.size == 1 -> typeBounds.single().toJtype(depth + 1, classpath, index)
             else -> Intersect(
-                typeBounds.map { it.toJtype(depth + 1, classpath, index) }.toLogicList())
+                typeBounds.map { it.toJtype(depth + 1, classpath, index) }.toLogicList()
+            )
         }
 
-        return Var(symbol.hashCode().toLogic(), index.toPeanoLogicNumber(), upperBound,
-            None.noneLogic())
+        return Var(
+            symbol.hashCode().toLogic(), index.toPeanoLogicNumber(), upperBound, None.noneLogic()
+        )
     }
 
     fun JcClassOrInterface.toJtype(classpath: JcClasspath, depth: Int): Jtype<LogicInt> {
@@ -225,13 +210,12 @@ data class ClassesTable(
         }.toLogicList()
 
         return when (this.simpleName) {
-            "java.lang.Object" -> Class_(0.toLogic(), typeParams, this.simpleName)
-            "java.lang.Cloneable" -> Interface(1.toLogic(), typeParams, this.simpleName)
-            "java.io.Serializable" -> Interface(2.toLogic(), typeParams, this.simpleName)
+            "java.lang.Object" -> Class_(0.toLogic(), typeParams)
+            "java.lang.Cloneable" -> Interface(1.toLogic(), typeParams)
+            "java.io.Serializable" -> Interface(2.toLogic(), typeParams)
             else -> {
                 val id = mkId(this.simpleName).toLogic()
-                if (isInterface) Interface(id, typeParams, this.simpleName) else
-                    Class_(id, typeParams, this.simpleName)
+                if (isInterface) Interface(id, typeParams) else Class_(id, typeParams)
             }
         }
     }
@@ -254,10 +238,9 @@ data class ClassesTable(
         classes: List<JcClassOrInterface>,
         classpath: JcClasspath,
     ) = classes.forEach {
-        runCatching { it.toDeclaration(classpath) }
-            .onFailure { error ->
-                println("Class ${it.name} | $error")
-            }
+        runCatching { it.toDeclaration(classpath) }.onFailure { error ->
+            println("Class ${it.name} | $error")
+        }
     }
 
     companion object {

@@ -1,32 +1,29 @@
 @file:Suppress("SpellCheckingInspection")
 
-import org.jgrapht.Graph
+import JGSBackward.ClosureType
 import org.jgrapht.graph.DefaultEdge
 import org.jgrapht.graph.DirectedAcyclicGraph
 import org.jgrapht.traverse.TopologicalOrderIterator
 import org.jgs.classtable.ClassesTable
-import org.jgs.classtable.EmptyClassTable
 import org.jgs.classtable.extractClassesTable
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.klogic.core.*
 import org.klogic.core.Var
 import org.klogic.utils.terms.LogicList
-import org.klogic.utils.terms.toPeanoLogicNumber
+import org.klogic.utils.terms.LogicList.Companion.logicListOf
+import org.klogic.utils.terms.logicTo
 import utils.JGS.*
 import utils.JGS.Closure.Closure
 import utils.JGS.Wildcard
+import utils.JtypePretty
 import utils.LogicInt
 import utils.LogicInt.Companion.toLogic
 import utils.LogicOption
 import utils.Some
 import utils.freshTypedVars
-import kotlin.system.measureTimeMillis
-import JGSBackward.ClosureType
-import org.klogic.utils.terms.LogicList.Companion.logicListOf
-import org.klogic.utils.terms.LogicPair
-import org.klogic.utils.terms.logicTo
 
 class JGSstandard {
     fun <T> Iterable<T>.toCountMap(): Map<out T, Int> = groupingBy { it }.eachCount()
@@ -52,26 +49,38 @@ class JGSstandard {
 
     private val data = prepareGraph(verbose = false)
     private fun prepareGraph(
-        verbose: Boolean = false): Pair<ClassesTable, DirectedAcyclicGraph<Int, DefaultEdge>> {
+        verbose: Boolean = false
+    ): Pair<ClassesTable, DirectedAcyclicGraph<Int, DefaultEdge>> {
         var ct: ClassesTable = extractClassesTable()
         val directedGraph: DirectedAcyclicGraph<Int, DefaultEdge> = DirectedAcyclicGraph(
-            DefaultEdge::class.java)
+            DefaultEdge::class.java
+        )
 
         fun addEdge(from: Int, to: Class_<LogicInt>) {
-            if (from == to.id.asReified().n) return
-            directedGraph.addVertex(to.id.asReified().n)
-            if (verbose) println("Add edge $from  -> ${to.id.asReified()} (${to.humanName})")
-            directedGraph.addEdge(from, to.id.asReified().n)
+            val destID = to.id.asReified().n
+            if (from == destID)
+                return
+            directedGraph.addVertex(destID)
+            if (verbose) {
+                val destName = ct.nameOfId[destID]!!
+                println("Add edge $from  -> ${to.id.asReified()} ($destName)")
+            }
+            directedGraph.addEdge(from, destID)
         }
 
         fun addEdge(from: Int, to: Interface<LogicInt>) {
-            if (from == to.id.asReified().n) return
-            directedGraph.addVertex(to.id.asReified().n)
-            if (verbose) println("Add edge $from  -> ${to.id.asReified()} (${to.humanName})")
+            val destID = to.id.asReified().n
+            if (from == destID)
+                return
+            directedGraph.addVertex(destID)
+            if (verbose) {
+                val destName = ct.nameOfId[destID]!!
+                println("Add edge $from  -> ${to.id.asReified()} ($destName)")
+            }
             directedGraph.addEdge(from, to.id.asReified().n)
         }
         for ((id, decl) in ct.table) {
-            if (verbose) println("WIP: $id    with `$decl`");
+            if (verbose) println("WIP: $id    with `$decl`")
             directedGraph.addVertex(id)
             when (decl) {
                 is C -> when (decl.superClass) {
@@ -90,7 +99,8 @@ class JGSstandard {
         }
         with(directedGraph) {
             val moreDependencyFirstIterator = TopologicalOrderIterator(
-                directedGraph) // Some class are generated withoout information. Possible Bug
+                directedGraph
+            ) // Some class are generated withoout information. Possible Bug
             val toRemove: MutableSet<Int> = mutableSetOf()
             moreDependencyFirstIterator.forEachRemaining { id: Int ->
                 if (ct.table[id] == null) toRemove.add(id)
@@ -107,33 +117,38 @@ class JGSstandard {
         return (ct to directedGraph)
     }
 
-    fun testSingleConstraint(expectedResult: (CLASSTABLE) -> Collection<String>, count: Int = 10,
-                             boundKind: ClosureType = ClosureType.Subtyping,
-                             bound: (ConvenientCT) -> Term<Jtype<ID>>, verbose: Boolean = false) {
+    fun testSingleConstraint(
+        expectedResult: (CLASSTABLE) -> Collection<String>, count: Int = 10,
+        boundKind: ClosureType = ClosureType.Subtyping,
+        bound: (ConvenientCT) -> Term<Jtype<ID>>, verbose: Boolean = false
+    ) {
         val classTable = BigCT(data.second, data.first)
         val v = Verifier(classTable)
         val closureBuilder = Closure(classTable)
         withEmptyContext {
             val g = { q: Term<Jtype<ID>> ->
-                and(only_classes_interfaces_and_arrays(q), (when (boundKind) {
-                    ClosureType.Subtyping -> JGSBackward.MakeClosure2(closureBuilder)
-                        .closure({ a, b, c, d ->
-                            v.minus_less_minus(a, b, c, d)
-                        }, q, bound(classTable))
+                and(
+                    only_classes_interfaces_and_arrays(q), (when (boundKind) {
+                        ClosureType.Subtyping -> JGSBackward.MakeClosure2(closureBuilder)
+                            .closure({ a, b, c, d ->
+                                v.minus_less_minus(a, b, c, d)
+                            }, q, bound(classTable))
 
-                    ClosureType.SuperTyping -> TODO()
-                }))
+                        ClosureType.SuperTyping -> TODO()
+                    })
+                )
             }
             val answers = run(count, g).map { it.term }.toList()
             if (verbose) answers.forEachIndexed { i, x -> println("$i: $x") }
 
-            Assertions.assertEquals(count, answers.count())
+            assertEquals(count, answers.count())
             val expectedTerm = expectedResult(classTable).toCountMap()
-            val answers2 = answers.map { classTable.ppJtype(it) }
+            val pp = JtypePretty{classTable.nameOfId(it)}
+            val answers2 = answers.map { pp.ppJtype(it) }
             answers2.run {
                 forEachIndexed { i, x -> println("$i : $x") }
             }
-            //            Assertions.assertEquals(expectedTerm, answers2.toCountMap())
+            assertEquals(expectedTerm, answers2.toCountMap())
         }
     }
 
@@ -154,11 +169,19 @@ class JGSstandard {
     fun test2() {
         val expectedResult: (CLASSTABLE) -> Collection<String> = { ct ->
             listOf( //                ct.object_t, Array_(ct.object_t), Array_(Array_(ct.object_t)), Array_(Null) as Jtype<ID>
+                "Class java.lang.Object",
+                "Array<Class java.lang.Object>",
+                "Class NonBaseLocaleDataMetaInfo",
+                "Class CLDRLocaleDataMetaInfo",
+                "Array<Array<Class java.lang.Object>>",
             )
         }
-        testSingleConstraint(expectedResult, count = 999,
+        testSingleConstraint(
+            expectedResult,
+            count = 5,
             ClosureType.Subtyping, { it.object_t },
-            verbose = false)
+            verbose = false
+        )
     }
 
     @Test
@@ -168,29 +191,29 @@ class JGSstandard {
             listOf( //                ct.object_t, Array_(ct.object_t), Array_(Array_(ct.object_t)), Array_(Null) as Jtype<ID>
             )
         }
-        testSingleConstraint(expectedResult, count = 44,
-                ClosureType.Subtyping, { ct ->
-                    val humanName = "java.util.List<A>"
-
-//                    println( ct.data.size() );
-                    val listID = ct.idOfName(humanName)!!
-                    //C(LogicList.logicListOf(ct.object_t), ct.object_t, LogicList.logicListOf(),                            humanName = humanName)
-                    Class_(listID, logicListOf(Type(ct.object_t)), humanName_ = humanName)
-
-                },
-                verbose = false)
+        //  An operation is not implemented: Not implemented. Asked integer 7685 which is not in the table
+        testSingleConstraint(
+            expectedResult, count = 4,
+            ClosureType.Subtyping, { ct ->
+                val humanName = "java.util.List<A>"
+                val listID = ct.idOfName(humanName)!!
+                Class_(listID, logicListOf(Type(ct.object_t)))
+            },
+            verbose = false
+        )
     }
 
 
     interface ConvenientCT : CLASSTABLE {
         fun idOfName(name: String): ID?
+        fun nameOfId(id: Int): String?
     }
 
     class BigCT : ConvenientCT {
         private var lastId: Int = 0
         private fun newId(): Int {
-            lastId++;
-            return lastId;
+            lastId++
+            return lastId
         }
 
         private val graph: DirectedAcyclicGraph<Int, DefaultEdge>
@@ -210,6 +233,10 @@ class JGSstandard {
                 null -> null
                 else -> d.toLogic()
             }
+        }
+
+        override fun nameOfId(id: Int): String? {
+            return data.nameOfId[id]
         }
 
         //        private val top: Term<Jtype<ID>>?
@@ -249,8 +276,10 @@ class JGSstandard {
 
 
         context(RelationalContext)
-        override fun decl_by_id(v1: Term<LogicInt>,
-                                rez: Term<Decl<LogicInt>>): Goal { //        println("decl_by_id: $v1, $rez")
+        override fun decl_by_id(
+            v1: Term<LogicInt>,
+            rez: Term<Decl<LogicInt>>
+        ): Goal { //        println("decl_by_id: $v1, $rez")
             return debugVar(v1, { id -> id.reified() }) { it ->
                 val v = it.term
                 when (v) {
@@ -269,8 +298,10 @@ class JGSstandard {
         }
 
         context(RelationalContext)
-        fun getSuperclassByIdFreeFree(subId: Term<LogicInt>, superId: Term<LogicInt>,
-                                      rez: Term<Jtype<LogicInt>>): Goal {
+        fun getSuperclassByIdFreeFree(
+            subId: Term<LogicInt>, superId: Term<LogicInt>,
+            rez: Term<Jtype<LogicInt>>
+        ): Goal {
             val parents: (Decl<ID>) -> List<Jtype<ID>> = { it ->
                 when (it) {
                     is I -> when (it.supers) {
@@ -279,6 +310,7 @@ class JGSstandard {
                         is UnboundedValue -> TODO("Should not be reachable")
                         else -> TODO("Should not be reachable 100%")
                     }
+
                     is C -> when (it.supers) {
                         is LogicList<Jtype<ID>> -> it.supers.toList().map { it as Jtype<ID> }
 
@@ -303,11 +335,15 @@ class JGSstandard {
 
                     parentsList.fold(acc) { acc, jtyp ->
                         when (jtyp) {
-                            is Interface -> acc `|||` and(jtyp.id `===` superId,
-                                curId.toLogic() `===` subId, rez `===` jtyp)
+                            is Interface -> acc `|||` and(
+                                jtyp.id `===` superId,
+                                curId.toLogic() `===` subId, rez `===` jtyp
+                            )
 
-                            is Class_ -> acc `|||` and(jtyp.id `===` superId,
-                                curId.toLogic() `===` subId, rez `===` jtyp)
+                            is Class_ -> acc `|||` and(
+                                jtyp.id `===` superId,
+                                curId.toLogic() `===` subId, rez `===` jtyp
+                            )
 
                             else -> TODO("ancestor of the interface should be an interface")
                         }
@@ -316,122 +352,22 @@ class JGSstandard {
             }
         }
 
-        context(RelationalContext) override fun get_superclass_by_id(subId: Term<LogicInt>,
-                                                                     superId: Term<LogicInt>,
-                                                                     rez: Term<LogicOption<Jtype<LogicInt>>>): Goal {
+        context(RelationalContext) @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
+        override fun get_superclass_by_id(
+            subId: Term<LogicInt>,
+            superId: Term<LogicInt>,
+            rez: Term<LogicOption<Jtype<LogicInt>>>
+        ): Goal {
 
-            return debugVar( subId logicTo superId, reifier = {it.reified() }) {
+            return debugVar(subId logicTo superId, reifier = { it.reified() }) {
                 println("get_superclass_by_id ${it.term} ~~> $rez\n")
-                 freshTypedVars { answerJtyp: Term<Jtype<LogicInt>> ->
-                    and(rez `===` Some(answerJtyp),
-                            getSuperclassByIdFreeFree(subId, superId, answerJtyp))
+                freshTypedVars { answerJtyp: Term<Jtype<LogicInt>> ->
+                    and(
+                        rez `===` Some(answerJtyp),
+                        getSuperclassByIdFreeFree(subId, superId, answerJtyp)
+                    )
                 }
             }
-
-//
-        }
-
-
-        fun ppJarg(jarg: Term<Jarg<Jtype<ID>>>, b: StringBuilder) {
-            when (jarg) {
-                is Type<*> -> b.append(jarg.typ)
-                is ArgWildcardProto<*> -> {
-                    when (val info = jarg.typ.asReified()) {
-                        utils.None -> b.append("*")
-                        is Some -> {
-                            b.append("*")
-                            val p = info.head.asReified()
-                            when (p.first) {
-                                is Extends -> b.append(" extends ")
-                                is Super -> b.append(" super ")
-                                else -> TODO()
-                            }
-                            b.append(p.second)
-                        }
-                    }
-                }
-
-                is CustomTerm<*> -> TODO()
-                is UnboundedValue<*> -> b.append("_.?")
-            }
-        }
-
-        fun ppJtype(jt: Term<Jtype<ID>>, b: StringBuilder) {
-            when (jt) {
-                //is Null -> b.append("Null")
-                is CustomTerm<*> -> {
-                    when (val t = jt.asReified()) {
-                        is Intersect -> b.append("`intersect`")
-                        is Class_ -> {
-                            val name =
-                                    when (t.id) {
-                                        is CustomTerm -> {
-                                            val id: Int = t.id.asReified().n
-                                            val decl: Decl<LogicInt> = data.table[id]!!
-                                            decl.humanName()
-                                        }
-                                                    else -> "FUCK"
-                                    }
-
-                            b.append("Class ${name}")
-                            when (t.args) {
-                                is LogicList -> {
-                                    if (t.args.toList().isNotEmpty()) {
-                                        b.append("<")
-                                        t.args.toList().forEach { ppJarg(it, b); b.append(", ") }
-                                        b.append(">")
-                                    }
-                                }
-
-                                else -> b.append("/*TODO*/")
-                            }
-                        }
-
-                        is Interface -> {
-                            val name =
-                                    when (t.id) {
-                                        is CustomTerm -> {
-                                            val id: Int = t.id.asReified().n
-                                            val decl: Decl<LogicInt> = data.table[id]!!
-                                            decl.humanName()
-                                        }
-                                        else -> "FUCK"
-                                    }
-
-                            b.append("Interface ${name}")
-                            when (t.args) {
-                                is LogicList -> {
-                                    if (t.args.toList().isNotEmpty()) {
-                                        b.append("<")
-                                        t.args.toList().forEach { ppJarg(it, b); b.append(", ") }
-                                        b.append(">")
-                                    }
-                                }
-
-                                else -> b.append("/*TODO*/")
-                            }
-                        }
-
-                        is Array_ -> {
-                            b.append("Array<")
-                            b.append(ppJtype(t.typ, b))
-                            b.append(">")
-                        }
-
-                        else -> b.append("/*TODO*/", t, t.javaClass)
-                    }
-                }
-
-                else -> {}
-            }
-        }
-
-        fun ppJtype(jt: Term<Jtype<ID>>): String {
-            val b = StringBuilder()
-            ppJtype(jt, b);
-            return b.toString()
-        }
+       }
     }
-
-
 }

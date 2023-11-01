@@ -31,6 +31,7 @@ interface MutableClassTable : CLASSTABLE {
     fun makeTVar(id: Int, upb: Term<Jtype<ID>>): Jtype<ID>
 
     fun addName(id: Int, name: String)
+    fun nameOfId(id: Int) : String?
 }
 
 class DefaultCT : MutableClassTable {
@@ -53,6 +54,9 @@ class DefaultCT : MutableClassTable {
 
     fun declOfId(n: Int): Decl<ID>? {
         return data[n]
+    }
+    override fun nameOfId(n: Int) : String? {
+        return names[n]
     }
 
     override fun addClass(c: C<ID>): Int {
@@ -89,7 +93,9 @@ class DefaultCT : MutableClassTable {
     }
 
     override fun addName(id: Int, name: String) {
-        assert(!data.contains(id))
+        if (names.contains(id)) {
+            assert (names[id] !!  == name)
+        }
         names[id] = name
     }
 
@@ -101,11 +107,14 @@ class DefaultCT : MutableClassTable {
         objectId = addClass(C(logicListOf(), top, logicListOf()))
         assert(objectId == 1)
         object_t = Class_(objectId.toLogic(), logicListOf())
+        names[objectId] = "java.lang.Object"
         cloneableId = addInterface(logicListOf(), logicListOf())
         assert(cloneableId == 2)
+        names[cloneableId] = "java.lang.Cloneable"
         cloneable_t = Interface(cloneableId.toLogic(), logicListOf())
         serializableId = addInterface(logicListOf(), logicListOf())
         assert(serializableId == 3)
+        names[serializableId] = "java.io.Serializable"
         serializable_t = Interface(serializableId.toLogic(), logicListOf())
     }
 
@@ -203,7 +212,7 @@ class DefaultCT : MutableClassTable {
         superId: Term<LogicInt>,
         rez: Term<LogicOption<Jtype<LogicInt>>>
     ): Goal {
-        println("get_superclass_by_id $subId $superId ~~> $rez\n")
+//        println("get_superclass_by_id $subId $superId ~~> $rez\n")
         return freshTypedVars { answerJtyp: Term<Jtype<LogicInt>> ->
             and(rez `===` Some(answerJtyp), getSuperclassByIdFreeFree(subId, superId, answerJtyp))
         }

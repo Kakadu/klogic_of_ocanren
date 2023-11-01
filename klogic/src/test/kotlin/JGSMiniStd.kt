@@ -99,7 +99,7 @@ class JGSMiniStd {
                 )
             }
             val answers = run(count, g).map { it.term }.toList()
-            val pPrinter = JtypePretty { n -> classTable.declOfId(n) }
+            val pPrinter = JtypePretty { n -> classTable.nameOfId(n) }
             answers.forEachIndexed { i, x ->
                 println("$i: $x")
                 println("-   ${pPrinter.ppJtype(x)}")
@@ -117,6 +117,8 @@ class JGSMiniStd {
         val init: (MutableClassTable) -> Unit = { ct: MutableClassTable ->
             val iIterableID = ct.addInterface(params = logicListOf(), logicListOf())
             println("iterableID = $iIterableID")
+            ct.addName(iIterableID, "Iterable")
+
             val iCollectionID = ct.addInterface(
                 params = logicListOf(), logicListOf(Interface(iIterableID.toLogic(), logicListOf()))
             )

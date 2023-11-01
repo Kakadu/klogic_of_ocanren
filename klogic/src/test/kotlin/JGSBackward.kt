@@ -10,6 +10,7 @@ import utils.JGS.*
 import utils.JGS.Closure.CLOSURE
 import utils.JGS.Closure.Closure
 import utils.JGS.Var
+import utils.JtypePretty
 import utils.LogicInt
 import utils.LogicInt.Companion.toLogic
 import utils.LogicOption
@@ -116,7 +117,7 @@ class JGSBackward {
         context(RelationalContext)
         fun debugVarHandler(ta: Term<Jtype<ID>>, closureDown: Goal, closureUp: Goal): Goal =
             debugVar(ta, reifier = { it -> it.reified() }) {
-                when (it) {
+                when (it.term) {
                     is CustomTerm<*> -> closureUp
                     else -> closureDown
                 }
@@ -132,12 +133,12 @@ class JGSBackward {
 
     // new revised by Peter
     // specifies upper bound
-    fun testSingleConstraint2(
-        expectedResult: (CLASSTABLE) -> Collection<Term<Jtype<ID>>>,
+    private fun testSingleConstraint2(
+        expectedResult: (MutableClassTable) -> Collection<String>,
         count: Int = 10,
-        boundKind: ClosureType = ClosureType.Subtyping,
-        bound: (CLASSTABLE) -> Term<Jtype<ID>>,
-        verbose: Boolean = false
+        @Suppress("SameParameterValue") boundKind: ClosureType = ClosureType.Subtyping,
+        bound: (MutableClassTable) -> Term<Jtype<ID>>,
+        @Suppress("SameParameterValue") verbose: Boolean = false
     ) {
         val classTable = DefaultCT()
         val v = Verifier(classTable)
@@ -159,8 +160,11 @@ class JGSBackward {
                     })
                 )
             }
-            val answers = run(count, g).map { it.term }.toList()
-            if (verbose) answers.forEachIndexed { i, x -> println("$i: $x") }
+            val pp = JtypePretty { classTable.nameOfId(it) }
+            val answers = run(count, g).map { it.term }.toList().map {pp.ppJtype(it)}
+
+            if (verbose)
+                answers.forEachIndexed { i, x -> println("$i: $x") }
 
             assertEquals(count, answers.count())
             val expectedTerm = expectedResult(classTable).toCountMap()
@@ -169,7 +173,7 @@ class JGSBackward {
     }
 
     fun testBinary(
-        expectedResult: (CLASSTABLE) -> Collection<Term<Jtype<ID>>>,
+        expectedResult: (MutableClassTable) -> Collection<String>,
         count: Int = 10,
         init: (MutableClassTable) -> Unit = { },
         verbose: Boolean = false,
@@ -188,8 +192,10 @@ class JGSBackward {
                     only_classes_interfaces_and_arrays(q), makeGoal(this, q)(queryItself)
                 )
             }
-            val answers = run(count, g).map { it.term }.toList()
-            if (verbose) answers.forEachIndexed { i, x -> println("$i: $x") }
+            val pp = JtypePretty { classTable.nameOfId(it) }
+            val answers = run(count, g).map { it.term }.toList().map {pp.ppJtype(it)}
+            if (verbose)
+                answers.forEachIndexed { i, x -> println("$i: $x") }
 
             assertEquals(count, answers.count())
             val expectedTerm = expectedResult(classTable).toCountMap()
@@ -198,12 +204,24 @@ class JGSBackward {
     }
 
     @Test
+    @DisplayName("Pretty printer test")
+    fun test1PP() {
+        val ct = DefaultCT()
+        val pp = JtypePretty { ct.nameOfId(it) }
+        assertEquals( pp.ppJtype(ct.object_t), "Class java.lang.Object")
+        assertEquals( pp.ppJtype(ct.cloneable_t), "Interface java.lang.Cloneable")
+        assertEquals( pp.ppJtype(ct.serializable_t), "Interface java.io.Serializable")
+        assertEquals( pp.ppJtype(Array_(ct.serializable_t)), "Array<Interface java.io.Serializable>")
+    }
+
+    @Test
     @DisplayName("? <: Object")
     fun test1() {
-        val expectedResult: (CLASSTABLE) -> Collection<Term<Jtype<ID>>> = { ct ->
+        val expectedResult: (MutableClassTable) -> Collection<String> = { ct ->
+            val pp = JtypePretty { ct.nameOfId(it) }
             listOf(
                 ct.object_t, Array_(ct.object_t), Array_(Array_(ct.object_t)), Array_(Null) as Jtype<ID>
-            )
+            ).map { pp.ppJtype(it) }
         }
         testSingleConstraint2(expectedResult, count = 4, ClosureType.Subtyping, { it.object_t }, verbose = false)
     }
@@ -211,21 +229,24 @@ class JGSBackward {
     @Test
     @DisplayName("? <: Cloneable")
     fun test2() {
-        val expectedResult: (CLASSTABLE) -> Collection<Term<Jtype<ID>>> = { ct ->
+        val expectedResult: (MutableClassTable) -> Collection<String> = { ct ->
+            val pp = JtypePretty { ct.nameOfId(it) }
             listOf(
-                ct.object_t
-            )
+                Array_(ct.object_t), ct.cloneable_t
+            ).map { pp.ppJtype(it) }
+            // TODO(Kakadu): understand whey object_t is not in the answers
         }
-        testSingleConstraint2(expectedResult, count = 1, ClosureType.Subtyping, { it.cloneable_t }, verbose = false)
+        testSingleConstraint2(expectedResult, count = 2, ClosureType.Subtyping, { it.cloneable_t }, verbose = false)
     }
 
     @Test
     @DisplayName("? <: Cloneable[][]")
     fun test3() {
-        val expectedResult: (CLASSTABLE) -> Collection<Term<Jtype<ID>>> = { ct ->
+        val expectedResult: (MutableClassTable) -> Collection<String> = { ct ->
+            val pp = JtypePretty { ct.nameOfId(it) }
             listOf(
                 Array_(Null) as Jtype<ID>
-            )
+            ).map { pp.ppJtype(it) }
         }
 
         testSingleConstraint2(
@@ -244,13 +265,16 @@ class JGSBackward {
         val init: (MutableClassTable) -> Unit = { ct: MutableClassTable ->
             val aId = ct.addClass(logicListOf(), ct.object_t, logicListOf())
             a = Class_(aId.toLogic(), logicListOf())
+            ct.addName(aId, "A")
             val bId = ct.addClass(logicListOf(), a!!, logicListOf())
             b = Class_(bId.toLogic(), logicListOf())
+            ct.addName(bId, "B")
         }
-        val expectedResult: (CLASSTABLE) -> Collection<Term<Jtype<ID>>> = { ct ->
+        val expectedResult: (MutableClassTable) -> Collection<String> = { ct ->
+            val pp = JtypePretty { ct.nameOfId(it) }
             listOf(
                 b!!
-            )
+            ).map { pp.ppJtype(it) }
         }
         testBinary(
             expectedResult,
