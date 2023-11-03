@@ -37,7 +37,7 @@ class JGSstandard {
     }
 
     @Test
-    @DisplayName("asasdf")
+    @DisplayName("Class table is well founded")
     fun test0() {
         val ct: ClassesTable = data.first //        for ((k,v) in ct.table.toSortedMap())
         //            println("$k -> $v")
@@ -110,6 +110,7 @@ class JGSstandard {
         println("Graph prepareted")
         println(" Total ${ct.table.size} classes")
         println(" Orphaned types: ${ct.missingTypes} ")
+//        println(" nameOfId size =  ${ct.da} ")
 
         println("Id of 'java.lang.Object' =  ${ct.idOfName["java.lang.Object"]}")
         println(" Object with id=1 is ${ct.table[1]}")
@@ -195,7 +196,7 @@ class JGSstandard {
         testSingleConstraint(
             expectedResult, count = 4,
             ClosureType.Subtyping, { ct ->
-                val humanName = "java.util.List<A>"
+                val humanName = "java.util.AbstractList"
                 val listID = ct.idOfName(humanName)!!
                 Class_(listID, logicListOf(Type(ct.object_t)))
             },
@@ -218,6 +219,7 @@ class JGSstandard {
 
         private val graph: DirectedAcyclicGraph<Int, DefaultEdge>
         public val data: ClassesTable
+        private val topId: Int
         private val objectId: Int
         private val cloneableId: Int
         private val serializableId: Int
@@ -239,8 +241,7 @@ class JGSstandard {
             return data.nameOfId[id]
         }
 
-        //        private val top: Term<Jtype<ID>>?
-        //
+        private val top_t: Term<Jtype<ID>>
         override val object_t: Term<Jtype<LogicInt>>
         override val cloneable_t: Term<Jtype<LogicInt>>
         override val serializable_t: Term<Jtype<LogicInt>>
@@ -254,6 +255,8 @@ class JGSstandard {
             //            lastId = 0;
 
             // TODO: add assertions that hardcoded classes correspond to class table
+            topId = 0
+            top_t = Class_(topId.toLogic(), LogicList.logicListOf())
             objectId = 1
             assert(objectId == 1)
             object_t = Class_(objectId.toLogic(), LogicList.logicListOf())
@@ -279,7 +282,8 @@ class JGSstandard {
         override fun decl_by_id(
             v1: Term<LogicInt>,
             rez: Term<Decl<LogicInt>>
-        ): Goal { //        println("decl_by_id: $v1, $rez")
+        ): Goal {
+            //        println("decl_by_id: $v1, $rez")
             return debugVar(v1, { id -> id.reified() }) { it ->
                 val v = it.term
                 when (v) {
@@ -288,7 +292,15 @@ class JGSstandard {
                     else {
                         println("Asking for ${data.table[v.n]}")
                         println("Asking for ${data.table[v.n]}")
-                        TODO("Not implemented. Asked integer ${v.n} which is not in the table")
+                        //TODO("Not implemented. Asked integer ${v.n} which is not in the table")
+                        val kind = data.kindOfId[v.n]!!
+                        when (kind){
+                            is Class_kind ->  rez `===` C(logicListOf(), top_t, logicListOf())
+                            is Interface_kind ->
+                                rez `===` I(logicListOf(), logicListOf())
+//                            failure
+                        }
+
                     }
 
                     else -> TODO("?")
@@ -299,7 +311,10 @@ class JGSstandard {
 
         context(RelationalContext)
         fun getSuperclassByIdFreeFree(
-            subId: Term<LogicInt>, superId: Term<LogicInt>,
+            subId: Term<LogicInt>,
+            subKind: Term<Jtype_kind>,
+            superId: Term<LogicInt>,
+            superKind: Term<Jtype_kind>,
             rez: Term<Jtype<LogicInt>>
         ): Goal {
             val parents: (Decl<ID>) -> List<Jtype<ID>> = { it ->
@@ -331,17 +346,22 @@ class JGSstandard {
                 if (curId == objectId) acc
                 else {
                     val d: Term<Decl<ID>> = entry.value
+                    val entryKind = entry.value.getKind()
                     val parentsList = parents(d as Decl<ID>)
 
                     parentsList.fold(acc) { acc, jtyp ->
                         when (jtyp) {
                             is Interface -> acc `|||` and(
                                 jtyp.id `===` superId,
+                                    superKind `===` Interface_kind,
+                                    subKind `===` entryKind,
                                 curId.toLogic() `===` subId, rez `===` jtyp
                             )
 
                             is Class_ -> acc `|||` and(
                                 jtyp.id `===` superId,
+                                    superKind `===` Class_kind,
+                                    subKind `===` entryKind,
                                 curId.toLogic() `===` subId, rez `===` jtyp
                             )
 
@@ -355,16 +375,18 @@ class JGSstandard {
         context(RelationalContext) @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
         override fun get_superclass_by_id(
             subId: Term<LogicInt>,
+            subKind: Term<Jtype_kind>,
             superId: Term<LogicInt>,
+            superKind: Term<Jtype_kind>,
             rez: Term<LogicOption<Jtype<LogicInt>>>
         ): Goal {
 
             return debugVar(subId logicTo superId, reifier = { it.reified() }) {
-                println("get_superclass_by_id ${it.term} ~~> $rez\n")
+//                println("get_superclass_by_id ${it.term} ~~> $rez\n")
                 freshTypedVars { answerJtyp: Term<Jtype<LogicInt>> ->
                     and(
                         rez `===` Some(answerJtyp),
-                        getSuperclassByIdFreeFree(subId, superId, answerJtyp)
+                        getSuperclassByIdFreeFree(subId, subKind, superId, superKind, answerJtyp)
                     )
                 }
             }

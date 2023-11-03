@@ -219,13 +219,16 @@ data class Var<ID : Term<ID>>(val id: Term<ID>, val index: Term<PeanoLogicNumber
     }
 }
 
-sealed class Decl<ID : Term<ID>> : CustomTerm<Decl<ID>>
+sealed class Decl<ID : Term<ID>> : CustomTerm<Decl<ID>>{
+    abstract fun getKind(): Jtype_kind
+}
 
 data class C<ID : Term<ID>>(
     val params: Term<LogicList<Jtype<ID>>>,
     val superClass: Term<Jtype<ID>>,
     val supers: Term<LogicList<Jtype<ID>>>,
 ) : Decl<ID>() {
+    override  fun getKind(): Jtype_kind = Class_kind
     override val subtreesToUnify: Array<Term<*>>
         get() = arrayOf(params, superClass, supers)
 
@@ -249,6 +252,7 @@ data class I<ID : Term<ID>>(
     val params: Term<LogicList<Jtype<ID>>>,
     val supers: Term<LogicList<Jtype<ID>>>,
 ) : Decl<ID>() {
+    override  fun getKind(): Jtype_kind = Interface_kind
     override val subtreesToUnify: Array<Term<*>>
         get() = arrayOf(params, supers)
 

@@ -39,7 +39,8 @@ val EmptyClassTable = ClassesTable(
 )
 
 data class ClassesTable(
-    val classNames: MutableMap<JcClassOrInterface, Int>, val table: MutableMap<Int, Decl<LogicInt>> = mutableMapOf(
+    val classNames: MutableMap<JcClassOrInterface, Int>,
+    val table: MutableMap<Int, Decl<LogicInt>> = mutableMapOf(
         1 to C(
             params = logicListOf(), superClass = Class_(1.toLogic(), logicListOf()), logicListOf()
         ), 2 to I(
@@ -51,7 +52,8 @@ data class ClassesTable(
         "java.lang.Object" to 1, "java.lang.Cloneable" to 2, "java.io.Serializable" to 3
     ), val nameOfId: MutableMap<Int, String> = mutableMapOf(
         1 to "java.lang.Object", 2 to "java.lang.Cloneable", 3 to "java.io.Serializable"
-    ), val missingTypes: MutableSet<String> = mutableSetOf()
+    ), val missingTypes: MutableSet<String> = mutableSetOf(),
+        val kindOfId: MutableMap<Int, Jtype_kind> = mutableMapOf()
 ) {
 
     private fun addName(name: String, id: Int) {
@@ -62,11 +64,16 @@ data class ClassesTable(
     }
 
     private var lastID = 10
-    private fun JcClassOrInterface.mkId(name: String): Int {
-        return if (idOfName.containsKey(name)) idOfName[name]!!
+    private fun JcClassOrInterface.mkId(name: String, kind: Class_kind): Int {
+        return if (idOfName.containsKey(name)) {
+            val id = idOfName[name]!!
+            assert(kindOfId[id] == kind)
+            idOfName[name]!!
+        }
         else {
             lastID++;
             addName(name, lastID)
+            kindOfId[lastID] = kind
             lastID
         }
     }
@@ -90,7 +97,7 @@ data class ClassesTable(
         }
         if (idOfName.containsKey(this.simpleName)) return
         else {
-            val id = mkId(this.simpleName)
+            val id = mkId(this.simpleName, Class_kind)
             //            if (table.containsKey(id)) {
             //                println("Current value: ${table[id]} with name = ${}")
             //                println("New value: ${decl}")
@@ -108,9 +115,12 @@ data class ClassesTable(
             param.toJvmTypeArgument(index, classpath, depth + 1)
         }.toLogicList()
 
-        val id = jcClass.mkId(this.typeName).toLogic()
-        return if (jcClass.isInterface) Interface(id, typeParams)
-        else Class_(id, typeParams)
+
+        val id = jcClass.mkId(this.typeName, Class_kind)
+        if (id == 10015)
+            println("FUCK")
+        return if (jcClass.isInterface) Interface(id.toLogic(), typeParams)
+        else Class_(id.toLogic(), typeParams)
     }
 
     private fun JcType.toJtype(
@@ -209,13 +219,20 @@ data class ClassesTable(
             param.toJvmTypeArgument(index, classpath, depth + 1)
         }.toLogicList()
 
-        return when (this.simpleName) {
+        val name = this.name
+//        if (name == "Cloneable") {
+//            println("FUCK")
+//        }
+        return when (name) {
             "java.lang.Object" -> Class_(0.toLogic(), typeParams)
             "java.lang.Cloneable" -> Interface(1.toLogic(), typeParams)
             "java.io.Serializable" -> Interface(2.toLogic(), typeParams)
             else -> {
-                val id = mkId(this.simpleName).toLogic()
-                if (isInterface) Interface(id, typeParams) else Class_(id, typeParams)
+                val id : Int = mkId(name, Class_kind)
+                if (id == 10015)
+                    println("FUCK")
+
+                if (isInterface) Interface(id.toLogic(), typeParams) else Class_(id.toLogic(), typeParams)
             }
         }
     }
@@ -268,5 +285,17 @@ fun extractClassesTable(cpFiles: List<File> = emptyList()): ClassesTable =
     }
 
 fun main() {
-    extractClassesTable()
+    val ct = extractClassesTable()
+    println("\nLooking for Cloneables in the nameOfID")
+    ct.nameOfId.forEach {
+        if (it.value.contains("Cloneable")) {
+            println("${it.key} ~~> ${it.value}")
+            println("    --- ${ct.table[it.key]}")
+        }
+    }
+//    println("\nLooking for Cloneables in the declarations")
+//    ct.table.forEach {
+//        if (it.value.contains("Cloneable"))
+//            println("${it.key} ~~> ${it.value}")
+//    }
 }

@@ -132,6 +132,7 @@ class DefaultCT : MutableClassTable {
 
     context(RelationalContext)
     fun decl_by_id_Free(v1: Term<LogicInt>, rez: Term<Decl<LogicInt>>): Goal {
+//        TODO("FUCK")
         // It seems to be called only in supertyping
         return data.entries.fold(failure) { acc: Goal, e: MutableMap.MutableEntry<Int, Decl<ID>> ->
             acc `|||` and(v1 `===` e.key.toLogic(), rez `===` e.value)
@@ -217,7 +218,9 @@ class DefaultCT : MutableClassTable {
 
     context(RelationalContext) override fun get_superclass_by_id(
         subId: Term<LogicInt>,
+        subKind: Term<Jtype_kind>,
         superId: Term<LogicInt>,
+        superKind: Term<Jtype_kind>,
         rez: Term<LogicOption<Jtype<LogicInt>>>
     ): Goal {
         //        println("get_superclass_by_id $subId $superId ~~> $rez\n")
