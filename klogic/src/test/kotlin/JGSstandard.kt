@@ -24,6 +24,7 @@ import utils.LogicInt.Companion.toLogic
 import utils.LogicOption
 import utils.Some
 import utils.freshTypedVars
+import java.io.File
 
 class JGSstandard {
     fun <T> Iterable<T>.toCountMap(): Map<out T, Int> = groupingBy { it }.eachCount()
@@ -271,6 +272,12 @@ class JGSstandard {
             assert(serializableId == 3)
             serializable_t = Interface(serializableId.toLogic(), LogicList.logicListOf())
             assert(ct.table.containsKey(serializableId))
+
+            File("/tmp/out.txt").printWriter().use { out ->
+                out.println("Big Table\n");
+                out.println("ct.table.size = ${ct.table.size}")
+                out.println("ct.nameOfId.size = ${ct.nameOfId.size}")
+            }
         }
 
         context(RelationalContext) override fun new_var(): Term<LogicInt> {

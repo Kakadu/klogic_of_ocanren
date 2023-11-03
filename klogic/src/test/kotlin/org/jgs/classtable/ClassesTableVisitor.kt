@@ -72,6 +72,10 @@ data class ClassesTable(
         }
         else {
             lastID++;
+            if (lastID == 10027)
+                print("")
+            if (name.contains("<"))
+                print("")
             addName(name, lastID)
             kindOfId[lastID] = kind
             lastID
@@ -95,17 +99,18 @@ data class ClassesTable(
                 ), supers
             )
         }
-        if (idOfName.containsKey(this.simpleName)) return
+        val name = this.name
+        if (idOfName.containsKey(name)) return
         else {
-            val id = mkId(this.simpleName, Class_kind)
+            val id = mkId(name, Class_kind)
             //            if (table.containsKey(id)) {
             //                println("Current value: ${table[id]} with name = ${}")
             //                println("New value: ${decl}")
             //                assert(!table.containsKey(id)) { String.format("Duplicate ID generated: $id") }
             //            }
             table[id] = decl
-            assert(idOfName[this.simpleName] == id)
-            if (id == 7671) println("$id ~~> $decl")
+            assert(idOfName[name] == id)
+//            if (id == 7671) println("$id ~~> $decl")
             table.containsKey(id)
         }
     }
@@ -115,10 +120,10 @@ data class ClassesTable(
             param.toJvmTypeArgument(index, classpath, depth + 1)
         }.toLogicList()
 
+        if (this.typeName.contains("<"))
+            error("Class names should not contains '<': ${this.typeName}")
 
         val id = jcClass.mkId(this.typeName, Class_kind)
-        if (id == 10015)
-            println("FUCK")
         return if (jcClass.isInterface) Interface(id.toLogic(), typeParams)
         else Class_(id.toLogic(), typeParams)
     }
@@ -293,6 +298,20 @@ fun main() {
             println("    --- ${ct.table[it.key]}")
         }
     }
+    println("\nLooking for AbstractList in the nameOfID")
+    ct.nameOfId.forEach {
+        if (it.value.contains("AbstractList")) {
+            println("${it.key} ~~> ${it.value}")
+            println("    --- ${ct.table[it.key]}")
+        }
+    }
+//    println("\nLooking for AbstractList in the humanName")
+//    ct.nameOfId.forEach {
+//        if (it.value.contains("AbstractList")) {
+//            println("${it.key} ~~> ${it.value}")
+//            println("    --- ${ct.table[it.key]}")
+//        }
+//    }
 //    println("\nLooking for Cloneables in the declarations")
 //    ct.table.forEach {
 //        if (it.value.contains("Cloneable"))
