@@ -120,8 +120,8 @@ data class ClassesTable(
             param.toJvmTypeArgument(index, classpath, depth + 1)
         }.toLogicList()
 
-        if (this.typeName.contains("<"))
-            error("Class names should not contains '<': ${this.typeName}")
+//        if (this.typeName.contains("<"))
+//            error("Class names should not contains '<': ${this.typeName}")
 
         val id = jcClass.mkId(this.typeName, Class_kind)
         return if (jcClass.isInterface) Interface(id.toLogic(), typeParams)
@@ -277,6 +277,10 @@ data class ClassesTable(
             assert(table.table.containsKey(2)) { "No object with ID=2 generated" }
             assert(table.table.containsKey(3)) { "No object with ID=3 generated" }
             println("Table's last ID = ${table.lastID}")
+            println("9137 = ${table.table[9137]}")
+            println("table.idOfName[\"java.lang.Iterable\"] = ${table.idOfName["java.lang" +
+                ".Iterable"]}")
+            println("table.nameOfId[9137] = ${table.nameOfId[9137]}")
             return table
         }
     }
@@ -291,20 +295,25 @@ fun extractClassesTable(cpFiles: List<File> = emptyList()): ClassesTable =
 
 fun main() {
     val ct = extractClassesTable()
-    println("\nLooking for Cloneables in the nameOfID")
-    ct.nameOfId.forEach {
-        if (it.value.contains("Cloneable")) {
-            println("${it.key} ~~> ${it.value}")
-            println("    --- ${ct.table[it.key]}")
+    val lookup = { clas: String ->
+        println("\nLooking for $clas in the nameOfID")
+        ct.nameOfId.forEach {
+            if (it.value.contains(clas)) {
+                assert(ct.idOfName[it.value] == it.key)
+                println("${it.key} ~~> ${it.value}")
+                println("    --- ${ct.table[it.key]}")
+            }
         }
     }
-    println("\nLooking for AbstractList in the nameOfID")
-    ct.nameOfId.forEach {
-        if (it.value.contains("AbstractList")) {
-            println("${it.key} ~~> ${it.value}")
-            println("    --- ${ct.table[it.key]}")
-        }
-    }
+    lookup("Cloneable")
+    lookup("AbstractList")
+    lookup("java.util.Collection")
+    lookup("java.util.List")
+    lookup("java.lang.Iterable")
+
+    lookup("java.util.AbstractList")
+    lookup("<")
+
 //    println("\nLooking for AbstractList in the humanName")
 //    ct.nameOfId.forEach {
 //        if (it.value.contains("AbstractList")) {

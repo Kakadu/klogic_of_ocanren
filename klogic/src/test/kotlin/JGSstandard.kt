@@ -114,8 +114,10 @@ class JGSstandard {
 //        println(" nameOfId size =  ${ct.da} ")
 
         println("Id of 'java.lang.Object' =  ${ct.idOfName["java.lang.Object"]}")
+        println("Id of 'java.lang.Iterable' =  ${ct.idOfName["java.lang.Iterable"]}")
+        println("Id of 'java.util.List' =  ${ct.idOfName["java.util.List"]}")
         println(" Object with id=1 is ${ct.table[1]}")
-        println(" Object with id=7671 is ${ct.table[7671]}")
+//        println(" Object with id=7671 is ${ct.table[7671]}")
         return (ct to directedGraph)
     }
 
@@ -187,7 +189,7 @@ class JGSstandard {
     }
 
     @Test
-    @DisplayName("Subclasses of List<Object>")
+    @DisplayName("Subclasses of Iterable<Object>")
     fun test3() {
         val expectedResult: (CLASSTABLE) -> Collection<String> = { ct ->
             listOf( //                ct.object_t, Array_(ct.object_t), Array_(Array_(ct.object_t)), Array_(Null) as Jtype<ID>
@@ -197,10 +199,28 @@ class JGSstandard {
         testSingleConstraint(
             expectedResult, count = 4,
             ClosureType.Subtyping, { ct ->
-                val humanName = "java.util.AbstractList"
-                val listID = ct.idOfName(humanName)!!
-                Class_(listID, logicListOf(Type(ct.object_t)))
-            },
+            val humanName = "java.lang.Iterable"
+            val listID = ct.idOfName(humanName)!!
+            Class_(listID, logicListOf(Type(ct.object_t)))
+        },
+            verbose = false
+        )
+    }
+    @Test
+    @DisplayName("Subclasses of java.util.AbstractList<Object>")
+    fun test4() {
+        val expectedResult: (CLASSTABLE) -> Collection<String> = { ct ->
+            listOf( //                ct.object_t, Array_(ct.object_t), Array_(Array_(ct.object_t)), Array_(Null) as Jtype<ID>
+            )
+        }
+
+        testSingleConstraint(
+            expectedResult, count = 4,
+            ClosureType.Subtyping, { ct ->
+            val humanName = "java.util.AbstractList"
+            val listID = ct.idOfName(humanName)!!
+            Class_(listID, logicListOf(Type(ct.object_t)))
+        },
             verbose = false
         )
     }
@@ -227,10 +247,10 @@ class JGSstandard {
 
 
         override fun idOfName(name: String): ID? {
-            println("idOfName? $name when there are ${data.idOfName.size}")
+            println("idOfName? `$name` = ${data.idOfName[name]} when there are ${data.idOfName.size}")
             data.idOfName.forEach {
-                if (it.key.contains("java.util.List"))
-                    println(it.key)
+                if (it.key.contains("Iterable"))
+                    println("\t${it.key}")
             }
             return when (val d = data.idOfName[name]) {
                 null -> null
@@ -277,7 +297,20 @@ class JGSstandard {
                 out.println("Big Table\n");
                 out.println("ct.table.size = ${ct.table.size}")
                 out.println("ct.nameOfId.size = ${ct.nameOfId.size}")
+                val lookup = { clas: String ->
+                    out.println("\nLooking for $clas in the nameOfID")
+                    ct.nameOfId.forEach {
+                        if (it.value.contains(clas)) {
+                            assert(ct.idOfName[it.value] == it.key)
+                            out.println("${it.key} ~~> ${it.value}")
+                            out.println("    --- ${ct.table[it.key]}")
+                        }
+                    }
+                }
+
+                lookup("java.lang.Iterable")
             }
+
         }
 
         context(RelationalContext) override fun new_var(): Term<LogicInt> {
