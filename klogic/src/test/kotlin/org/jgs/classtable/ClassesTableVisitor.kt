@@ -271,7 +271,7 @@ data class ClassesTable(
             classpath: JcClasspath,
         ): ClassesTable {
             println("Classes length = ${classes.size}")
-            val table = ClassesTable(hashMapOf())
+            val table = EmptyClassTable
             table.toJvmDeclarationsSafe(classes, classpath)
             assert(table.table.containsKey(1)) { "No object with ID=1 generated" }
             assert(table.table.containsKey(2)) { "No object with ID=2 generated" }

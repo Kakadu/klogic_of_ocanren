@@ -6,10 +6,8 @@ import org.jgrapht.graph.DirectedAcyclicGraph
 import org.jgrapht.traverse.TopologicalOrderIterator
 import org.jgs.classtable.ClassesTable
 import org.jgs.classtable.extractClassesTable
-import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.DisplayName
-import org.junit.jupiter.api.Test
 import org.klogic.core.*
 import org.klogic.core.Var
 import org.klogic.utils.terms.LogicList
@@ -27,32 +25,26 @@ import utils.freshTypedVars
 import java.io.File
 
 class JGSstandard {
-    fun <T> Iterable<T>.toCountMap(): Map<out T, Int> = groupingBy { it }.eachCount()
+    private var data: Pair<ClassesTable, DirectedAcyclicGraph<Int, DefaultEdge>> =
+        ClassesTable(mutableMapOf()) to DirectedAcyclicGraph(
+            DefaultEdge::class.java
+        )
 
-    fun checkClassTable(ct: ClassesTable) {
-        val nameToId = mutableMapOf<Int, String>()
-        for ((typ, id) in ct.classNames) {
-            if (nameToId.containsKey(id)) TODO("FUCK")
-            else nameToId.put(id, typ.simpleName)
-        }
+    @BeforeEach
+    fun initClasses() {
+        var ct: ClassesTable = extractClassesTable()
+        println(" Classes are loaded")
+        println("java.util.AbstractList's ID = ${ct.idOfName["java.util.AbstractList"]}")
+
+        data = prepareGraph(ct, verbose = false)
     }
 
-    @Test
-    @DisplayName("Class table is well founded")
-    fun test0() {
-        val ct: ClassesTable = data.first //        for ((k,v) in ct.table.toSortedMap())
-        //            println("$k -> $v")
-        println("${ct.table[1]} ")
-        println("${ct.table[2]} ")
-        println("${ct.table[3]} ")
-        checkClassTable(ct)
-    }
 
-    private val data = prepareGraph(verbose = false)
     private fun prepareGraph(
+        ct: ClassesTable,
         verbose: Boolean = false
     ): Pair<ClassesTable, DirectedAcyclicGraph<Int, DefaultEdge>> {
-        var ct: ClassesTable = extractClassesTable()
+
         val directedGraph: DirectedAcyclicGraph<Int, DefaultEdge> = DirectedAcyclicGraph(
             DefaultEdge::class.java
         )
@@ -121,6 +113,28 @@ class JGSstandard {
         return (ct to directedGraph)
     }
 
+    fun <T> Iterable<T>.toCountMap(): Map<out T, Int> = groupingBy { it }.eachCount()
+
+    fun checkClassTable(ct: ClassesTable) {
+        val nameToId = mutableMapOf<Int, String>()
+        for ((typ, id) in ct.classNames) {
+            if (nameToId.containsKey(id)) TODO("FUCK")
+            else nameToId.put(id, typ.simpleName)
+        }
+    }
+
+    @Test
+    @DisplayName("Class table is well founded")
+    fun test0() {
+        val ct: ClassesTable = data.first //        for ((k,v) in ct.table.toSortedMap())
+        //            println("$k -> $v")
+        println("${ct.table[1]} ")
+        println("${ct.table[2]} ")
+        println("${ct.table[3]} ")
+        checkClassTable(ct)
+    }
+
+
     fun testSingleConstraint(
         expectedResult: (CLASSTABLE) -> Collection<String>, count: Int = 10,
         boundKind: ClosureType = ClosureType.Subtyping,
@@ -147,7 +161,7 @@ class JGSstandard {
 
             assertEquals(count, answers.count())
             val expectedTerm = expectedResult(classTable).toCountMap()
-            val pp = JtypePretty{classTable.nameOfId(it)}
+            val pp = JtypePretty { classTable.nameOfId(it) }
             val answers2 = answers.map { pp.ppJtype(it) }
             answers2.run {
                 forEachIndexed { i, x -> println("$i : $x") }
@@ -172,7 +186,8 @@ class JGSstandard {
     @DisplayName("Subclasses of Object")
     fun test2() {
         val expectedResult: (CLASSTABLE) -> Collection<String> = { ct ->
-            listOf( //                ct.object_t, Array_(ct.object_t), Array_(Array_(ct.object_t)), Array_(Null) as Jtype<ID>
+            listOf(
+                //                ct.object_t, Array_(ct.object_t), Array_(Array_(ct.object_t)), Array_(Null) as Jtype<ID>
                 "Class java.lang.Object",
                 "Array<Class java.lang.Object>",
                 "Class NonBaseLocaleDataMetaInfo",
@@ -199,13 +214,14 @@ class JGSstandard {
         testSingleConstraint(
             expectedResult, count = 4,
             ClosureType.Subtyping, { ct ->
-            val humanName = "java.lang.Iterable"
-            val listID = ct.idOfName(humanName)!!
-            Class_(listID, logicListOf(Type(ct.object_t)))
-        },
+                val humanName = "java.lang.Iterable"
+                val listID = ct.idOfName(humanName)!!
+                Class_(listID, logicListOf(Type(ct.object_t)))
+            },
             verbose = false
         )
     }
+
     @Test
     @DisplayName("Subclasses of java.util.AbstractList<Object>")
     fun test4() {
@@ -217,10 +233,10 @@ class JGSstandard {
         testSingleConstraint(
             expectedResult, count = 4,
             ClosureType.Subtyping, { ct ->
-            val humanName = "java.util.AbstractList"
-            val listID = ct.idOfName(humanName)!!
-            Class_(listID, logicListOf(Type(ct.object_t)))
-        },
+                val humanName = "java.util.AbstractList"
+                val listID = ct.idOfName(humanName)!!
+                Class_(listID, logicListOf(Type(ct.object_t)))
+            },
             verbose = false
         )
     }
@@ -334,8 +350,8 @@ class JGSstandard {
                         println("Asking for ${data.table[v.n]}")
                         //TODO("Not implemented. Asked integer ${v.n} which is not in the table")
                         val kind = data.kindOfId[v.n]!!
-                        when (kind){
-                            is Class_kind ->  rez `===` C(logicListOf(), top_t, logicListOf())
+                        when (kind) {
+                            is Class_kind -> rez `===` C(logicListOf(), top_t, logicListOf())
                             is Interface_kind ->
                                 rez `===` I(logicListOf(), logicListOf())
 //                            failure
@@ -393,15 +409,15 @@ class JGSstandard {
                         when (jtyp) {
                             is Interface -> acc `|||` and(
                                 jtyp.id `===` superId,
-                                    superKind `===` Interface_kind,
-                                    subKind `===` entryKind,
+                                superKind `===` Interface_kind,
+                                subKind `===` entryKind,
                                 curId.toLogic() `===` subId, rez `===` jtyp
                             )
 
                             is Class_ -> acc `|||` and(
                                 jtyp.id `===` superId,
-                                    superKind `===` Class_kind,
-                                    subKind `===` entryKind,
+                                superKind `===` Class_kind,
+                                subKind `===` entryKind,
                                 curId.toLogic() `===` subId, rez `===` jtyp
                             )
 
@@ -430,6 +446,6 @@ class JGSstandard {
                     )
                 }
             }
-       }
+        }
     }
 }
