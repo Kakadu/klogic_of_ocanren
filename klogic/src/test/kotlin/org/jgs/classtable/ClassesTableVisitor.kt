@@ -58,7 +58,7 @@ data class ClassesTable(
 
     private fun addName(name: String, id: Int) {
         check(!idOfName.containsKey(name))
-       check(!nameOfId.containsKey(id))
+        check(!nameOfId.containsKey(id))
         idOfName[name] = id
         nameOfId[id] = name
     }
@@ -67,7 +67,9 @@ data class ClassesTable(
     private fun JcClassOrInterface.mkId(name: String, kind: Class_kind): Int {
         return if (idOfName.containsKey(name)) {
             val id = idOfName[name]!!
-            check(kindOfId[id] == kind)
+            check(kindOfId[id] == kind)  {
+                "FUCK"
+            }
             idOfName[name]!!
         }
         else {
@@ -260,9 +262,7 @@ data class ClassesTable(
         classes: List<JcClassOrInterface>,
         classpath: JcClasspath,
     ) = classes.forEach {
-        runCatching { it.toDeclaration(classpath) }.onFailure { error ->
-            println("Class ${it.name} | $error")
-        }
+        it.toDeclaration(classpath)
     }
 
     companion object {

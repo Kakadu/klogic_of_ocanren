@@ -312,23 +312,23 @@ class JGSstandard {
             serializable_t = Interface(serializableId.toLogic(), LogicList.logicListOf())
             check(ct.table.containsKey(serializableId))
 
-            File("/tmp/out.txt").printWriter().use { out ->
-                out.println("Big Table\n");
-                out.println("ct.table.size = ${ct.table.size}")
-                out.println("ct.nameOfId.size = ${ct.nameOfId.size}")
-                val lookup = { clas: String ->
-                    out.println("\nLooking for $clas in the nameOfID")
-                    ct.nameOfId.forEach {
-                        if (it.value.contains(clas)) {
-                            check(ct.idOfName[it.value] == it.key)
-                            out.println("${it.key} ~~> ${it.value}")
-                            out.println("    --- ${ct.table[it.key]}")
-                        }
-                    }
-                }
-
-                lookup("java.lang.Iterable")
-            }
+//            File("/tmp/out.txt").printWriter().use { out ->
+//                out.println("Big Table\n");
+//                out.println("ct.table.size = ${ct.table.size}")
+//                out.println("ct.nameOfId.size = ${ct.nameOfId.size}")
+//                val lookup = { clas: String ->
+//                    out.println("\nLooking for $clas in the nameOfID")
+//                    ct.nameOfId.forEach {
+//                        if (it.value.contains(clas)) {
+//                            check(ct.idOfName[it.value] == it.key)
+//                            out.println("${it.key} ~~> ${it.value}")
+//                            out.println("    --- ${ct.table[it.key]}")
+//                        }
+//                    }
+//                }
+//
+//                lookup("java.lang.Iterable")
+//            }
 
         }
 
