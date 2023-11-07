@@ -57,8 +57,8 @@ data class ClassesTable(
 ) {
 
     private fun addName(name: String, id: Int) {
-        assert(!idOfName.containsKey(name))
-        assert(!nameOfId.containsKey(id))
+        check(!idOfName.containsKey(name))
+       check(!nameOfId.containsKey(id))
         idOfName[name] = id
         nameOfId[id] = name
     }
@@ -67,7 +67,7 @@ data class ClassesTable(
     private fun JcClassOrInterface.mkId(name: String, kind: Class_kind): Int {
         return if (idOfName.containsKey(name)) {
             val id = idOfName[name]!!
-            assert(kindOfId[id] == kind)
+            check(kindOfId[id] == kind)
             idOfName[name]!!
         }
         else {
@@ -106,10 +106,10 @@ data class ClassesTable(
             //            if (table.containsKey(id)) {
             //                println("Current value: ${table[id]} with name = ${}")
             //                println("New value: ${decl}")
-            //                assert(!table.containsKey(id)) { String.format("Duplicate ID generated: $id") }
+            //                checkt(!table.containsKey(id)) { String.format("Duplicate ID generated: $id") }
             //            }
             table[id] = decl
-            assert(idOfName[name] == id)
+            check(idOfName[name] == id)
 //            if (id == 7671) println("$id ~~> $decl")
             table.containsKey(id)
         }
@@ -271,11 +271,11 @@ data class ClassesTable(
             classpath: JcClasspath,
         ): ClassesTable {
             println("Classes length = ${classes.size}")
-            val table = EmptyClassTable
+            val table = ClassesTable(hashMapOf())
             table.toJvmDeclarationsSafe(classes, classpath)
-            assert(table.table.containsKey(1)) { "No object with ID=1 generated" }
-            assert(table.table.containsKey(2)) { "No object with ID=2 generated" }
-            assert(table.table.containsKey(3)) { "No object with ID=3 generated" }
+            check(table.table.containsKey(1)) { "No object with ID=1 generated" }
+            check(table.table.containsKey(2)) { "No object with ID=2 generated" }
+            check(table.table.containsKey(3)) { "No object with ID=3 generated" }
             println("Table's last ID = ${table.lastID}")
             println("9137 = ${table.table[9137]}")
             println("table.idOfName[\"java.lang.Iterable\"] = ${table.idOfName["java.lang" +
@@ -299,7 +299,7 @@ fun main() {
         println("\nLooking for $clas in the nameOfID")
         ct.nameOfId.forEach {
             if (it.value.contains(clas)) {
-                assert(ct.idOfName[it.value] == it.key)
+                check(ct.idOfName[it.value] == it.key)
                 println("${it.key} ~~> ${it.value}")
                 println("    --- ${ct.table[it.key]}")
             }

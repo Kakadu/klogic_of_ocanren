@@ -25,93 +25,96 @@ import utils.freshTypedVars
 import java.io.File
 
 class JGSstandard {
-    private var data: Pair<ClassesTable, DirectedAcyclicGraph<Int, DefaultEdge>> =
-        ClassesTable(mutableMapOf()) to DirectedAcyclicGraph(
-            DefaultEdge::class.java
-        )
+    companion object {
+        private var data: Pair<ClassesTable, DirectedAcyclicGraph<Int, DefaultEdge>> =
+            ClassesTable(mutableMapOf()) to DirectedAcyclicGraph(
+                DefaultEdge::class.java
+            )
 
-    @BeforeEach
-    fun initClasses() {
-        var ct: ClassesTable = extractClassesTable()
-        println(" Classes are loaded")
-        println("java.util.AbstractList's ID = ${ct.idOfName["java.util.AbstractList"]}")
+        @JvmStatic
+        @BeforeAll
+        fun initClasses() {
+            val ct: ClassesTable = extractClassesTable()
+            println(" Classes are loaded")
+            println("java.util.AbstractList's ID = ${ct.idOfName["java.util.AbstractList"]}")
 
-        data = prepareGraph(ct, verbose = false)
-    }
-
-
-    private fun prepareGraph(
-        ct: ClassesTable,
-        verbose: Boolean = false
-    ): Pair<ClassesTable, DirectedAcyclicGraph<Int, DefaultEdge>> {
-
-        val directedGraph: DirectedAcyclicGraph<Int, DefaultEdge> = DirectedAcyclicGraph(
-            DefaultEdge::class.java
-        )
-
-        fun addEdge(from: Int, to: Class_<LogicInt>) {
-            val destID = to.id.asReified().n
-            if (from == destID)
-                return
-            directedGraph.addVertex(destID)
-            if (verbose) {
-                val destName = ct.nameOfId[destID]!!
-                println("Add edge $from  -> ${to.id.asReified()} ($destName)")
-            }
-            directedGraph.addEdge(from, destID)
+            data = prepareGraph(ct, verbose = false)
         }
 
-        fun addEdge(from: Int, to: Interface<LogicInt>) {
-            val destID = to.id.asReified().n
-            if (from == destID)
-                return
-            directedGraph.addVertex(destID)
-            if (verbose) {
-                val destName = ct.nameOfId[destID]!!
-                println("Add edge $from  -> ${to.id.asReified()} ($destName)")
-            }
-            directedGraph.addEdge(from, to.id.asReified().n)
-        }
-        for ((id, decl) in ct.table) {
-            if (verbose) println("WIP: $id    with `$decl`")
-            directedGraph.addVertex(id)
-            when (decl) {
-                is C -> when (decl.superClass) {
-                    is Class_ -> addEdge(id, decl.superClass)
-                    is Array_ -> println("TODO ${Thread.currentThread().stackTrace[2].lineNumber}")
-                    else -> {}
+        private fun prepareGraph(
+            ct: ClassesTable,
+            verbose: Boolean = false
+        ): Pair<ClassesTable, DirectedAcyclicGraph<Int, DefaultEdge>> {
+
+            val directedGraph: DirectedAcyclicGraph<Int, DefaultEdge> = DirectedAcyclicGraph(
+                DefaultEdge::class.java
+            )
+
+            fun addEdge(from: Int, to: Class_<LogicInt>) {
+                val destID = to.id.asReified().n
+                if (from == destID)
+                    return
+                directedGraph.addVertex(destID)
+                if (verbose) {
+                    val destName = ct.nameOfId[destID]!!
+                    println("Add edge $from  -> ${to.id.asReified()} ($destName)")
                 }
+                directedGraph.addEdge(from, destID)
+            }
 
-                is I -> for (i in decl.supers.asReified().toList()) {
-                    when (i) {
-                        is Interface -> addEdge(id, i)
+            fun addEdge(from: Int, to: Interface<LogicInt>) {
+                val destID = to.id.asReified().n
+                if (from == destID)
+                    return
+                directedGraph.addVertex(destID)
+                if (verbose) {
+                    val destName = ct.nameOfId[destID]!!
+                    println("Add edge $from  -> ${to.id.asReified()} ($destName)")
+                }
+                directedGraph.addEdge(from, to.id.asReified().n)
+            }
+            for ((id, decl) in ct.table) {
+                if (verbose) println("WIP: $id    with `$decl`")
+                directedGraph.addVertex(id)
+                when (decl) {
+                    is C -> when (decl.superClass) {
+                        is Class_ -> addEdge(id, decl.superClass)
+                        is Array_ -> println("TODO ${Thread.currentThread().stackTrace[2].lineNumber}")
                         else -> {}
+                    }
+
+                    is I -> for (i in decl.supers.asReified().toList()) {
+                        when (i) {
+                            is Interface -> addEdge(id, i)
+                            else -> {}
+                        }
                     }
                 }
             }
-        }
-        with(directedGraph) {
-            val moreDependencyFirstIterator = TopologicalOrderIterator(
-                directedGraph
-            ) // Some class are generated withoout information. Possible Bug
-            val toRemove: MutableSet<Int> = mutableSetOf()
-            moreDependencyFirstIterator.forEachRemaining { id: Int ->
-                if (ct.table[id] == null) toRemove.add(id)
+            with(directedGraph) {
+                val moreDependencyFirstIterator = TopologicalOrderIterator(
+                    directedGraph
+                ) // Some class are generated withoout information. Possible Bug
+                val toRemove: MutableSet<Int> = mutableSetOf()
+                moreDependencyFirstIterator.forEachRemaining { id: Int ->
+                    if (ct.table[id] == null) toRemove.add(id)
+                }
+                toRemove.forEach { directedGraph.removeVertex(it) }
             }
-            toRemove.forEach { directedGraph.removeVertex(it) }
-        }
-        println("Graph prepareted")
-        println(" Total ${ct.table.size} classes")
-        println(" Orphaned types: ${ct.missingTypes} ")
-//        println(" nameOfId size =  ${ct.da} ")
+            println("Graph prepareted")
+            println(" Total ${ct.table.size} classes")
+            println(" Orphaned types: ${ct.missingTypes} ")
+            //        println(" nameOfId size =  ${ct.da} ")
 
-        println("Id of 'java.lang.Object' =  ${ct.idOfName["java.lang.Object"]}")
-        println("Id of 'java.lang.Iterable' =  ${ct.idOfName["java.lang.Iterable"]}")
-        println("Id of 'java.util.List' =  ${ct.idOfName["java.util.List"]}")
-        println(" Object with id=1 is ${ct.table[1]}")
-//        println(" Object with id=7671 is ${ct.table[7671]}")
-        return (ct to directedGraph)
+            println("Id of 'java.lang.Object' =  ${ct.idOfName["java.lang.Object"]}")
+            println("Id of 'java.lang.Iterable' =  ${ct.idOfName["java.lang.Iterable"]}")
+            println("Id of 'java.util.List' =  ${ct.idOfName["java.util.List"]}")
+            println(" Object with id=1 is ${ct.table[1]}")
+            //        println(" Object with id=7671 is ${ct.table[7671]}")
+            return (ct to directedGraph)
+        }
     }
+
 
     fun <T> Iterable<T>.toCountMap(): Map<out T, Int> = groupingBy { it }.eachCount()
 
@@ -176,7 +179,7 @@ class JGSstandard {
         val ct = data.first
         val moreDependencyFirstIterator = TopologicalOrderIterator(data.second)
         moreDependencyFirstIterator.forEachRemaining { id: Int ->
-            assert(ct.table.containsKey(id))
+            check(ct.table.containsKey(id))
             val dest = ct.table[id]
             println("$id -> $dest")
         }
@@ -284,8 +287,8 @@ class JGSstandard {
         override val serializable_t: Term<Jtype<LogicInt>>
 
         constructor(g: DirectedAcyclicGraph<Int, DefaultEdge>, ct: ClassesTable) {
-            assert(ct.table.isNotEmpty())
-            assert(ct.idOfName.isNotEmpty())
+            check(ct.table.isNotEmpty())
+            check(ct.idOfName.isNotEmpty())
             graph = g
             data = ct //            top = Class_<ID>(0.toLogic(), LogicList.logicListOf());
             //            addClass(LogicList.logicListOf(), top, LogicList.logicListOf())
@@ -295,19 +298,19 @@ class JGSstandard {
             topId = 0
             top_t = Class_(topId.toLogic(), LogicList.logicListOf())
             objectId = 1
-            assert(objectId == 1)
+            check(objectId == 1)
             object_t = Class_(objectId.toLogic(), LogicList.logicListOf())
-            assert(ct.table.containsKey(objectId))
+            check(ct.table.containsKey(objectId))
 
             cloneableId = 2
-            assert(cloneableId == 2)
+            check(cloneableId == 2)
             cloneable_t = Interface(cloneableId.toLogic(), LogicList.logicListOf())
-            assert(ct.table.containsKey(cloneableId))
+            check(ct.table.containsKey(cloneableId))
 
             serializableId = 3
-            assert(serializableId == 3)
+            check(serializableId == 3)
             serializable_t = Interface(serializableId.toLogic(), LogicList.logicListOf())
-            assert(ct.table.containsKey(serializableId))
+            check(ct.table.containsKey(serializableId))
 
             File("/tmp/out.txt").printWriter().use { out ->
                 out.println("Big Table\n");
@@ -317,7 +320,7 @@ class JGSstandard {
                     out.println("\nLooking for $clas in the nameOfID")
                     ct.nameOfId.forEach {
                         if (it.value.contains(clas)) {
-                            assert(ct.idOfName[it.value] == it.key)
+                            check(ct.idOfName[it.value] == it.key)
                             out.println("${it.key} ~~> ${it.value}")
                             out.println("    --- ${ct.table[it.key]}")
                         }
