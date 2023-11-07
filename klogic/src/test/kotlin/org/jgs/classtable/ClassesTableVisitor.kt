@@ -44,16 +44,18 @@ data class ClassesTable(
         1 to C(
             params = logicListOf(), superClass = Class_(1.toLogic(), logicListOf()), logicListOf()
         ), 2 to I(
-            params = logicListOf(), supers = logicListOf()
-        ), 3 to I(
-            params = logicListOf(), supers = logicListOf()
-        )
+        params = logicListOf(), supers = logicListOf()
+    ), 3 to I(
+        params = logicListOf(), supers = logicListOf()
+    )
     ), val idOfName: MutableMap<String, Int> = mutableMapOf(
         "java.lang.Object" to 1, "java.lang.Cloneable" to 2, "java.io.Serializable" to 3
     ), val nameOfId: MutableMap<Int, String> = mutableMapOf(
         1 to "java.lang.Object", 2 to "java.lang.Cloneable", 3 to "java.io.Serializable"
     ), val missingTypes: MutableSet<String> = mutableSetOf(),
-        val kindOfId: MutableMap<Int, Jtype_kind> = mutableMapOf()
+    val kindOfId: MutableMap<Int, Jtype_kind> = mutableMapOf(
+        1 to Class_kind, 2 to Interface_kind, 3 to Interface_kind
+    )
 ) {
 
     private fun addName(name: String, id: Int) {
@@ -64,15 +66,14 @@ data class ClassesTable(
     }
 
     private var lastID = 10
-    private fun JcClassOrInterface.mkId(name: String, kind: Class_kind): Int {
+    private fun JcClassOrInterface.mkId(name: String, kind: Jtype_kind): Int {
         return if (idOfName.containsKey(name)) {
             val id = idOfName[name]!!
-            check(kindOfId[id] == kind)  {
-                "FUCK"
+            check(kindOfId[id] == kind) {
+                "FUCK  $id"
             }
             idOfName[name]!!
-        }
-        else {
+        } else {
             lastID++;
             if (lastID == 10027)
                 print("")
@@ -80,6 +81,9 @@ data class ClassesTable(
                 print("")
             addName(name, lastID)
             kindOfId[lastID] = kind
+
+            if (lastID == 157)
+                print("")
             lastID
         }
     }
@@ -96,7 +100,8 @@ data class ClassesTable(
         val decl = when {
             isInterface -> I(typeParams, supers)
             else -> C(
-                typeParams, type.superType?.toJtype(classpath, depth = 0) ?: classpath.objectClass.toJtype(
+                typeParams,
+                type.superType?.toJtype(classpath, depth = 0) ?: classpath.objectClass.toJtype(
                     classpath, 0
                 ), supers
             )
@@ -104,7 +109,8 @@ data class ClassesTable(
         val name = this.name
         if (idOfName.containsKey(name)) return
         else {
-            val id = mkId(name, Class_kind)
+            val kind = if (this.isInterface) Interface_kind else Class_kind
+            val id = mkId(name, kind)
             //            if (table.containsKey(id)) {
             //                println("Current value: ${table[id]} with name = ${}")
             //                println("New value: ${decl}")
@@ -112,7 +118,7 @@ data class ClassesTable(
             //            }
             table[id] = decl
             check(idOfName[name] == id)
-//            if (id == 7671) println("$id ~~> $decl")
+            //            if (id == 7671) println("$id ~~> $decl")
             table.containsKey(id)
         }
     }
@@ -122,10 +128,11 @@ data class ClassesTable(
             param.toJvmTypeArgument(index, classpath, depth + 1)
         }.toLogicList()
 
-//        if (this.typeName.contains("<"))
-//            error("Class names should not contains '<': ${this.typeName}")
+        //        if (this.typeName.contains("<"))
+        //            error("Class names should not contains '<': ${this.typeName}")
 
-        val id = jcClass.mkId(this.typeName, Class_kind)
+        val kind = if (jcClass.isInterface) Interface_kind else Class_kind
+        val id = jcClass.mkId(this.typeName, kind)
         return if (jcClass.isInterface) Interface(id.toLogic(), typeParams)
         else Class_(id.toLogic(), typeParams)
     }
@@ -176,7 +183,8 @@ data class ClassesTable(
                 TODO()
             }
 
-            val polarityJtypeLogicPair = Super logicTo lowerBounds.single().toJtype(index, classpath, depth + 1)
+            val polarityJtypeLogicPair = Super logicTo lowerBounds.single()
+                .toJtype(index, classpath, depth + 1)
             return Wildcard(polarityJtypeLogicPair.toOption())
         }
 
@@ -227,19 +235,20 @@ data class ClassesTable(
         }.toLogicList()
 
         val name = this.name
-//        if (name == "Cloneable") {
-//            println("FUCK")
-//        }
+        //        if (name == "Cloneable") {
+        //            println("FUCK")
+        //        }
         return when (name) {
             "java.lang.Object" -> Class_(0.toLogic(), typeParams)
             "java.lang.Cloneable" -> Interface(1.toLogic(), typeParams)
             "java.io.Serializable" -> Interface(2.toLogic(), typeParams)
             else -> {
-                val id : Int = mkId(name, Class_kind)
+                val id: Int = mkId(name, Class_kind)
                 if (id == 10015)
                     println("FUCK")
 
-                if (isInterface) Interface(id.toLogic(), typeParams) else Class_(id.toLogic(), typeParams)
+                if (isInterface) Interface(id.toLogic(), typeParams) else Class_(id.toLogic(),
+                    typeParams)
             }
         }
     }
@@ -278,8 +287,10 @@ data class ClassesTable(
             check(table.table.containsKey(3)) { "No object with ID=3 generated" }
             println("Table's last ID = ${table.lastID}")
             println("9137 = ${table.table[9137]}")
-            println("table.idOfName[\"java.lang.Iterable\"] = ${table.idOfName["java.lang" +
-                ".Iterable"]}")
+            println("table.idOfName[\"java.lang.Iterable\"] = ${
+                table.idOfName["java.lang" +
+                    ".Iterable"]
+            }")
             println("table.nameOfId[9137] = ${table.nameOfId[9137]}")
             return table
         }
@@ -314,16 +325,16 @@ fun main() {
     lookup("java.util.AbstractList")
     lookup("<")
 
-//    println("\nLooking for AbstractList in the humanName")
-//    ct.nameOfId.forEach {
-//        if (it.value.contains("AbstractList")) {
-//            println("${it.key} ~~> ${it.value}")
-//            println("    --- ${ct.table[it.key]}")
-//        }
-//    }
-//    println("\nLooking for Cloneables in the declarations")
-//    ct.table.forEach {
-//        if (it.value.contains("Cloneable"))
-//            println("${it.key} ~~> ${it.value}")
-//    }
+    //    println("\nLooking for AbstractList in the humanName")
+    //    ct.nameOfId.forEach {
+    //        if (it.value.contains("AbstractList")) {
+    //            println("${it.key} ~~> ${it.value}")
+    //            println("    --- ${ct.table[it.key]}")
+    //        }
+    //    }
+    //    println("\nLooking for Cloneables in the declarations")
+    //    ct.table.forEach {
+    //        if (it.value.contains("Cloneable"))
+    //            println("${it.key} ~~> ${it.value}")
+    //    }
 }

@@ -13,6 +13,7 @@ import org.klogic.core.Var
 import org.klogic.utils.terms.LogicList
 import org.klogic.utils.terms.LogicList.Companion.logicListOf
 import org.klogic.utils.terms.logicTo
+import org.klogic.utils.terms.toPeanoLogicNumber
 import utils.JGS.*
 import utils.JGS.Closure.Closure
 import utils.JGS.Wildcard
@@ -79,7 +80,9 @@ class JGSstandard {
                 when (decl) {
                     is C -> when (decl.superClass) {
                         is Class_ -> addEdge(id, decl.superClass)
-                        is Array_ -> println("TODO ${Thread.currentThread().stackTrace[2].lineNumber}")
+                        is Array_ -> println(
+                            "TODO ${Thread.currentThread().stackTrace[2].lineNumber}")
+
                         else -> {}
                     }
 
@@ -141,7 +144,7 @@ class JGSstandard {
     fun testSingleConstraint(
         expectedResult: (CLASSTABLE) -> Collection<String>, count: Int = 10,
         boundKind: ClosureType = ClosureType.Subtyping,
-        bound: (ConvenientCT) -> Term<Jtype<ID>>, verbose: Boolean = false
+        bound: (RelationalContext, ConvenientCT) -> Term<Jtype<ID>>, verbose: Boolean = false
     ) {
         val classTable = BigCT(data.second, data.first)
         val v = Verifier(classTable)
@@ -150,25 +153,28 @@ class JGSstandard {
             val g = { q: Term<Jtype<ID>> ->
                 and(
                     only_classes_interfaces_and_arrays(q), (when (boundKind) {
-                        ClosureType.Subtyping -> JGSBackward.MakeClosure2(closureBuilder)
-                            .closure({ a, b, c, d ->
-                                v.minus_less_minus(a, b, c, d)
-                            }, q, bound(classTable))
+                    ClosureType.Subtyping -> JGSBackward.MakeClosure2(closureBuilder)
+                        .closure({ a, b, c, d ->
+                            v.minus_less_minus(a, b, c, d)
+                        }, q, bound(this, classTable))
 
-                        ClosureType.SuperTyping -> TODO()
-                    })
+                    ClosureType.SuperTyping -> JGSBackward.MakeClosure2(closureBuilder)
+                        .closure({ a, b, c, d ->
+                            v.minus_less_minus(a, b, c, d)
+                        }, bound(this, classTable), q)
+                })
                 )
             }
             val answers = run(count, g).map { it.term }.toList()
             if (verbose) answers.forEachIndexed { i, x -> println("$i: $x") }
 
-            assertEquals(count, answers.count())
             val expectedTerm = expectedResult(classTable).toCountMap()
             val pp = JtypePretty { classTable.nameOfId(it) }
             val answers2 = answers.map { pp.ppJtype(it) }
             answers2.run {
                 forEachIndexed { i, x -> println("$i : $x") }
             }
+            assertEquals(count, answers.count())
             assertEquals(expectedTerm, answers2.toCountMap())
         }
     }
@@ -201,7 +207,7 @@ class JGSstandard {
         testSingleConstraint(
             expectedResult,
             count = 5,
-            ClosureType.Subtyping, { it.object_t },
+            ClosureType.Subtyping, { _, ct -> ct.object_t },
             verbose = false
         )
     }
@@ -209,18 +215,19 @@ class JGSstandard {
     @Test
     @DisplayName("Subclasses of Iterable<Object>")
     fun test3() {
-        val expectedResult: (CLASSTABLE) -> Collection<String> = { ct ->
-            listOf( //                ct.object_t, Array_(ct.object_t), Array_(Array_(ct.object_t)), Array_(Null) as Jtype<ID>
+        val expectedResult: (CLASSTABLE) -> Collection<String> = { _ ->
+            listOf(
+                "Array<Class java.lang.Object>"
             )
         }
-        //  An operation is not implemented: Not implemented. Asked integer 7685 which is not in the table
+
         testSingleConstraint(
-            expectedResult, count = 4,
-            ClosureType.Subtyping, { ct ->
-                val humanName = "java.lang.Iterable"
-                val listID = ct.idOfName(humanName)!!
-                Class_(listID, logicListOf(Type(ct.object_t)))
-            },
+            expectedResult, count = 1,
+            ClosureType.Subtyping, { _,ct ->
+            val humanName = "java.lang.Iterable"
+            val listID = ct.idOfName(humanName)!!
+            Class_(listID, logicListOf(Type(ct.object_t)))
+        },
             verbose = false
         )
     }
@@ -228,26 +235,50 @@ class JGSstandard {
     @Test
     @DisplayName("Subclasses of java.util.AbstractList<Object>")
     fun test4() {
-        val expectedResult: (CLASSTABLE) -> Collection<String> = { ct ->
-            listOf( //                ct.object_t, Array_(ct.object_t), Array_(Array_(ct.object_t)), Array_(Null) as Jtype<ID>
+        val expectedResult: (CLASSTABLE) -> Collection<String> = { _ ->
+            listOf(
+                "Class java.util.AbstractList<Class java.lang.Object, >"
+            )
+        }
+        // In principle, we can find AbstractSequentialList, ArrayList, Vector
+        // but this classes seem not to be in the class table
+
+        testSingleConstraint(
+            expectedResult, count = 1,
+            ClosureType.Subtyping, { _, ct ->
+            val humanName = "java.util.AbstractList"
+            val listID = ct.idOfName(humanName)!!
+            Class_(listID, logicListOf(Type(ct.object_t)))
+        },
+            verbose = false
+        )
+    }
+
+    @Test
+    @DisplayName("Subclasses of Collection<V1>")
+    fun test5() {
+        val expectedResult: (CLASSTABLE) -> Collection<String> = { _ ->
+            listOf(
+                "Array<Class java.lang.Object>"
             )
         }
 
         testSingleConstraint(
-            expectedResult, count = 4,
-            ClosureType.Subtyping, { ct ->
-                val humanName = "java.util.AbstractList"
-                val listID = ct.idOfName(humanName)!!
-                Class_(listID, logicListOf(Type(ct.object_t)))
+            expectedResult, count = 2,
+            ClosureType.Subtyping, { _, ct ->
+                val humanName = "java.util.Collection"
+                val iterableID = ct.idOfName(humanName)!!
+
+                Interface(iterableID, logicListOf(Type(ct.makeTVar(0, ct.object_t))))
             },
             verbose = false
         )
     }
 
-
     interface ConvenientCT : CLASSTABLE {
         fun idOfName(name: String): ID?
         fun nameOfId(id: Int): String?
+        fun makeTVar(id: Int, upb: Term<Jtype<ID>>): Jtype<ID>
     }
 
     class BigCT : ConvenientCT {
@@ -258,19 +289,24 @@ class JGSstandard {
         }
 
         private val graph: DirectedAcyclicGraph<Int, DefaultEdge>
-        public val data: ClassesTable
+        val data: ClassesTable
         private val topId: Int
         private val objectId: Int
         private val cloneableId: Int
         private val serializableId: Int
 
+        override fun makeTVar(index: Int, upb: Term<Jtype<ID>>): Jtype<ID> {
+            val id = newId()
+            return utils.JGS.Var(id.toLogic(), index.toPeanoLogicNumber(), upb, None())
+        }
 
         override fun idOfName(name: String): ID? {
-            println("idOfName? `$name` = ${data.idOfName[name]} when there are ${data.idOfName.size}")
-            data.idOfName.forEach {
-                if (it.key.contains("Iterable"))
-                    println("\t${it.key}")
-            }
+//            println(
+//                "idOfName? `$name` = ${data.idOfName[name]} when there are ${data.idOfName.size}")
+//            data.idOfName.forEach {
+//                if (it.key.contains("Iterable"))
+//                    println("\t${it.key}")
+//            }
             return when (val d = data.idOfName[name]) {
                 null -> null
                 else -> d.toLogic()
@@ -312,23 +348,23 @@ class JGSstandard {
             serializable_t = Interface(serializableId.toLogic(), LogicList.logicListOf())
             check(ct.table.containsKey(serializableId))
 
-//            File("/tmp/out.txt").printWriter().use { out ->
-//                out.println("Big Table\n");
-//                out.println("ct.table.size = ${ct.table.size}")
-//                out.println("ct.nameOfId.size = ${ct.nameOfId.size}")
-//                val lookup = { clas: String ->
-//                    out.println("\nLooking for $clas in the nameOfID")
-//                    ct.nameOfId.forEach {
-//                        if (it.value.contains(clas)) {
-//                            check(ct.idOfName[it.value] == it.key)
-//                            out.println("${it.key} ~~> ${it.value}")
-//                            out.println("    --- ${ct.table[it.key]}")
-//                        }
-//                    }
-//                }
-//
-//                lookup("java.lang.Iterable")
-//            }
+            //            File("/tmp/out.txt").printWriter().use { out ->
+            //                out.println("Big Table\n");
+            //                out.println("ct.table.size = ${ct.table.size}")
+            //                out.println("ct.nameOfId.size = ${ct.nameOfId.size}")
+            //                val lookup = { clas: String ->
+            //                    out.println("\nLooking for $clas in the nameOfID")
+            //                    ct.nameOfId.forEach {
+            //                        if (it.value.contains(clas)) {
+            //                            check(ct.idOfName[it.value] == it.key)
+            //                            out.println("${it.key} ~~> ${it.value}")
+            //                            out.println("    --- ${ct.table[it.key]}")
+            //                        }
+            //                    }
+            //                }
+            //
+            //                lookup("java.lang.Iterable")
+            //            }
 
         }
 
@@ -357,7 +393,7 @@ class JGSstandard {
                             is Class_kind -> rez `===` C(logicListOf(), top_t, logicListOf())
                             is Interface_kind ->
                                 rez `===` I(logicListOf(), logicListOf())
-//                            failure
+                            //                            failure
                         }
 
                     }
@@ -441,7 +477,7 @@ class JGSstandard {
         ): Goal {
 
             return debugVar(subId logicTo superId, reifier = { it.reified() }) {
-//                println("get_superclass_by_id ${it.term} ~~> $rez\n")
+                //                println("get_superclass_by_id ${it.term} ~~> $rez\n")
                 freshTypedVars { answerJtyp: Term<Jtype<LogicInt>> ->
                     and(
                         rez `===` Some(answerJtyp),
