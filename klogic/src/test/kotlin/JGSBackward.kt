@@ -28,7 +28,6 @@ class JGSBackward {
     }
 
     private val unificationsTracer = UnificationListener { firstTerm, secondTerm, stateBefore, stateAfter ->
-        //if (System.getenv("SILENT_UNIFICATIONS") == null)
         val rez = if (stateAfter == null) " ~~> _|_"
         else ""
         println(
@@ -136,6 +135,7 @@ class JGSBackward {
     private fun testSingleConstraint2(
         expectedResult: (MutableClassTable) -> Collection<String>,
         count: Int = 10,
+        init: (MutableClassTable) -> Unit = { },
         @Suppress("SameParameterValue") boundKind: ClosureType = ClosureType.Subtyping,
         bound: (MutableClassTable) -> Term<Jtype<ID>>,
         @Suppress("SameParameterValue") verbose: Boolean = false
@@ -143,16 +143,14 @@ class JGSBackward {
         val classTable = DefaultCT()
         val v = Verifier(classTable)
         val closureBuilder = Closure(classTable)
+        init(classTable)
         withEmptyContext {
             val g = { q: Term<Jtype<ID>> ->
                 and(
                     only_classes_interfaces_and_arrays(q), (when (boundKind) {
                         ClosureType.Subtyping -> MakeClosure2(closureBuilder).closure({ a, b, c, d ->
                             v.minus_less_minus(
-                                a,
-                                b,
-                                c,
-                                d
+                                a, b, c, d
                             )
                         }, q, bound(classTable))
 
@@ -161,10 +159,9 @@ class JGSBackward {
                 )
             }
             val pp = JtypePretty { classTable.nameOfId(it) }
-            val answers = run(count, g).map { it.term }.toList().map {pp.ppJtype(it)}
+            val answers = run(count, g).map { it.term }.toList().map { pp.ppJtype(it) }
 
-            if (verbose)
-                answers.forEachIndexed { i, x -> println("$i: $x") }
+            if (verbose) answers.forEachIndexed { i, x -> println("$i: $x") }
 
             assertEquals(count, answers.count())
             val expectedTerm = expectedResult(classTable).toCountMap()
@@ -193,9 +190,8 @@ class JGSBackward {
                 )
             }
             val pp = JtypePretty { classTable.nameOfId(it) }
-            val answers = run(count, g).map { it.term }.toList().map {pp.ppJtype(it)}
-            if (verbose)
-                answers.forEachIndexed { i, x -> println("$i: $x") }
+            val answers = run(count, g).map { it.term }.toList().map { pp.ppJtype(it) }
+            if (verbose) answers.forEachIndexed { i, x -> println("$i: $x") }
 
             assertEquals(count, answers.count())
             val expectedTerm = expectedResult(classTable).toCountMap()
@@ -208,10 +204,10 @@ class JGSBackward {
     fun test1PP() {
         val ct = DefaultCT()
         val pp = JtypePretty { ct.nameOfId(it) }
-        assertEquals( pp.ppJtype(ct.object_t), "Class java.lang.Object")
-        assertEquals( pp.ppJtype(ct.cloneable_t), "Interface java.lang.Cloneable")
-        assertEquals( pp.ppJtype(ct.serializable_t), "Interface java.io.Serializable")
-        assertEquals( pp.ppJtype(Array_(ct.serializable_t)), "Array<Interface java.io.Serializable>")
+        assertEquals(pp.ppJtype(ct.object_t), "Class java.lang.Object")
+        assertEquals(pp.ppJtype(ct.cloneable_t), "Interface java.lang.Cloneable")
+        assertEquals(pp.ppJtype(ct.serializable_t), "Interface java.io.Serializable")
+        assertEquals(pp.ppJtype(Array_(ct.serializable_t)), "Array<Interface java.io.Serializable>")
     }
 
     @Test
@@ -223,7 +219,13 @@ class JGSBackward {
                 ct.object_t, Array_(ct.object_t), Array_(Array_(ct.object_t)), Array_(Null) as Jtype<ID>
             ).map { pp.ppJtype(it) }
         }
-        testSingleConstraint2(expectedResult, count = 4, ClosureType.Subtyping, { it.object_t }, verbose = false)
+        testSingleConstraint2(
+            expectedResult,
+            count = 4,
+            boundKind = ClosureType.Subtyping,
+            bound = { it.object_t },
+            verbose = false
+        )
     }
 
     @Test
@@ -236,7 +238,13 @@ class JGSBackward {
             ).map { pp.ppJtype(it) }
             // TODO(Kakadu): understand whey object_t is not in the answers
         }
-        testSingleConstraint2(expectedResult, count = 2, ClosureType.Subtyping, { it.cloneable_t }, verbose = false)
+        testSingleConstraint2(
+            expectedResult,
+            count = 2,
+            boundKind = ClosureType.Subtyping,
+            bound = { it.cloneable_t },
+            verbose = false
+        )
     }
 
     @Test
@@ -252,7 +260,7 @@ class JGSBackward {
         testSingleConstraint2(
             expectedResult,
             // larget count will generate answers with intersections and Vars
-            count = 1, ClosureType.Subtyping, { Array_(Array_(it.cloneable_t)) }, verbose = false
+            count = 1, boundKind = ClosureType.Subtyping, bound = { Array_(Array_(it.cloneable_t)) }, verbose = false
         )
     }
 
@@ -277,14 +285,70 @@ class JGSBackward {
             ).map { pp.ppJtype(it) }
         }
         testBinary(
-            expectedResult,
-            count = 1,
-            init = init,
-            verbose = false
+            expectedResult, count = 1, init = init, verbose = false
         ) { ctx: RelationalContext, q: Term<Jtype<ID>> ->
             { f ->
                 with(ctx) { f(b!!, a!!) and (q `===` b!!) }
             }
         }
     }
+
+    @Test
+    @DisplayName("Long test With many type arguments")
+    fun test9() {
+        var f_a_b: Term<Jtype<ID>>? = null
+        var e_d_b_a: Term<Jtype<ID>>? = null
+        val expectedResult: (MutableClassTable) -> Collection<String> = { ct ->
+            val pp = JtypePretty { ct.nameOfId(it) }
+            listOf(
+                e_d_b_a!!, f_a_b!!
+            ).map { pp.ppJtype(it) }
+        }
+
+        val init: (MutableClassTable) -> Unit = { ct ->
+            val aId = ct.addClass(logicListOf(), ct.object_t, logicListOf())
+            val a = Class_(aId.toLogic(), logicListOf())
+            ct.addName(aId, "A")
+            val bId = ct.addClass(logicListOf(), a, logicListOf())
+            val b = Class_(bId.toLogic(), logicListOf())
+            ct.addName(bId, "B")
+
+            val dId = ct.addClass(params = logicListOf(ct.object_t), ct.object_t, logicListOf())
+            val d = Class_(dId.toLogic(), logicListOf())
+            ct.addName(dId, "D")
+            val eId = ct.addClass(params = logicListOf(ct.object_t, ct.object_t), ct.object_t, logicListOf())
+            val e = Class_(eId.toLogic(), logicListOf())
+            ct.addName(eId, "E")
+            val fId = ct.addClass(
+                params = logicListOf(ct.object_t, ct.object_t),
+                superClass = Class_(
+                    eId.toLogic(), logicListOf(
+                        Type(Class_(dId.toLogic(), logicListOf(Type(ct.makeTVar(1, ct.object_t))))),
+                        Type(ct.makeTVar(0, ct.object_t))
+                    )
+                ),
+                logicListOf()
+            )
+            ct.addName(fId, "F")
+
+            f_a_b = Class_(
+                fId.toLogic(),
+                logicListOf(Type(Class_(aId.toLogic(), logicListOf())), Type(Class_(bId.toLogic(), logicListOf())))
+            )
+            e_d_b_a = Class_(
+                eId.toLogic(), logicListOf(
+                    Type(Class_(dId.toLogic(), logicListOf(Type(Class_(bId.toLogic(), logicListOf()))))),
+                    Type(Class_(aId.toLogic(), logicListOf()))
+                )
+            )
+        }
+        val query: (MutableClassTable) -> Term<Jtype<ID>> = {
+            e_d_b_a!!
+        }
+        testSingleConstraint2(
+            expectedResult,
+            init = init, count = 2, boundKind = ClosureType.Subtyping, bound = query, verbose = false
+        )
+    }
+
 }
