@@ -237,19 +237,53 @@ class JGSstandard {
     fun test4() {
         val expectedResult: (CLASSTABLE) -> Collection<String> = { _ ->
             listOf(
-                "Class java.util.AbstractList<Class java.lang.Object, >"
+                "Class java.util.AbstractList<Class java.lang.Object>"
             )
         }
         // In principle, we can find AbstractSequentialList, ArrayList, Vector
         // but this classes seem not to be in the class table
 
+        val lookup = { ct: BigCT, clas: String ->
+            println("\nLooking for $clas in the idOfName")
+            ct.data.idOfName.forEach {
+                if (it.key.contains(clas)) {
+                    println("\t${it.key} ~~> ${it.value}")
+                    println("\t\t${ct.data.table[it.value]}")
+                }
+            }
+        }
         testSingleConstraint(
-            expectedResult, count = 1,
+            expectedResult, count = 2,
             ClosureType.Subtyping, { _, ct ->
-            val humanName = "java.util.AbstractList"
-            val listID = ct.idOfName(humanName)!!
-            Class_(listID, logicListOf(Type(ct.object_t)))
-        },
+                val ct2 = ct as BigCT
+                // currently ArrayList implements 11245(java.util.List<E>)
+                // but it should be 11651(java.util.List)
+                // java.util.ArrayList
+                println("11291  = ${ct.nameOfId(11291)}\n" +
+                        "\t ${ct2.data.table[11291]}");
+                //  java.util.List<E> without declaration
+                println("11245  = ${ct.nameOfId(11245)}\n" +
+                        "\t ${ct2.data.table[11245]}");
+                //  java.util.RandomAccess without declaration
+                println("11255  = ${ct.nameOfId(11255)}\n" +
+                        "\t ${ct2.data.table[11255]}");
+
+                lookup(ct2, "java.util.List")
+                lookup(ct2, "java.util.RandomAccess") // hardcoded?
+                    // But Peter says it was present in JSON
+                lookup(ct2, "java.time.temporal.TemporalAccessor")
+                    // same as RandomAccess
+                lookup(ct2, "attribute.Attribute") // javax.print.attribute.Attribute ~~> 14424
+                lookup(ct2, "java.lang.Iterable") // declaration 9175
+                lookup(ct2, "java.util.Collection")
+                    // declaration  11341
+                    // extends 11340 which <> 9175 BUG?
+
+
+                val humanName = "java.util.AbstractList"
+                val listID = ct.idOfName(humanName)!!
+                Class_(listID, logicListOf(Type(ct.object_t)))
+            },
             verbose = false
         )
     }
@@ -269,7 +303,7 @@ class JGSstandard {
                 val humanName = "java.util.Collection"
                 val iterableID = ct.idOfName(humanName)!!
 
-                Interface(iterableID, logicListOf(Type(ct.makeTVar(0, ct.object_t))))
+                Interface(iterableID, logicListOf( Type(ct.makeTVar(0, ct.object_t))))
             },
             verbose = false
         )
@@ -304,8 +338,8 @@ class JGSstandard {
 //            println(
 //                "idOfName? `$name` = ${data.idOfName[name]} when there are ${data.idOfName.size}")
 //            data.idOfName.forEach {
-//                if (it.key.contains("Iterable"))
-//                    println("\t${it.key}")
+//                if (it.key.contains("ArrayList"))
+//                    println("\t${it.key} ~~> ${it.value}")
 //            }
             return when (val d = data.idOfName[name]) {
                 null -> null

@@ -59,9 +59,11 @@ class JtypePretty(val getName: (Int) -> String?) {
                             is LogicList -> {
                                 if (t.args.toList().isNotEmpty()) {
                                     b.append("<")
-                                    t.args.toList().forEach { this.ppJarg(it, b); b.append(", ") }
+                                    t.args.toList().forEachIndexed { i, it ->
+                                        if (i!=0) b.append(", ")
+                                        this.ppJarg(it, b)
+                                    }
                                     b.append(">")
-
                                 }
                             }
                             else -> {
@@ -91,7 +93,10 @@ class JtypePretty(val getName: (Int) -> String?) {
                             is LogicList -> {
                                 if (t.args.toList().isNotEmpty()) {
                                     b.append("<")
-                                    t.args.toList().forEach { this.ppJarg(it, b); b.append(", ") }
+                                    t.args.toList().forEachIndexed { i, it ->
+                                        if (i!=0) b.append(", ")
+                                        this.ppJarg(it, b)
+                                    }
                                     b.append(">")
                                 }
                             }
@@ -109,7 +114,7 @@ class JtypePretty(val getName: (Int) -> String?) {
                     }
 
                     else -> {
-                        b.append("/*TODO*/", t, t.javaClass)
+                        b.append("/*TODO 2 */", t)
                         Unit
                     }
                 }

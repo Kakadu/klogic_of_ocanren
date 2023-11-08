@@ -33,6 +33,8 @@ interface MutableClassTable : CLASSTABLE {
     fun addName(id: Int, name: String)
     fun nameOfId(id: Int): String?
     fun idOfName(name: String): Int?
+    fun makeClass(id: Int, args: LogicList<Jarg<Jtype<ID>>>): Term<Jtype<ID>>
+    fun makeInterface(id: Int, args: LogicList<Jarg<Jtype<ID>>>): Term<Jtype<ID>>
 }
 
 class DefaultCT : MutableClassTable {
@@ -97,6 +99,17 @@ class DefaultCT : MutableClassTable {
     override fun makeTVar(index: Int, upb: Term<Jtype<ID>>): Jtype<ID> {
         val id = newId()
         return utils.JGS.Var(id.toLogic(), index.toPeanoLogicNumber(), upb, None())
+    }
+
+    override fun makeClass(id: Int, args: LogicList<Jarg<Jtype<ID>>>): Term<Jtype<ID>> {
+        assert(data.containsKey(id))
+        assert(data[id] is C)
+        return Class_(id.toLogic(), args)
+    }
+    override fun makeInterface(id: Int, args: LogicList<Jarg<Jtype<ID>>>): Term<Jtype<ID>> {
+        assert(data.containsKey(id))
+        assert(data[id] is I)
+        return Interface(id.toLogic(), args)
     }
 
     override fun addName(id: Int, name: String) {
