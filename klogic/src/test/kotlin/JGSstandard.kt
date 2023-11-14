@@ -10,6 +10,8 @@ import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.klogic.core.*
 import org.klogic.core.Var
+import org.klogic.utils.computing.Closure
+import org.klogic.utils.terms.LogicBool
 import org.klogic.utils.terms.LogicList
 import org.klogic.utils.terms.LogicList.Companion.logicListOf
 import org.klogic.utils.terms.logicTo
@@ -81,7 +83,8 @@ class JGSstandard {
                     is C -> when (decl.superClass) {
                         is Class_ -> addEdge(id, decl.superClass)
                         is Array_ -> println(
-                            "TODO ${Thread.currentThread().stackTrace[2].lineNumber}")
+                            "TODO ${Thread.currentThread().stackTrace[2].lineNumber}"
+                        )
 
                         else -> {}
                     }
@@ -153,16 +156,16 @@ class JGSstandard {
             val g = { q: Term<Jtype<ID>> ->
                 and(
                     only_classes_interfaces_and_arrays(q), (when (boundKind) {
-                    ClosureType.Subtyping -> JGSBackward.MakeClosure2(closureBuilder)
-                        .closure({ a, b, c, d ->
-                            v.minus_less_minus(a, b, c, d)
-                        }, q, bound(this, classTable))
+                        ClosureType.Subtyping -> JGSBackward.MakeClosure2(closureBuilder)
+                            .closure({ a, b, c, d ->
+                                v.minus_less_minus(a, b, c, d)
+                            }, q, bound(this, classTable))
 
-                    ClosureType.SuperTyping -> JGSBackward.MakeClosure2(closureBuilder)
-                        .closure({ a, b, c, d ->
-                            v.minus_less_minus(a, b, c, d)
-                        }, bound(this, classTable), q)
-                })
+                        ClosureType.SuperTyping -> JGSBackward.MakeClosure2(closureBuilder)
+                            .closure({ a, b, c, d ->
+                                v.minus_less_minus(a, b, c, d)
+                            }, bound(this, classTable), q)
+                    })
                 )
             }
             val answers = run(count, g).map { it.term }.toList()
@@ -172,7 +175,59 @@ class JGSstandard {
             val pp = JtypePretty { classTable.nameOfId(it) }
             val answers2 = answers.map { pp.ppJtype(it) }
             answers2.run {
-                forEachIndexed { i, x -> println("$i : $x") }
+                forEachIndexed { i, x -> println("//$i\n\"$x\",") }
+            }
+            assertEquals(count, answers.count())
+            assertEquals(expectedTerm, answers2.toCountMap())
+        }
+    }
+
+
+    fun testManyConstraints(
+        expectedResult: (CLASSTABLE) -> Collection<String>,
+        count: Int = 10,
+        verbose: Boolean,
+        bounds:
+            (RelationalContext, ConvenientCT) -> Collection<Pair<ClosureType, Term<Jtype<ID>>>>
+    ) {
+        val classTable = BigCT(data.second, data.first)
+        val v = Verifier(classTable)
+        val closureBuilder = Closure(classTable)
+
+        withEmptyContext {
+            val (subs, supers) = bounds(this, classTable).partition {
+                when (it.first) {
+                    ClosureType.Subtyping -> true
+                    ClosureType.SuperTyping -> false
+                }
+            }
+            val g = { q: Term<Jtype<ID>> ->
+                val direct: (v29: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal, v30: Term<Jtype<LogicInt>>, v31: Term<Jtype<LogicInt>>, v32: Term<LogicBool>) -> (State) -> RecursiveStream<State> =
+                    { a, b, c, d ->
+                        v.minus_less_minus(a, b, c, d)
+                    }
+                and(
+                    only_classes_interfaces_and_arrays(q),
+                    supers.fold(success) { acc, (_, bound) ->
+                        acc and
+                                JGSBackward.MakeClosure2(closureBuilder)
+                                    .closure(direct, bound, q)
+                    },
+                    subs.fold(success) { acc, (_, bound) ->
+                        acc and
+                                JGSBackward.MakeClosure2(closureBuilder)
+                                    .closure(direct, q, bound)
+                    },
+                )
+            }
+            val answers = run(count, g).map { it.term }.toList()
+            if (verbose) answers.forEachIndexed { i, x -> println("$i: $x") }
+
+            val expectedTerm = expectedResult(classTable).toCountMap()
+            val pp = JtypePretty { classTable.nameOfId(it) }
+            val answers2 = answers.map { pp.ppJtype(it) }
+            answers2.run {
+                forEachIndexed { i, x -> println("//$i\n\"$x\",") }
             }
             assertEquals(count, answers.count())
             assertEquals(expectedTerm, answers2.toCountMap())
@@ -223,11 +278,11 @@ class JGSstandard {
 
         testSingleConstraint(
             expectedResult, count = 1,
-            ClosureType.Subtyping, { _,ct ->
-            val humanName = "java.lang.Iterable"
-            val listID = ct.idOfName(humanName)!!
-            Class_(listID, logicListOf(Type(ct.object_t)))
-        },
+            ClosureType.Subtyping, { _, ct ->
+                val humanName = "java.lang.Iterable"
+                val listID = ct.idOfName(humanName)!!
+                Class_(listID, logicListOf(Type(ct.object_t)))
+            },
             verbose = false
         )
     }
@@ -308,7 +363,7 @@ class JGSstandard {
                 val humanName = "java.util.Collection"
                 val iterableID = ct.idOfName(humanName)!!
 
-                Interface(iterableID, logicListOf( Type(ct.makeTVar(0, ct.object_t))))
+                Interface(iterableID, logicListOf(Type(ct.makeTVar(0, ct.object_t))))
             },
             verbose = false
         )
@@ -333,8 +388,94 @@ class JGSstandard {
         )
     }
 
-    // TODO
-    // Collection<E> & Iterable<E>
+    @Test
+    @DisplayName("Conj of constraints ")
+    fun test7() {
+        val expectedResult: (CLASSTABLE) -> Collection<String> = { _ ->
+            listOf(
+                //0
+                "Interface java.util.Collection</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+//1
+                "Class java.util.concurrent.ConcurrentHashMap\$ValuesView</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), _.?>",
+//2
+                "Class java.util.concurrent.ConcurrentHashMap\$CollectionView</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), _.?, _.?>",
+//3
+                "Interface java.util.Set</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+//4
+                "Interface java.util.Queue</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+//5
+                "Interface java.util.List</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+//6
+                "Class java.util.Collections\$UnmodifiableCollection</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+//7
+                "Class java.util.Collections\$SynchronizedCollection</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+//8
+                "Class java.util.Collections\$CheckedCollection</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+//9
+                "Class java.util.AbstractCollection</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+//10
+                "Class java.util.concurrent.ConcurrentHashMap\$EntrySetView</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), _.?>",
+//11
+                "Class javax.security.auth.Subject\$SecureSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+//12
+                "Class java.util.concurrent.ConcurrentHashMap\$KeySetView</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), _.?>",
+//13
+                "Interface java.util.SortedSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+//14
+                "Class java.util.ImmutableCollections\$AbstractImmutableSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+//15
+                "Class java.util.LinkedHashSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+//16
+                "Class java.util.ImmutableCollections\$AbstractImmutableSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+//17
+                "Class java.util.LinkedHashSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+//18
+                "Class java.util.LinkedHashSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+//19
+                "Class java.util.LinkedHashSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+            )
+        }
+
+        testManyConstraints(
+            expectedResult, count = 20,
+            verbose = false
+        ) { _, ct ->
+            val iterableID = ct.idOfName("java.lang.Iterable")!!
+            val collectionID = ct.idOfName("java.util.Collection")!!
+            val v1 = Type(ct.makeTVar(0, ct.object_t))
+            listOf(
+                ClosureType.Subtyping to Interface(iterableID, logicListOf(v1)),
+                ClosureType.Subtyping to Interface(collectionID, logicListOf(v1)),
+            )
+        }
+    }
+
+    @Test
+    @DisplayName("Conj of upper and lower bound")
+    fun test8() {
+        val expectedResult: (CLASSTABLE) -> Collection<String> = { _ ->
+            listOf(
+//0
+                "Class javax.management.AttributeList",
+//1
+                "Class java.util.ArrayList<Class java.lang.Object>",
+//2
+                "Interface java.util.RandomAccess",
+            )
+        }
+
+        testManyConstraints(
+            expectedResult, count = 3,
+            verbose = false
+        ) { _, ct ->
+            val attrListID = ct.idOfName("javax.management.AttributeList")!!
+            val randAccID = ct.idOfName("java.util.RandomAccess")!!
+            listOf(
+                ClosureType.SuperTyping to Class_(attrListID, logicListOf()),
+                ClosureType.Subtyping to Interface(randAccID, logicListOf()),
+            )
+        }
+    }
 
     interface ConvenientCT : CLASSTABLE {
         fun idOfName(name: String): ID?
