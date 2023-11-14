@@ -237,7 +237,11 @@ class JGSstandard {
     fun test4() {
         val expectedResult: (CLASSTABLE) -> Collection<String> = { _ ->
             listOf(
-                "Class java.util.AbstractList<Class java.lang.Object>"
+                "Class java.util.AbstractList<Class java.lang.Object>",
+                "Class sun.awt.util.IdentityArrayList<Class java.lang.Object>",
+                "Class java.util.Vector<Class java.lang.Object>",
+                "Class java.util.Collections\$SingletonList<Class java.lang.Object>",
+                "Class java.util.Collections\$EmptyList<Class java.lang.Object>"
             )
         }
         // In principle, we can find AbstractSequentialList, ArrayList, Vector
@@ -253,31 +257,31 @@ class JGSstandard {
             }
         }
         testSingleConstraint(
-            expectedResult, count = 2,
+            expectedResult, count = 35,
             ClosureType.Subtyping, { _, ct ->
                 val ct2 = ct as BigCT
                 // currently ArrayList implements 11245(java.util.List<E>)
                 // but it should be 11651(java.util.List)
                 // java.util.ArrayList
-                println("11291  = ${ct.nameOfId(11291)}\n" +
-                        "\t ${ct2.data.table[11291]}");
-                //  java.util.List<E> without declaration
-                println("11245  = ${ct.nameOfId(11245)}\n" +
-                        "\t ${ct2.data.table[11245]}");
-                //  java.util.RandomAccess without declaration
-                println("11255  = ${ct.nameOfId(11255)}\n" +
-                        "\t ${ct2.data.table[11255]}");
+//                println("11291  = ${ct.nameOfId(11291)}\n" +
+//                        "\t ${ct2.data.table[11291]}");
+//                //  java.util.List<E> without declaration
+//                println("11245  = ${ct.nameOfId(11245)}\n" +
+//                        "\t ${ct2.data.table[11245]}");
+//                //  java.util.RandomAccess without declaration
+//                println("11255  = ${ct.nameOfId(11255)}\n" +
+//                        "\t ${ct2.data.table[11255]}");
 
-                lookup(ct2, "java.util.List")
-                lookup(ct2, "java.util.RandomAccess") // hardcoded?
-                    // But Peter says it was present in JSON
-                lookup(ct2, "java.time.temporal.TemporalAccessor")
-                    // same as RandomAccess
-                lookup(ct2, "attribute.Attribute") // javax.print.attribute.Attribute ~~> 14424
-                lookup(ct2, "java.lang.Iterable") // declaration 9175
-                lookup(ct2, "java.util.Collection")
-                    // declaration  11341
-                    // extends 11340 which <> 9175 BUG?
+//                lookup(ct2, "java.util.List")
+//                lookup(ct2, "java.util.RandomAccess") // hardcoded?
+//                    // But Peter says it was present in JSON
+//                lookup(ct2, "java.time.temporal.TemporalAccessor")
+//                    // same as RandomAccess
+//                lookup(ct2, "attribute.Attribute") // javax.print.attribute.Attribute ~~> 14424
+//                lookup(ct2, "java.lang.Iterable") // declaration 9175
+//                lookup(ct2, "java.util.Collection")
+//                    // declaration  11341
+//                    // extends 11340 which <> 9175 BUG?
 
 
                 val humanName = "java.util.AbstractList"
@@ -293,7 +297,8 @@ class JGSstandard {
     fun test5() {
         val expectedResult: (CLASSTABLE) -> Collection<String> = { _ ->
             listOf(
-                "Array<Class java.lang.Object>"
+                "Interface java.util.Collection</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                "Class java.util.concurrent.ConcurrentHashMap\$ValuesView</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), _.?>"
             )
         }
 
@@ -308,6 +313,28 @@ class JGSstandard {
             verbose = false
         )
     }
+
+    @Test
+    @DisplayName("Super classes of javax.management.AttributeList")
+    fun test6() {
+        val expectedResult: (CLASSTABLE) -> Collection<String> = { _ ->
+            listOf(
+            )
+        }
+
+        testSingleConstraint(
+            expectedResult, count = 20,
+            ClosureType.SuperTyping, { _, ct ->
+                val humanName = "javax.management.AttributeList"
+                val iterableID = ct.idOfName(humanName)!!
+                Class_(iterableID, logicListOf())
+            },
+            verbose = false
+        )
+    }
+
+    // TODO
+    // Collection<E> & Iterable<E>
 
     interface ConvenientCT : CLASSTABLE {
         fun idOfName(name: String): ID?

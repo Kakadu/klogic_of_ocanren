@@ -67,23 +67,21 @@ data class ClassesTable(
 
     private var lastID = 10
     private fun JcClassOrInterface.mkId(name: String, kind: Jtype_kind): Int {
+        assert(!name.contains('<'))
         return if (idOfName.containsKey(name)) {
             val id = idOfName[name]!!
             check(kindOfId[id] == kind) {
-                "FUCK  $id"
+                "FUCK  $id. kind =  $kind, expectedKind = ${kindOfId[id]}"
             }
             idOfName[name]!!
         } else {
             lastID++;
-            if (lastID == 10027)
-                print("")
-            if (name.contains("<"))
-                print("")
+//            if (lastID == 10027)
+//                print("")
+//            if (name.contains("<"))
+//                print("")
             addName(name, lastID)
             kindOfId[lastID] = kind
-
-            if (lastID == 157)
-                print("")
             lastID
         }
     }
@@ -107,18 +105,25 @@ data class ClassesTable(
             )
         }
         val name = this.name
-        if (idOfName.containsKey(name)) return
+
+        if (idOfName.containsKey(name) && table.containsKey(idOfName[name]!!)) {
+            // We have already visited this type
+            return
+        }
         else {
             val kind = if (this.isInterface) Interface_kind else Class_kind
-            val id = mkId(name, kind)
+            val id = // TODO: only else is needed
+                if (idOfName[name] != null) idOfName[name]!! else mkId(name, kind)
+
             //            if (table.containsKey(id)) {
             //                println("Current value: ${table[id]} with name = ${}")
             //                println("New value: ${decl}")
             //                checkt(!table.containsKey(id)) { String.format("Duplicate ID generated: $id") }
             //            }
             table[id] = decl
-            check(idOfName[name] == id)
-            //            if (id == 7671) println("$id ~~> $decl")
+            check(idOfName[name] == id){
+                "FUCK"
+            }
             table.containsKey(id)
         }
     }
@@ -128,11 +133,8 @@ data class ClassesTable(
             param.toJvmTypeArgument(index, classpath, depth + 1)
         }.toLogicList()
 
-        //        if (this.typeName.contains("<"))
-        //            error("Class names should not contains '<': ${this.typeName}")
-
         val kind = if (jcClass.isInterface) Interface_kind else Class_kind
-        val id = jcClass.mkId(this.typeName, kind)
+        val id = jcClass.mkId(this.jcClass.name, kind)
         return if (jcClass.isInterface) Interface(id.toLogic(), typeParams)
         else Class_(id.toLogic(), typeParams)
     }
@@ -243,7 +245,8 @@ data class ClassesTable(
             "java.lang.Cloneable" -> Interface(1.toLogic(), typeParams)
             "java.io.Serializable" -> Interface(2.toLogic(), typeParams)
             else -> {
-                val id: Int = mkId(name, Class_kind)
+                val kind = if (this.isInterface) Interface_kind else Class_kind
+                val id: Int = mkId(this.javaClass.name, kind)
                 if (id == 10015)
                     println("FUCK")
 
