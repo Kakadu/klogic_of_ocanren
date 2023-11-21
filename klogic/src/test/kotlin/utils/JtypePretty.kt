@@ -51,7 +51,7 @@ class JtypePretty(val getName: (Int) -> String?) {
                                     getName(id)!!
                                 }
                                 else -> "FUCK"
-                            }
+                            }.replace("$", "\$")
 
                         b.append("Class $name")
 
@@ -86,7 +86,7 @@ class JtypePretty(val getName: (Int) -> String?) {
                                 }
 
                                 else ->  "FUCK"
-                            }
+                            }.replace("$", "\$")
 
                         b.append("Interface $name")
                         when (t.args) {
