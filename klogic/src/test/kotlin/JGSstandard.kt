@@ -15,15 +15,14 @@ import org.klogic.utils.terms.LogicList
 import org.klogic.utils.terms.LogicList.Companion.logicListOf
 import org.klogic.utils.terms.logicTo
 import org.klogic.utils.terms.toPeanoLogicNumber
+import utils.*
 import utils.JGS.*
 import utils.JGS.Closure.Closure
 import utils.JGS.Wildcard
-import utils.JtypePretty
-import utils.LogicInt
 import utils.LogicInt.Companion.toLogic
-import utils.LogicOption
-import utils.Some
 import utils.freshTypedVars
+import kotlin.time.ExperimentalTime
+import kotlin.time.TimeSource
 
 class JGSstandard {
     companion object {
@@ -180,6 +179,40 @@ class JGSstandard {
         }
     }
 
+    fun <T: Term<T>> iterKlogicStream(query: (Term<T>) -> Goal, n: Int, before: (Int) -> Unit, after: (Int) -> Unit)
+            : List<ReifiedTerm<T>> {
+        val q = freshTypedVar<T>()
+        var stream = query(q)(State.empty)
+        var i = 0
+        val answers = mutableListOf<ReifiedTerm<T>>()
+        while (i < n) {
+            before(i)
+            var rez = stream.msplit()
+            after(i)
+            if (rez == null)
+                break
+            else {
+                i++
+                stream = rez.second
+                answers.add(rez.first.reify(q))
+            }
+        }
+        return answers
+    }
+
+    @OptIn(ExperimentalTime::class)
+    fun <T: Term<T>> iterAndMeasure(query: (Term<T>) -> Goal, n: Int)
+            : List<Pair< ReifiedTerm<T>, Long>> {
+
+        var updatedTimeMark = TimeSource.Monotonic.markNow()
+        val timings = mutableListOf<Long>()
+        val answers =
+            iterKlogicStream(query, n, before = { updatedTimeMark = TimeSource.Monotonic.markNow() }) {
+                timings += ( TimeSource.Monotonic.markNow() - updatedTimeMark).inWholeMilliseconds
+            }
+        assert(answers.count() == timings.count())
+        return answers.zip(timings.reversed()) { l, r -> l to r }
+    }
 
     private fun testManyConstraints(
         expectedResult: (CLASSTABLE) -> Collection<String>,
@@ -218,12 +251,14 @@ class JGSstandard {
                     },
                 )
             }
-            val answers = run(count, g).map { it.term }.toList()
+            val answers =
+                iterAndMeasure(g, count).map { p -> p.first.term to p.second }.toList()
+
             if (verbose) answers.forEachIndexed { i, x -> println("$i: $x") }
 
             val expectedTerm = expectedResult(classTable).toCountMap()
             val pp = JtypePretty { classTable.nameOfId(it) }
-            val answers2 = answers.map { pp.ppJtype(it) }
+            val answers2 = answers.map { pp.ppJtype(it.first) }
             answers2.run {
                 forEachIndexed { i, x -> println("//$i\n\"$x\",") }
             }
