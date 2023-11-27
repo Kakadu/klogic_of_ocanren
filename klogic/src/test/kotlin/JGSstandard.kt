@@ -178,7 +178,7 @@ class JGSstandard {
             assertEquals(expectedTerm, answers2.toCountMap())
         }
     }
-
+    /*
     fun <T: Term<T>> iterKlogicStream(query: (Term<T>) -> Goal, n: Int, before: (Int) -> Unit, after: (Int) -> Unit)
             : List<ReifiedTerm<T>> {
         val q = freshTypedVar<T>()
@@ -187,7 +187,7 @@ class JGSstandard {
         val answers = mutableListOf<ReifiedTerm<T>>()
         while (i < n) {
             before(i)
-            var rez = stream.msplit()
+            var rez = stream.msplit() // gives stack overflow somewher
             after(i)
             if (rez == null)
                 break
@@ -213,7 +213,9 @@ class JGSstandard {
         assert(answers.count() == timings.count())
         return answers.zip(timings.reversed()) { l, r -> l to r }
     }
+    */
 
+    @OptIn(ExperimentalTime::class)
     private fun testManyConstraints(
         expectedResult: (CLASSTABLE) -> Collection<String>,
         count: Int = 10,
@@ -251,14 +253,24 @@ class JGSstandard {
                     },
                 )
             }
-            val answers =
-                iterAndMeasure(g, count).map { p -> p.first.term to p.second }.toList()
+
+//            val answers =
+//                    iterAndMeasure(g, count).map { p -> p.first.term to p.second }.toList()
+            var answerStartTimeMark = TimeSource.Monotonic.markNow()
+//
+            val elementConsumer: State.() -> Unit = {
+                val nextMark = TimeSource.Monotonic.markNow()
+                val delta = (nextMark - answerStartTimeMark).inWholeMilliseconds
+                answerStartTimeMark = nextMark
+                println("... in $delta ms")
+            }
+            val answers = run(count, g, elementConsumer=elementConsumer).map { p -> p.term }.toList()
 
             if (verbose) answers.forEachIndexed { i, x -> println("$i: $x") }
 
             val expectedTerm = expectedResult(classTable).toCountMap()
             val pp = JtypePretty { classTable.nameOfId(it) }
-            val answers2 = answers.map { pp.ppJtype(it.first) }
+            val answers2 = answers.map { pp.ppJtype(it) }
             answers2.run {
                 forEachIndexed { i, x -> println("//$i\n\"$x\",") }
             }
@@ -590,30 +602,7 @@ class JGSstandard {
         fun makeInterface(id: Int, args: LogicList<Jarg<Jtype<ID>>>): Term<Jtype<ID>>
     }
 
-    class BigCT//            top = Class_<ID>(0.toLogic(), LogicList.logicListOf());
-    //            addClass(LogicList.logicListOf(), top, LogicList.logicListOf())
-    //            lastId = 0;
-
-    // TODO: add assertions that hardcoded classes correspond to class table
-
-    //            File("/tmp/out.txt").printWriter().use { out ->
-    //                out.println("Big Table\n");
-    //                out.println("ct.table.size = ${ct.table.size}")
-    //                out.println("ct.nameOfId.size = ${ct.nameOfId.size}")
-    //                val lookup = { clas: String ->
-    //                    out.println("\nLooking for $clas in the nameOfID")
-    //                    ct.nameOfId.forEach {
-    //                        if (it.value.contains(clas)) {
-    //                            check(ct.idOfName[it.value] == it.key)
-    //                            out.println("${it.key} ~~> ${it.value}")
-    //                            out.println("    --- ${ct.table[it.key]}")
-    //                        }
-    //                    }
-    //                }
-    //
-    //                lookup("java.lang.Iterable")
-    //            }
-        (g: DirectedAcyclicGraph<Int, DefaultEdge>, ct: ClassesTable) : ConvenientCT {
+    class BigCT(g: DirectedAcyclicGraph<Int, DefaultEdge>, ct: ClassesTable) : ConvenientCT {
         private var lastId: Int = 0
         private fun newId(): Int {
             lastId++
@@ -644,12 +633,6 @@ class JGSstandard {
         }
 
         override fun idOfName(name: String): Int? {
-//            println(
-//                "idOfName? `$name` = ${data.idOfName[name]} when there are ${data.idOfName.size}")
-//            data.idOfName.forEach {
-//                if (it.key.contains("ArrayList"))
-//                    println("\t${it.key} ~~> ${it.value}")
-//            }
             return when (val d = data.idOfName[name]) {
                 null -> null
                 else -> d

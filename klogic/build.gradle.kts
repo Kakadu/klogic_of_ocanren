@@ -21,10 +21,16 @@ dependencies {
 //    testImplementation("com.github.UnitTestBot.klogic:klogic-core:0.2.1") // core
 //    testImplementation("com.github.UnitTestBot.klogic:klogic-utils:0.2.1") // util terms
 //     Pin klogic commit with wildcards
+//    testImplementation(
+//            "com.github.UnitTestBot.klogic:klogic-core:df988d091aa17312f9a488ed0705ab0c87d89d28") // core
+//    testImplementation(
+//            "com.github.UnitTestBot.klogic:klogic-utils:df988d091aa17312f9a488ed0705ab0c87d89d28") // util terms
     testImplementation(
-            "com.github.UnitTestBot.klogic:klogic-core:df988d091aa17312f9a488ed0705ab0c87d89d28") // core
+            "com.github.UnitTestBot.klogic:klogic-core:be4fc88b0c5522906470a71755cfa2efa63881ea") // core
     testImplementation(
-            "com.github.UnitTestBot.klogic:klogic-utils:df988d091aa17312f9a488ed0705ab0c87d89d28") // util terms
+            "com.github.UnitTestBot.klogic:klogic-utils:be4fc88b0c5522906470a71755cfa2efa63881ea") // util terms
+
+
 
     implementation("org.jacodb:jacodb-core:1.3.1")
     implementation("org.jacodb:jacodb-analysis:1.3.1")
