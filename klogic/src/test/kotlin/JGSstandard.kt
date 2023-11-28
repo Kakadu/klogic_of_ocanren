@@ -1,4 +1,4 @@
-@file:Suppress("SpellCheckingInspection")
+@file:Suppress("SpellCheckingInspection", "MUST_BE_INITIALIZED_OR_FINAL_OR_ABSTRACT_WARNING")
 
 import JGSBackward.ClosureType
 import org.jgrapht.graph.DefaultEdge
@@ -10,11 +10,8 @@ import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.klogic.core.*
 import org.klogic.core.Var
-import org.klogic.utils.terms.LogicBool
-import org.klogic.utils.terms.LogicList
+import org.klogic.utils.terms.*
 import org.klogic.utils.terms.LogicList.Companion.logicListOf
-import org.klogic.utils.terms.logicTo
-import org.klogic.utils.terms.toPeanoLogicNumber
 import utils.*
 import utils.JGS.*
 import utils.JGS.Closure.Closure
@@ -510,47 +507,46 @@ class JGSstandard {
     fun test7() {
         val expectedResult: (CLASSTABLE) -> Collection<String> = { _ ->
             listOf(
-                //0
-                "Interface java.util.Collection</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+//0
+                    "Interface java.util.Collection</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
 //1
-                "Class java.util.concurrent.ConcurrentHashMap\$ValuesView</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), _.?>",
+                    "Class java.util.concurrent.ConcurrentHashMap\$ValuesView</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), _.?>",
 //2
-                "Class java.util.concurrent.ConcurrentHashMap\$CollectionView</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), _.?, _.?>",
+                    "Interface java.util.Set</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
 //3
-                "Interface java.util.Set</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Class java.util.concurrent.ConcurrentHashMap\$CollectionView</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), _.?, _.?>",
 //4
-                "Interface java.util.Queue</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Interface java.util.Queue</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
 //5
-                "Interface java.util.List</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Class java.util.Collections\$UnmodifiableCollection</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
 //6
-                "Class java.util.Collections\$UnmodifiableCollection</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Interface java.util.List</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
 //7
-                "Class java.util.Collections\$SynchronizedCollection</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Class java.util.Collections\$SynchronizedCollection</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
 //8
-                "Class java.util.Collections\$CheckedCollection</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Class java.util.Collections\$CheckedCollection</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
 //9
-                "Class java.util.AbstractCollection</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Class java.util.AbstractCollection</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
 //10
-                "Class java.util.concurrent.ConcurrentHashMap\$EntrySetView</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), _.?>",
+                    "Class javax.security.auth.Subject\$SecureSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
 //11
-                "Class javax.security.auth.Subject\$SecureSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Interface java.util.SortedSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
 //12
-                "Class java.util.concurrent.ConcurrentHashMap\$KeySetView</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), _.?>",
+                    "Class java.util.concurrent.ConcurrentHashMap\$KeySetView</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), _.?>",
 //13
-                "Interface java.util.SortedSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Class java.util.LinkedHashSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
 //14
-                "Class java.util.ImmutableCollections\$AbstractImmutableSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Class java.util.LinkedHashSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
 //15
-                "Class java.util.LinkedHashSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Class java.util.ImmutableCollections\$AbstractImmutableSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
 //16
-                "Class java.util.ImmutableCollections\$AbstractImmutableSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Class java.util.LinkedHashSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
 //17
-                "Class java.util.LinkedHashSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Class java.util.LinkedHashSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
 //18
-                "Class java.util.LinkedHashSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Class java.util.ImmutableCollections\$AbstractImmutableSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
 //19
-                "Class java.util.LinkedHashSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
-            )
+                    "Class java.util.HashSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",  )
         }
 
         testManyConstraints(
@@ -648,6 +644,10 @@ class JGSstandard {
         override val cloneable_t: Term<Jtype<ID>>
         override val serializable_t: Term<Jtype<ID>>
 
+        // superID -> (subID * subKind * superJtype) list
+        private val subClassMap: MutableMap<Int, MutableList<Triple<ID, Jtype_kind, Jtype<ID>>> >
+            = mutableMapOf()
+
         init {
             check(ct.table.isNotEmpty())
             check(ct.idOfName.isNotEmpty())
@@ -664,6 +664,22 @@ class JGSstandard {
             check(serializableId == 3)
             serializable_t = Interface(serializableId.toLogic(), logicListOf())
             check(ct.table.containsKey(serializableId))
+
+            for ( (typId, decl) in data.table) {
+                val pars = parents(decl)
+                for (par in pars) {
+                    val id0  = when (par) {
+                        is Class_ -> par.id
+                        is Interface -> par.id
+                        else -> TODO("Fuck you, Kotlin")
+                    }
+                    val id = (id0 as LogicInt).n
+
+                    if (!(subClassMap.containsKey(id)))
+                        subClassMap[id] = mutableListOf()
+                    subClassMap[id]!!.add(Triple(typId.toLogic(), decl.getKind(), par))
+                }
+            }
         }
 
         context(RelationalContext) override fun new_var(): Term<LogicInt> {
@@ -701,6 +717,30 @@ class JGSstandard {
             }
         }
 
+        private fun parents(it: Decl<ID>): List<Jtype<ID>> =
+            when (it) {
+                is I -> when (it.supers) {
+                    is LogicList<Jtype<ID>> -> it.supers.toList().map { it as Jtype<ID> }
+
+                    is UnboundedValue -> TODO("Should not be reachable")
+                    else -> TODO("Should not be reachable 100%")
+                }
+
+                is C -> when (it.supers) {
+                    is LogicList<Jtype<ID>> -> it.supers.toList().map { it as Jtype<ID> }
+
+                    is Var -> TODO("")
+                    is Wildcard<*> -> TODO("Should not be reachable")
+                    else -> TODO("Should not be reachable 100%")
+                } + when (it.superClass) {
+                    is Jtype<ID> -> listOf(it.superClass)
+
+                    is Var -> TODO("")
+                    is Wildcard<*> -> TODO("Should not be reachable")
+                    else -> TODO("Should not be reachable 100%")
+                }
+            }
+
         context(RelationalContext)
         private fun getSuperclassByIdFreeFree(
             subId: Term<LogicInt>,
@@ -709,30 +749,6 @@ class JGSstandard {
             superKind: Term<Jtype_kind>,
             rez: Term<Jtype<LogicInt>>
         ): Goal {
-            val parents: (Decl<ID>) -> List<Jtype<ID>> = { it ->
-                when (it) {
-                    is I -> when (it.supers) {
-                        is LogicList<Jtype<ID>> -> it.supers.toList().map { it as Jtype<ID> }
-
-                        is UnboundedValue -> TODO("Should not be reachable")
-                        else -> TODO("Should not be reachable 100%")
-                    }
-
-                    is C -> when (it.supers) {
-                        is LogicList<Jtype<ID>> -> it.supers.toList().map { it as Jtype<ID> }
-
-                        is Var -> TODO("")
-                        is Wildcard<*> -> TODO("Should not be reachable")
-                        else -> TODO("Should not be reachable 100%")
-                    } + when (it.superClass) {
-                        is Jtype<ID> -> listOf(it.superClass)
-
-                        is Var -> TODO("")
-                        is Wildcard<*> -> TODO("Should not be reachable")
-                        else -> TODO("Should not be reachable 100%")
-                    }
-                }
-            }
             return data.table.entries.fold(failure) { acc, entry ->
                 val curId = entry.key
                 if (curId == objectId) acc
@@ -764,7 +780,45 @@ class JGSstandard {
             }
         }
 
-        context(RelationalContext) @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
+        sealed class Classify
+        data class GroundGround(val subId: Int, val superId: Int): Classify()
+        data class GroundFree(val subId: Int, val superId: Term<ID>): Classify()
+        data class FreeGround(val subId:  Term<ID>, val superId:Int): Classify()
+        data class FreeFree(val subId:  Term<ID>, val superId: Term<ID>): Classify()
+
+        private fun classify(subId: Term<ID>, superId: Term<ID>): Classify {
+            return when (subId) {
+                is Var -> {
+                     when (superId) {
+                        is Var -> FreeFree(subId, superId)
+                        is UnboundedValue -> TODO("")
+                        is LogicInt -> FreeGround(subId, superId.n)
+                        is CustomTerm -> TODO()
+                        else -> TODO("FUCK")
+                    }
+                }
+                is LogicInt ->
+                    when (superId) {
+                        is Var -> GroundFree(subId.n, superId)
+                        is UnboundedValue -> TODO("")
+                        is LogicInt -> GroundGround(subId.n, superId.n)
+                        is CustomTerm -> TODO()
+                        else -> TODO("FUCK")
+                    }
+                else -> TODO("FUCK")
+            }
+        }
+
+        private fun <T, R> findFirstMap(xs: Collection<T>, f: (T) -> R?) : R? {
+            for (x in xs) {
+                val foo = f(x);
+                if (foo != null)
+                    return foo
+            }
+            return null
+        }
+
+        context(RelationalContext)
         override fun get_superclass_by_id(
             subId: Term<LogicInt>,
             subKind: Term<Jtype_kind>,
@@ -773,13 +827,86 @@ class JGSstandard {
             rez: Term<LogicOption<Jtype<LogicInt>>>
         ): Goal {
 
-            return debugVar(subId logicTo superId, reifier = { it.reified() }) {
-                //                println("get_superclass_by_id ${it.term} ~~> $rez\n")
-                freshTypedVars { answerJtyp: Term<Jtype<LogicInt>> ->
-                    and(
-                        rez `===` Some(answerJtyp),
-                        getSuperclassByIdFreeFree(subId, subKind, superId, superKind, answerJtyp)
-                    )
+            return debugVar(subId logicTo superId, reifier = { it.reified() }) { it ->
+                val u = it.term as LogicPair<LogicInt, LogicInt>
+                val subId = u.first
+                val superId = u.second
+                when (val sortOfGroundness = classify(subId, superId)) {
+                    is FreeFree ->
+                        freshTypedVars { answerJtyp: Term<Jtype<LogicInt>> ->
+                        and(
+                                rez `===` Some(answerJtyp),
+                                getSuperclassByIdFreeFree(sortOfGroundness.subId, subKind, sortOfGroundness.superId, superKind, answerJtyp)
+                        )
+                    }
+                    is GroundFree -> {
+                        val curId = sortOfGroundness.subId
+                        val decl = data.table[curId]!!
+                        val parentsList = parents(decl)
+
+                        parentsList.fold(failure) { acc, jtyp: Jtype<ID> ->
+                            val toGoal = { kind: Jtype_kind, jtypID: Term<ID> ->
+                                acc `|||` and(
+                                        jtypID `===` superId,
+                                        superKind `===` kind,
+                                        subKind `===` decl.getKind(),
+                                        curId.toLogic() `===` subId,
+                                        rez `===` Some(jtyp)
+                                )
+                            }
+                            when (jtyp) {
+                                is Interface -> toGoal(Interface_kind, jtyp.id)
+                                is Class_ -> toGoal(Class_kind, jtyp.id)
+                                else -> TODO("ancestor of the interface should be an interface")
+                            }
+                        }
+                    }
+
+                    is FreeGround -> {
+                        val info = subClassMap[sortOfGroundness.superId]
+                        if (info == null)
+                            failure
+                        else
+                            info.fold(failure) { acc, (newSubId, newKind, superJType) ->
+                                acc `|||` and (
+                                        subId `===` newSubId,
+                                        subKind `===` newKind,
+                                        rez `===` Some(superJType)
+                                )
+                            }
+                    }
+
+                    is GroundGround -> {
+                        val curId = sortOfGroundness.subId
+                        val decl = data.table[curId]!!
+                        val parentsList = parents(decl)
+
+                        val infoAboutSuper = findFirstMap(parentsList) {
+                            when (it) {
+                                is Interface  -> {
+                                    if ((it.id as LogicInt).n == sortOfGroundness.superId)
+                                    Interface_kind to it
+                                    else null
+
+                                }
+                                is Class_ -> {
+                                    if ((it.id as LogicInt).n == sortOfGroundness.superId)
+                                        Class_kind to it
+                                    else null
+                                }
+                                else -> TODO("The table is full of shit")
+                            }
+                        }
+                        if (infoAboutSuper == null)
+                            failure
+                        else {
+                            and(
+                                    superKind `===` infoAboutSuper.first,
+                                    subKind `===` decl.getKind(),
+                                    rez `===` Some(infoAboutSuper.second)
+                            )
+                        }
+                    }
                 }
             }
         }

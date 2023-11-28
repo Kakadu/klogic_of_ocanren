@@ -7,6 +7,7 @@ import org.klogic.core.Term
 import org.klogic.utils.terms.LogicList
 import org.klogic.utils.terms.LogicPair
 import org.klogic.utils.terms.PeanoLogicNumber
+import utils.LogicInt.Companion.toLogic
 import utils.LogicOption
 
 sealed class Jtype_kind : CustomTerm<Jtype_kind>
@@ -221,6 +222,7 @@ data class Var<ID : Term<ID>>(val id: Term<ID>, val index: Term<PeanoLogicNumber
 
 sealed class Decl<ID : Term<ID>> : CustomTerm<Decl<ID>>{
     abstract fun getKind(): Jtype_kind
+//    abstract fun toJtype(id: Int): Jtype<ID>
 }
 
 data class C<ID : Term<ID>>(
@@ -229,6 +231,7 @@ data class C<ID : Term<ID>>(
     val supers: Term<LogicList<Jtype<ID>>>,
 ) : Decl<ID>() {
     override  fun getKind(): Jtype_kind = Class_kind
+
     override val subtreesToUnify: Array<Term<*>>
         get() = arrayOf(params, superClass, supers)
 
