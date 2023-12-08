@@ -169,7 +169,7 @@ class JGSstandard {
             val pp = JtypePretty { classTable.nameOfId(it) }
             val answers2 = answers.map { pp.ppJtype(it) }
             answers2.run {
-                forEachIndexed { i, x -> println("//$i\n\"$x\",") }
+                forEachIndexed { i, x -> println("//$i\n\"${x.toString().replace("$", "\\$")}\",") }
             }
             assertEquals(count, answers.count())
             assertEquals(expectedTerm, answers2.toCountMap())
@@ -261,13 +261,13 @@ class JGSstandard {
             }
             val answers = run(count, g, elementConsumer = elementConsumer).map { p -> p.term }.toList()
 
-            if (verbose) answers.forEachIndexed { i, x -> println("$i: $x") }
+//            if (verbose) answers.forEachIndexed { i, x -> println("$i: ${x.toString().replace("$", "\\$")}") }
 
             val expectedTerm = expectedResult(classTable).toCountMap()
             val pp = JtypePretty { classTable.nameOfId(it) }
             val answers2 = answers.map { pp.ppJtype(it) }
             answers2.run {
-                forEachIndexed { i, x -> println("//$i\n\"$x\",") }
+                forEachIndexed { i, x -> println("//$i\n\"${x.toString().replace("$", "\\$")}\",") }
             }
             assertEquals(count, answers.count())
             assertEquals(expectedTerm, answers2.toCountMap())
@@ -432,10 +432,10 @@ class JGSstandard {
         val expectedResult: (CLASSTABLE) -> Collection<String> = { _ ->
             listOf(
 //0
-                    "Interface java.util.Collection</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Interface java.util.Collection<_.1.0>",
 //1
-                    "Class java.util.concurrent.ConcurrentHashMap\$ValuesView</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), _.?>",
-            )
+                    "Class java.util.concurrent.ConcurrentHashMap\$ValuesView<_.1.0, _.?>",
+                    )
         }
 
         testSingleConstraint(
@@ -507,45 +507,46 @@ class JGSstandard {
         val expectedResult: (CLASSTABLE) -> Collection<String> = { _ ->
             listOf(
 //0
-                    "Interface java.util.Collection</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Interface java.util.Collection<_.1.0>",
 //1
-                    "Class java.util.concurrent.ConcurrentHashMap\$ValuesView</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), _.?>",
+                    "Class java.util.concurrent.ConcurrentHashMap\$ValuesView<_.1.0, _.?>",
 //2
-                    "Interface java.util.Set</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Interface java.util.Set<_.1.0>",
 //3
-                    "Class java.util.concurrent.ConcurrentHashMap\$CollectionView</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), _.?, _.?>",
+                    "Class java.util.concurrent.ConcurrentHashMap\$CollectionView<_.1.0, _.?, _.?>",
 //4
-                    "Interface java.util.Queue</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Interface java.util.Queue<_.1.0>",
 //5
-                    "Class java.util.Collections\$UnmodifiableCollection</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Class java.util.Collections\$UnmodifiableCollection<_.1.0>",
 //6
-                    "Interface java.util.List</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Interface java.util.List<_.1.0>",
 //7
-                    "Class java.util.Collections\$SynchronizedCollection</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Class java.util.Collections\$SynchronizedCollection<_.1.0>",
 //8
-                    "Class java.util.Collections\$CheckedCollection</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Class java.util.Collections\$CheckedCollection<_.1.0>",
 //9
-                    "Class java.util.AbstractCollection</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Class java.util.AbstractCollection<_.1.0>",
 //10
-                    "Class javax.security.auth.Subject\$SecureSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Class javax.security.auth.Subject\$SecureSet<_.1.0>",
 //11
-                    "Interface java.util.SortedSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Interface java.util.SortedSet<_.1.0>",
 //12
-                    "Class java.util.concurrent.ConcurrentHashMap\$KeySetView</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), _.?>",
+                    "Class java.util.concurrent.ConcurrentHashMap\$KeySetView<_.1.0, _.?>",
 //13
-                    "Class java.util.LinkedHashSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Class java.util.LinkedHashSet<_.1.0>",
 //14
-                    "Class java.util.LinkedHashSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Class java.util.LinkedHashSet<_.1.0>",
 //15
-                    "Class java.util.ImmutableCollections\$AbstractImmutableSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Class java.util.ImmutableCollections\$AbstractImmutableSet<_.1.0>",
 //16
-                    "Class java.util.LinkedHashSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Class java.util.LinkedHashSet<_.1.0>",
 //17
-                    "Class java.util.LinkedHashSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Class java.util.LinkedHashSet<_.1.0>",
 //18
-                    "Class java.util.ImmutableCollections\$AbstractImmutableSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+                    "Class java.util.ImmutableCollections\$AbstractImmutableSet<_.1.0>",
 //19
-                    "Class java.util.HashSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",           )
+                    "Class java.util.HashSet<_.1.0>",
+                    )
         }
 
         testManyConstraints(
@@ -620,12 +621,12 @@ class JGSstandard {
         val expectedResult: (CLASSTABLE) -> Collection<String> = { _ ->
             listOf(
 //0
-                    "Class java.util.HashMap</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), Class javax.print.attribute.standard.Severity>",
+                    "Class java.util.HashMap<_.1.0, Class javax.print.attribute.standard.Severity>",
 //1
-                    "Class java.util.LinkedHashMap</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), Class javax.print.attribute.standard.Severity>",
+                    "Class java.util.LinkedHashMap<_.1.0, Class javax.print.attribute.standard.Severity>",
 //2
-                    "Class sun.security.ssl.X509KeyManagerImpl\$SizedMap</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), Class javax.print.attribute.standard.Severity>",
-          )
+                    "Class sun.security.ssl.X509KeyManagerImpl\$SizedMap<_.1.0, Class javax.print.attribute.standard.Severity>",
+            )
         }
 
         testManyConstraints(
@@ -651,12 +652,12 @@ class JGSstandard {
         val expectedResult: (CLASSTABLE) -> Collection<String> = { _ ->
             listOf(
 //0
-                    "Class java.util.HashMap</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), * extends Class javax.print.attribute.standard.Severity>",
+                    "Class java.util.HashMap<_.1.0, * extends Class javax.print.attribute.standard.Severity>",
 //1
-                    "Class java.util.LinkedHashMap</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), * extends Class javax.print.attribute.standard.Severity>",
+                    "Class java.util.LinkedHashMap<_.1.0, * extends Class javax.print.attribute.standard.Severity>",
 //2
-                    "Class sun.security.ssl.X509KeyManagerImpl\$SizedMap</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), * extends Class javax.print.attribute.standard.Severity>",
-          )
+                    "Class sun.security.ssl.X509KeyManagerImpl\$SizedMap<_.1.0, * extends Class javax.print.attribute.standard.Severity>",
+            )
         }
 
         testManyConstraints(
