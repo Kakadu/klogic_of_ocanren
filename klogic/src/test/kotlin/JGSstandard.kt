@@ -24,9 +24,9 @@ import kotlin.time.TimeSource
 class JGSstandard {
     companion object {
         private var data: Pair<ClassesTable, DirectedAcyclicGraph<Int, DefaultEdge>> =
-            ClassesTable(mutableMapOf()) to DirectedAcyclicGraph(
-                DefaultEdge::class.java
-            )
+                ClassesTable(mutableMapOf()) to DirectedAcyclicGraph(
+                        DefaultEdge::class.java
+                )
 
         @JvmStatic
         @BeforeAll
@@ -39,12 +39,12 @@ class JGSstandard {
         }
 
         private fun prepareGraph(
-            ct: ClassesTable,
-            verbose: Boolean = false
+                ct: ClassesTable,
+                verbose: Boolean = false
         ): Pair<ClassesTable, DirectedAcyclicGraph<Int, DefaultEdge>> {
 
             val directedGraph: DirectedAcyclicGraph<Int, DefaultEdge> = DirectedAcyclicGraph(
-                DefaultEdge::class.java
+                    DefaultEdge::class.java
             )
 
             fun addEdge(from: Int, to: Class_<LogicInt>) {
@@ -77,7 +77,7 @@ class JGSstandard {
                     is C -> when (decl.superClass) {
                         is Class_ -> addEdge(id, decl.superClass)
                         is Array_ -> println(
-                            "TODO ${Thread.currentThread().stackTrace[2].lineNumber}"
+                                "TODO ${Thread.currentThread().stackTrace[2].lineNumber}"
                         )
 
                         else -> {}
@@ -93,7 +93,7 @@ class JGSstandard {
             }
             with(directedGraph) {
                 val moreDependencyFirstIterator = TopologicalOrderIterator(
-                    directedGraph
+                        directedGraph
                 ) // Some class are generated withoout information. Possible Bug
                 val toRemove: MutableSet<Int> = mutableSetOf()
                 moreDependencyFirstIterator.forEachRemaining { id: Int ->
@@ -139,9 +139,9 @@ class JGSstandard {
 
 
     private fun testSingleConstraint(
-        expectedResult: (CLASSTABLE) -> Collection<String>, count: Int = 10,
-        boundKind: ClosureType = ClosureType.Subtyping,
-        bound: (RelationalContext, ConvenientCT) -> Term<Jtype<ID>>, verbose: Boolean = false
+            expectedResult: (CLASSTABLE) -> Collection<String>, count: Int = 10,
+            boundKind: ClosureType = ClosureType.Subtyping,
+            bound: (RelationalContext, ConvenientCT) -> Term<Jtype<ID>>, verbose: Boolean = false
     ) {
         val classTable = BigCT(data.second, data.first)
         val v = Verifier(classTable)
@@ -149,17 +149,17 @@ class JGSstandard {
         withEmptyContext {
             val g = { q: Term<Jtype<ID>> ->
                 and(
-                    only_classes_interfaces_and_arrays(q), (when (boundKind) {
-                        ClosureType.Subtyping -> JGSBackward.MakeClosure2(closureBuilder)
+                        only_classes_interfaces_and_arrays(q), (when (boundKind) {
+                    ClosureType.Subtyping -> JGSBackward.MakeClosure2(closureBuilder)
                             .closure({ a, b, c, d ->
                                 v.minus_less_minus(a, b, c, d)
                             }, q, bound(this, classTable))
 
-                        ClosureType.SuperTyping -> JGSBackward.MakeClosure2(closureBuilder)
+                    ClosureType.SuperTyping -> JGSBackward.MakeClosure2(closureBuilder)
                             .closure({ a, b, c, d ->
                                 v.minus_less_minus(a, b, c, d)
                             }, bound(this, classTable), q)
-                    })
+                })
                 )
             }
             val answers = run(count, g).map { it.term }.toList()
@@ -214,10 +214,10 @@ class JGSstandard {
 
     @OptIn(ExperimentalTime::class)
     private fun testManyConstraints(
-        expectedResult: (CLASSTABLE) -> Collection<String>,
-        count: Int = 10,
-        verbose: Boolean,
-        bounds:
+            expectedResult: (CLASSTABLE) -> Collection<String>,
+            count: Int = 10,
+            verbose: Boolean,
+            bounds:
             (RelationalContext, ConvenientCT) -> Collection<Pair<ClosureType, Term<Jtype<ID>>>>
     ) {
         val classTable = BigCT(data.second, data.first)
@@ -233,26 +233,24 @@ class JGSstandard {
             }
             val g = { q: Term<Jtype<ID>> ->
                 val direct: (v29: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal, v30: Term<Jtype<LogicInt>>, v31: Term<Jtype<LogicInt>>, v32: Term<LogicBool>) -> (State) -> RecursiveStream<State> =
-                    { a, b, c, d ->
-                        v.minus_less_minus(a, b, c, d)
-                    }
+                        { a, b, c, d ->
+                            v.minus_less_minus(a, b, c, d)
+                        }
                 and(
-                    only_classes_interfaces_and_arrays(q),
-                    supers.fold(success) { acc, (_, bound) ->
-                        acc and
-                                JGSBackward.MakeClosure2(closureBuilder)
-                                    .closure(direct, bound, q)
-                    },
-                    subs.fold(success) { acc, (_, bound) ->
-                        acc and
-                                JGSBackward.MakeClosure2(closureBuilder)
-                                    .closure(direct, q, bound)
-                    },
+                        only_classes_interfaces_and_arrays(q),
+                        supers.fold(success) { acc, (_, bound) ->
+                            acc and
+                                    JGSBackward.MakeClosure2(closureBuilder)
+                                            .closure(direct, bound, q)
+                        },
+                        subs.fold(success) { acc, (_, bound) ->
+                            acc and
+                                    JGSBackward.MakeClosure2(closureBuilder)
+                                            .closure(direct, q, bound)
+                        },
                 )
             }
 
-//            val answers =
-//                    iterAndMeasure(g, count).map { p -> p.first.term to p.second }.toList()
             var answerStartTimeMark = TimeSource.Monotonic.markNow()
 //
             val elementConsumer: State.() -> Unit = {
@@ -261,7 +259,7 @@ class JGSstandard {
                 answerStartTimeMark = nextMark
                 println("... in $delta ms")
             }
-            val answers = run(count, g, elementConsumer=elementConsumer).map { p -> p.term }.toList()
+            val answers = run(count, g, elementConsumer = elementConsumer).map { p -> p.term }.toList()
 
             if (verbose) answers.forEachIndexed { i, x -> println("$i: $x") }
 
@@ -294,22 +292,22 @@ class JGSstandard {
         val expectedResult: (CLASSTABLE) -> Collection<String> = { _ ->
             listOf(
 //0
-                "Class java.lang.Object",
+                    "Class java.lang.Object",
 //1
-                "Array<Class java.lang.Object>",
+                    "Array<Class java.lang.Object>",
 //2
-                "Class sun.util.resources.provider.NonBaseLocaleDataMetaInfo",
+                    "Class sun.util.resources.provider.NonBaseLocaleDataMetaInfo",
 //3
-                "Array<Array<Class java.lang.Object>>",
+                    "Class sun.util.resources.cldr.provider.CLDRLocaleDataMetaInfo",
 //4
-                "Array<Class sun.util.resources.provider.NonBaseLocaleDataMetaInfo/*TODO*/>",
-            )
+                    "Class sun.util.resources.ParallelListResourceBundle\$KeySet\$1",
+          )
         }
         testSingleConstraint(
-            expectedResult,
-            count = 5,
-            ClosureType.Subtyping, { _, ct -> ct.object_t },
-            verbose = false
+                expectedResult,
+                count = 5,
+                ClosureType.Subtyping, { _, ct -> ct.object_t },
+                verbose = false
         )
     }
 
@@ -319,27 +317,27 @@ class JGSstandard {
         val expectedResult: (CLASSTABLE) -> Collection<String> = { _ ->
             listOf(
 //0
-                "Interface java.lang.Iterable<Class java.lang.Object>",
+                    "Interface java.lang.Iterable<Class java.lang.Object>",
 //1
-                "Interface javax.xml.crypto.NodeSetData<Class java.lang.Object>",
+                    "Interface javax.xml.crypto.NodeSetData<Class java.lang.Object>",
 //2
-                "Class java.util.stream.SpinedBuffer\$OfPrimitive<Class java.lang.Object, _.?, _.?>",
+                    "Interface java.util.Collection<Class java.lang.Object>",
 //3
-                "Class java.util.stream.SpinedBuffer<Class java.lang.Object>",
+                    "Interface java.nio.file.DirectoryStream<Class java.lang.Object>",
 //4
-                "Class java.util.ServiceLoader<Class java.lang.Object>",
+                    "Class java.util.stream.SpinedBuffer\$OfPrimitive<Class java.lang.Object, _.?, _.?>",
 
-            )
+                    )
         }
 
         testSingleConstraint(
-            expectedResult, count = 5,
-            ClosureType.Subtyping, { _, ct ->
-                val humanName = "java.lang.Iterable"
-                val listID = ct.idOfName(humanName)!!
-                ct.makeInterface(listID, logicListOf(Type(ct.object_t)))
-            },
-            verbose = false
+                expectedResult, count = 5,
+                ClosureType.Subtyping, { _, ct ->
+            val humanName = "java.lang.Iterable"
+            val listID = ct.idOfName(humanName)!!
+            ct.makeInterface(listID, logicListOf(Type(ct.object_t)))
+        },
+                verbose = false
         )
     }
 
@@ -349,60 +347,59 @@ class JGSstandard {
         val expectedResult: (CLASSTABLE) -> Collection<String> = { _ ->
             listOf(
 //0
-                "Class java.util.AbstractList<Class java.lang.Object>",
+                    "Class java.util.AbstractList<Class java.lang.Object>",
 //1
-                "Class sun.awt.util.IdentityArrayList<Class java.lang.Object>",
+                    "Class sun.awt.util.IdentityArrayList<Class java.lang.Object>",
 //2
-                "Class java.util.Vector<Class java.lang.Object>",
+                    "Class java.util.Vector<Class java.lang.Object>",
 //3
-                "Class java.util.Collections\$SingletonList<Class java.lang.Object>",
+                    "Class java.util.Collections\$SingletonList<Class java.lang.Object>",
 //4
-                "Class java.util.Collections\$EmptyList<Class java.lang.Object>",
+                    "Class java.util.Collections\$EmptyList<Class java.lang.Object>",
 //5
-                "Class java.util.Collections\$CopiesList<Class java.lang.Object>",
+                    "Class java.util.Collections\$CopiesList<Class java.lang.Object>",
 //6
-                "Class java.util.Arrays\$ArrayList<Class java.lang.Object>",
+                    "Class java.util.Arrays\$ArrayList<Class java.lang.Object>",
 //7
-                "Class java.util.ArrayList\$SubList<Class java.lang.Object>",
+                    "Class java.util.ArrayList\$SubList<Class java.lang.Object>",
 //8
-                "Class java.util.ArrayList<Class java.lang.Object>",
+                    "Class java.util.ArrayList<Class java.lang.Object>",
 //9
-                "Class java.util.AbstractSequentialList<Class java.lang.Object>",
+                    "Class java.util.AbstractSequentialList<Class java.lang.Object>",
 //10
-                "Class java.util.AbstractList\$SubList<Class java.lang.Object>",
+                    "Class java.util.AbstractList\$SubList<Class java.lang.Object>",
 //11
-                "Class java.lang.invoke.AbstractConstantGroup\$AsList",
+                    "Class java.lang.invoke.AbstractConstantGroup\$AsList",
 //12
-                "Class com.sun.org.apache.xerces.internal.impl.xs.util.ObjectListImpl",
+                    "Class com.sun.org.apache.xerces.internal.impl.xs.util.ObjectListImpl",
 //13
-                "Class com.sun.org.apache.xerces.internal.impl.dv.xs.XSSimpleTypeDecl\$AbstractObjectList",
+                    "Class java.util.Stack<Class java.lang.Object>",
 //14
-                "Class com.sun.org.apache.xerces.internal.impl.dv.xs.ListDV\$ListData",
+                    "Class com.sun.org.apache.xerces.internal.impl.dv.xs.XSSimpleTypeDecl\$AbstractObjectList",
 //15
-                "Class com.sun.jmx.remote.internal.ArrayQueue<Class java.lang.Object>",
+                    "Class com.sun.org.apache.xerces.internal.impl.dv.xs.ListDV\$ListData",
 //16
-                "Class java.util.Stack<Class java.lang.Object>",
+                    "Class com.sun.jmx.remote.internal.ArrayQueue<Class java.lang.Object>",
 //17
-                "Class sun.swing.BakedArrayList<Class java.lang.Object>",
+                    "Class sun.swing.BakedArrayList<Class java.lang.Object>",
 //18
-                "Class jdk.internal.org.objectweb.asm.tree.MethodNode$1",
+                    "Class jdk.internal.org.objectweb.asm.tree.MethodNode\$1",
 //19
-                "Class javax.management.relation.RoleUnresolvedList",
+                    "Class javax.management.relation.RoleUnresolvedList",
 //20
-                "Class javax.management.relation.RoleList",
+                    "Class sun.awt.util.IdentityLinkedList<Class java.lang.Object>",
 //21
-                "Class javax.management.AttributeList",
+                    "Class javax.management.relation.RoleList",
 //22
-                "Class sun.awt.util.IdentityLinkedList<Class java.lang.Object>",
+                    "Class java.util.LinkedList<Class java.lang.Object>",
 //23
-                "Class java.util.LinkedList<Class java.lang.Object>",
+                    "Class javax.management.AttributeList",
 //24
-                "Class java.util.AbstractList\$RandomAccessSubList<Class java.lang.Object>",
+                    "Class java.util.AbstractList\$RandomAccessSubList<Class java.lang.Object>",
 //25
-                "Class com.sun.org.apache.xerces.internal.impl.dv.xs.XSSimpleTypeDecl$3",
+                    "Class com.sun.org.apache.xerces.internal.impl.dv.xs.XSSimpleTypeDecl\$3",
 //26
-                "Class com.sun.org.apache.xerces.internal.impl.dv.xs.XSSimpleTypeDecl$2",
-            )
+                    "Class com.sun.org.apache.xerces.internal.impl.dv.xs.XSSimpleTypeDecl\$2",           )
         }
         // In principle, we can find AbstractSequentialList, ArrayList, Vector
         // but this classes seem not to be in the class table
@@ -417,15 +414,15 @@ class JGSstandard {
             }
         }
         testSingleConstraint(
-            expectedResult, count = 27,
-            ClosureType.Subtyping, { _, ct ->
-                val ct2 = ct as BigCT
+                expectedResult, count = 27,
+                ClosureType.Subtyping, { _, ct ->
+            val ct2 = ct as BigCT
 
-                val humanName = "java.util.AbstractList"
-                val listID = ct.idOfName(humanName)!!
-                ct.makeClass(listID, logicListOf(Type(ct.object_t)))
-            },
-            verbose = false
+            val humanName = "java.util.AbstractList"
+            val listID = ct.idOfName(humanName)!!
+            ct.makeClass(listID, logicListOf(Type(ct.object_t)))
+        },
+                verbose = false
         )
     }
 
@@ -434,20 +431,22 @@ class JGSstandard {
     fun test5() {
         val expectedResult: (CLASSTABLE) -> Collection<String> = { _ ->
             listOf(
-                "Interface java.util.Collection</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
-                "Class java.util.concurrent.ConcurrentHashMap\$ValuesView</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), _.?>"
+//0
+                    "Interface java.util.Collection</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
+//1
+                    "Class java.util.concurrent.ConcurrentHashMap\$ValuesView</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), _.?>",
             )
         }
 
         testSingleConstraint(
-            expectedResult, count = 2,
-            ClosureType.Subtyping, { _, ct ->
-                val humanName = "java.util.Collection"
-                val iterableID = ct.idOfName(humanName)!!
+                expectedResult, count = 2,
+                ClosureType.Subtyping, { _, ct ->
+            val humanName = "java.util.Collection"
+            val iterableID = ct.idOfName(humanName)!!
 
-                ct.makeInterface(iterableID, logicListOf(Type(ct.makeTVar(0, ct.object_t))))
-            },
-            verbose = false
+            ct.makeInterface(iterableID, logicListOf(Type(ct.makeTVar(0, ct.object_t))))
+        },
+                verbose = false
         )
     }
 
@@ -457,53 +456,53 @@ class JGSstandard {
         val expectedResult: (CLASSTABLE) -> Collection<String> = { _ ->
             listOf(
 //0
-                "Class javax.management.AttributeList",
+                    "Class javax.management.AttributeList",
 //1
-                "Class java.util.ArrayList<Class java.lang.Object>",
+                    "Class java.util.ArrayList<Class java.lang.Object>",
 //2
-                "Interface java.io.Serializable",
+                    "Interface java.io.Serializable",
 //3
-                "Interface java.lang.Cloneable",
+                    "Interface java.lang.Cloneable",
 //4
-                "Interface java.util.RandomAccess",
+                    "Interface java.util.RandomAccess",
 //5
-                "Class java.util.AbstractList<Class java.lang.Object>",
+                    "Class java.util.AbstractList<Class java.lang.Object>",
 //6
-                "Interface java.util.List<Class java.lang.Object>",
+                    "Interface java.util.List<Class java.lang.Object>",
 //7
-                "Interface java.util.List<Class java.lang.Object>",
+                    "Interface java.util.List<Class java.lang.Object>",
 //8
-                "Class java.util.AbstractCollection<Class java.lang.Object>",
+                    "Class java.util.AbstractCollection<Class java.lang.Object>",
 //9
-                "Interface java.util.Collection<Class java.lang.Object>",
+                    "Interface java.util.Collection<Class java.lang.Object>",
 //10
-                "Interface java.lang.Iterable<Class java.lang.Object>",
+                    "Interface java.lang.Iterable<Class java.lang.Object>",
 //11
-                "Interface java.util.Collection<Class java.lang.Object>",
+                    "Interface java.util.Collection<Class java.lang.Object>",
 //12
-                "Class java.lang.Object",
+                    "Class java.lang.Object",
 //13
-                "Interface java.util.Collection<Class java.lang.Object>",
+                    "Interface java.util.Collection<Class java.lang.Object>",
 //14
-                "Interface java.lang.Iterable<Class java.lang.Object>",
+                    "Interface java.lang.Iterable<Class java.lang.Object>",
 //15
-                "Interface java.lang.Iterable<Class java.lang.Object>",
+                    "Interface java.lang.Iterable<Class java.lang.Object>",
             )
         }
 
         testSingleConstraint(
-            expectedResult, count = 16,
-            ClosureType.SuperTyping, { _, ct ->
-                val humanName = "javax.management.AttributeList"
-                val ID = ct.idOfName(humanName)!!
-                ct.makeClass(ID, logicListOf())
-            },
-            verbose = false
+                expectedResult, count = 16,
+                ClosureType.SuperTyping, { _, ct ->
+            val humanName = "javax.management.AttributeList"
+            val ID = ct.idOfName(humanName)!!
+            ct.makeClass(ID, logicListOf())
+        },
+                verbose = false
         )
     }
 
     @Test
-    @DisplayName("Conj of constraints ")
+    @DisplayName("Conj of constraints: <= Iterable<V1> && <= Collection<V1> ")
     fun test7() {
         val expectedResult: (CLASSTABLE) -> Collection<String> = { _ ->
             listOf(
@@ -546,19 +545,19 @@ class JGSstandard {
 //18
                     "Class java.util.ImmutableCollections\$AbstractImmutableSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",
 //19
-                    "Class java.util.HashSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",  )
+                    "Class java.util.HashSet</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None)>",           )
         }
 
         testManyConstraints(
-            expectedResult, count = 20,
-            verbose = false
+                expectedResult, count = 20,
+                verbose = false
         ) { _, ct ->
             val iterableID = ct.idOfName("java.lang.Iterable")!!
             val collectionID = ct.idOfName("java.util.Collection")!!
             val v1 = Type(ct.makeTVar(0, ct.object_t))
             listOf(
-                ClosureType.Subtyping to ct.makeInterface(iterableID, logicListOf(v1)),
-                ClosureType.Subtyping to ct.makeInterface(collectionID, logicListOf(v1)),
+                    ClosureType.Subtyping to ct.makeInterface(iterableID, logicListOf(v1)),
+                    ClosureType.Subtyping to ct.makeInterface(collectionID, logicListOf(v1)),
             )
         }
     }
@@ -569,23 +568,112 @@ class JGSstandard {
         val expectedResult: (CLASSTABLE) -> Collection<String> = { _ ->
             listOf(
 //0
-                "Class javax.management.AttributeList",
+                    "Class javax.management.AttributeList",
 //1
-                "Class java.util.ArrayList<Class java.lang.Object>",
+                    "Class java.util.ArrayList<Class java.lang.Object>",
 //2
-                "Interface java.util.RandomAccess",
+                    "Interface java.util.RandomAccess",
             )
         }
 
         testManyConstraints(
-            expectedResult, count = 3,
-            verbose = false
+                expectedResult, count = 3,
+                verbose = false
         ) { _, ct ->
             val attrListID = ct.idOfName("javax.management.AttributeList")!!
             val randAccID = ct.idOfName("java.util.RandomAccess")!!
             listOf(
-                ClosureType.SuperTyping to ct.makeClass(attrListID, logicListOf()),
-                ClosureType.Subtyping to ct.makeInterface(randAccID, logicListOf()),
+                    ClosureType.SuperTyping to ct.makeClass(attrListID, logicListOf()),
+                    ClosureType.Subtyping to ct.makeInterface(randAccID, logicListOf()),
+            )
+        }
+    }
+
+    @Test
+    @DisplayName("SuperTypes of PrinterStateReasons")
+    fun test9() {
+        val expectedResult: (CLASSTABLE) -> Collection<String> = { _ ->
+            listOf(
+//0
+                    "Class javax.print.attribute.standard.PrinterStateReasons",
+//1
+                    "Interface javax.print.attribute.PrintServiceAttribute",
+//2
+                    "Class java.util.HashMap<Class javax.print.attribute.standard.PrinterStateReason, Class javax.print.attribute.standard.Severity>",
+            )
+        }
+
+        testManyConstraints(
+                expectedResult, count = 3,
+                verbose = false
+        ) { _, ct ->
+            val printerID = ct.idOfName("javax.print.attribute.standard.PrinterStateReasons")!!
+            listOf(
+                    ClosureType.SuperTyping to ct.makeClass(printerID, logicListOf()),
+            )
+        }
+    }
+
+    @Test
+    @DisplayName("SubTypes of java.util.HashMap<V0, Severity>")
+    fun test10() {
+        val expectedResult: (CLASSTABLE) -> Collection<String> = { _ ->
+            listOf(
+//0
+                    "Class java.util.HashMap</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), Class javax.print.attribute.standard.Severity>",
+//1
+                    "Class java.util.LinkedHashMap</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), Class javax.print.attribute.standard.Severity>",
+//2
+                    "Class sun.security.ssl.X509KeyManagerImpl\$SizedMap</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), Class javax.print.attribute.standard.Severity>",
+          )
+        }
+
+        testManyConstraints(
+                expectedResult, count = 3,
+                verbose = false
+        ) { _, ct ->
+            val hashMapID = ct.idOfName("java.util.HashMap")!!
+            val severityID = ct.idOfName("javax.print.attribute.standard.Severity")!!
+            val v0 = ct.makeTVar(0, ct.object_t)
+            listOf(
+                    ClosureType.Subtyping to
+                            ct.makeClass(hashMapID,
+                                    logicListOf(Type(v0),
+                                            Type(ct.makeClass(severityID, logicListOf())))),
+            )
+        }
+    }
+
+
+    @Test
+    @DisplayName("SubTypes of java.util.HashMap<V0, ? extends Severity>")
+    fun test11() {
+        val expectedResult: (CLASSTABLE) -> Collection<String> = { _ ->
+            listOf(
+//0
+                    "Class java.util.HashMap</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), * extends Class javax.print.attribute.standard.Severity>",
+//1
+                    "Class java.util.LinkedHashMap</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), * extends Class javax.print.attribute.standard.Severity>",
+//2
+                    "Class sun.security.ssl.X509KeyManagerImpl\$SizedMap</*TODO 2 */Var(id=1, index=0, upb=Class_(id=1, args=()), lwb=None), * extends Class javax.print.attribute.standard.Severity>",
+          )
+        }
+
+        testManyConstraints(
+                expectedResult, count = 3,
+                verbose = false
+        ) { _, ct ->
+            val hashMapID = ct.idOfName("java.util.HashMap")!!
+            val severityID = ct.idOfName("javax.print.attribute.standard.Severity")!!
+            val v0 = ct.makeTVar(0, ct.object_t)
+            val arg2 = ArgWildcardProto(Some(
+                    Extends
+                    logicTo
+                    ct.makeClass(severityID, logicListOf())))
+            listOf(
+                    ClosureType.Subtyping to
+                            ct.makeClass(hashMapID,
+                                    logicListOf(Type(v0), arg2)),
             )
         }
     }
@@ -622,6 +710,7 @@ class JGSstandard {
             assert(data.table[id] is C)
             return Class_(id.toLogic(), args)
         }
+
         override fun makeInterface(id: Int, args: LogicList<Jarg<Jtype<ID>>>): Term<Jtype<ID>> {
             assert(data.table.containsKey(id))
             assert(data.table[id] is I)
@@ -645,8 +734,7 @@ class JGSstandard {
         override val serializable_t: Term<Jtype<ID>>
 
         // superID -> (subID * subKind * superJtype) list
-        private val subClassMap: MutableMap<Int, MutableList<Triple<ID, Jtype_kind, Jtype<ID>>> >
-            = mutableMapOf()
+        private val subClassMap: MutableMap<Int, MutableList<Triple<ID, Jtype_kind, Jtype<ID>>>> = mutableMapOf()
 
         init {
             check(ct.table.isNotEmpty())
@@ -665,10 +753,10 @@ class JGSstandard {
             serializable_t = Interface(serializableId.toLogic(), logicListOf())
             check(ct.table.containsKey(serializableId))
 
-            for ( (typId, decl) in data.table) {
+            for ((typId, decl) in data.table) {
                 val pars = parents(decl)
                 for (par in pars) {
-                    val id0  = when (par) {
+                    val id0 = when (par) {
                         is Class_ -> par.id
                         is Interface -> par.id
                         else -> TODO("Fuck you, Kotlin")
@@ -689,8 +777,8 @@ class JGSstandard {
 
         context(RelationalContext)
         override fun decl_by_id(
-            v1: Term<LogicInt>,
-            rez: Term<Decl<LogicInt>>
+                v1: Term<LogicInt>,
+                rez: Term<Decl<LogicInt>>
         ): Goal {
             //        println("decl_by_id: $v1, $rez")
             return debugVar(v1, { id -> id.reified() }) {
@@ -718,36 +806,36 @@ class JGSstandard {
         }
 
         private fun parents(it: Decl<ID>): List<Jtype<ID>> =
-            when (it) {
-                is I -> when (it.supers) {
-                    is LogicList<Jtype<ID>> -> it.supers.toList().map { it as Jtype<ID> }
+                when (it) {
+                    is I -> when (it.supers) {
+                        is LogicList<Jtype<ID>> -> it.supers.toList().map { it as Jtype<ID> }
 
-                    is UnboundedValue -> TODO("Should not be reachable")
-                    else -> TODO("Should not be reachable 100%")
+                        is UnboundedValue -> TODO("Should not be reachable")
+                        else -> TODO("Should not be reachable 100%")
+                    }
+
+                    is C -> when (it.supers) {
+                        is LogicList<Jtype<ID>> -> it.supers.toList().map { it as Jtype<ID> }
+
+                        is Var -> TODO("")
+                        is Wildcard<*> -> TODO("Should not be reachable")
+                        else -> TODO("Should not be reachable 100%")
+                    } + when (it.superClass) {
+                        is Jtype<ID> -> listOf(it.superClass)
+
+                        is Var -> TODO("")
+                        is Wildcard<*> -> TODO("Should not be reachable")
+                        else -> TODO("Should not be reachable 100%")
+                    }
                 }
-
-                is C -> when (it.supers) {
-                    is LogicList<Jtype<ID>> -> it.supers.toList().map { it as Jtype<ID> }
-
-                    is Var -> TODO("")
-                    is Wildcard<*> -> TODO("Should not be reachable")
-                    else -> TODO("Should not be reachable 100%")
-                } + when (it.superClass) {
-                    is Jtype<ID> -> listOf(it.superClass)
-
-                    is Var -> TODO("")
-                    is Wildcard<*> -> TODO("Should not be reachable")
-                    else -> TODO("Should not be reachable 100%")
-                }
-            }
 
         context(RelationalContext)
         private fun getSuperclassByIdFreeFree(
-            subId: Term<LogicInt>,
-            subKind: Term<Jtype_kind>,
-            superId: Term<LogicInt>,
-            superKind: Term<Jtype_kind>,
-            rez: Term<Jtype<LogicInt>>
+                subId: Term<LogicInt>,
+                subKind: Term<Jtype_kind>,
+                superId: Term<LogicInt>,
+                superKind: Term<Jtype_kind>,
+                rez: Term<Jtype<LogicInt>>
         ): Goal {
             return data.table.entries.fold(failure) { acc, entry ->
                 val curId = entry.key
@@ -760,17 +848,17 @@ class JGSstandard {
                     parentsList.fold(acc) { acc, jtyp ->
                         when (jtyp) {
                             is Interface -> acc `|||` and(
-                                jtyp.id `===` superId,
-                                superKind `===` Interface_kind,
-                                subKind `===` entryKind,
-                                curId.toLogic() `===` subId, rez `===` jtyp
+                                    jtyp.id `===` superId,
+                                    superKind `===` Interface_kind,
+                                    subKind `===` entryKind,
+                                    curId.toLogic() `===` subId, rez `===` jtyp
                             )
 
                             is Class_ -> acc `|||` and(
-                                jtyp.id `===` superId,
-                                superKind `===` Class_kind,
-                                subKind `===` entryKind,
-                                curId.toLogic() `===` subId, rez `===` jtyp
+                                    jtyp.id `===` superId,
+                                    superKind `===` Class_kind,
+                                    subKind `===` entryKind,
+                                    curId.toLogic() `===` subId, rez `===` jtyp
                             )
 
                             else -> TODO("ancestor of the interface should be an interface")
@@ -781,15 +869,15 @@ class JGSstandard {
         }
 
         sealed class Classify
-        data class GroundGround(val subId: Int, val superId: Int): Classify()
-        data class GroundFree(val subId: Int, val superId: Term<ID>): Classify()
-        data class FreeGround(val subId:  Term<ID>, val superId:Int): Classify()
-        data class FreeFree(val subId:  Term<ID>, val superId: Term<ID>): Classify()
+        data class GroundGround(val subId: Int, val superId: Int) : Classify()
+        data class GroundFree(val subId: Int, val superId: Term<ID>) : Classify()
+        data class FreeGround(val subId: Term<ID>, val superId: Int) : Classify()
+        data class FreeFree(val subId: Term<ID>, val superId: Term<ID>) : Classify()
 
         private fun classify(subId: Term<ID>, superId: Term<ID>): Classify {
             return when (subId) {
                 is Var -> {
-                     when (superId) {
+                    when (superId) {
                         is Var -> FreeFree(subId, superId)
                         is UnboundedValue -> TODO("")
                         is LogicInt -> FreeGround(subId, superId.n)
@@ -797,6 +885,7 @@ class JGSstandard {
                         else -> TODO("FUCK")
                     }
                 }
+
                 is LogicInt ->
                     when (superId) {
                         is Var -> GroundFree(subId.n, superId)
@@ -805,11 +894,12 @@ class JGSstandard {
                         is CustomTerm -> TODO()
                         else -> TODO("FUCK")
                     }
+
                 else -> TODO("FUCK")
             }
         }
 
-        private fun <T, R> findFirstMap(xs: Collection<T>, f: (T) -> R?) : R? {
+        private fun <T, R> findFirstMap(xs: Collection<T>, f: (T) -> R?): R? {
             for (x in xs) {
                 val foo = f(x);
                 if (foo != null)
@@ -820,11 +910,11 @@ class JGSstandard {
 
         context(RelationalContext)
         override fun get_superclass_by_id(
-            subId: Term<LogicInt>,
-            subKind: Term<Jtype_kind>,
-            superId: Term<LogicInt>,
-            superKind: Term<Jtype_kind>,
-            rez: Term<LogicOption<Jtype<LogicInt>>>
+                subId: Term<LogicInt>,
+                subKind: Term<Jtype_kind>,
+                superId: Term<LogicInt>,
+                superKind: Term<Jtype_kind>,
+                rez: Term<LogicOption<Jtype<LogicInt>>>
         ): Goal {
 
             return debugVar(subId logicTo superId, reifier = { it.reified() }) { it ->
@@ -834,11 +924,12 @@ class JGSstandard {
                 when (val sortOfGroundness = classify(subId, superId)) {
                     is FreeFree ->
                         freshTypedVars { answerJtyp: Term<Jtype<LogicInt>> ->
-                        and(
-                                rez `===` Some(answerJtyp),
-                                getSuperclassByIdFreeFree(sortOfGroundness.subId, subKind, sortOfGroundness.superId, superKind, answerJtyp)
-                        )
-                    }
+                            and(
+                                    rez `===` Some(answerJtyp),
+                                    getSuperclassByIdFreeFree(sortOfGroundness.subId, subKind, sortOfGroundness.superId, superKind, answerJtyp)
+                            )
+                        }
+
                     is GroundFree -> {
                         val curId = sortOfGroundness.subId
                         val decl = data.table[curId]!!
@@ -868,7 +959,7 @@ class JGSstandard {
                             failure
                         else
                             info.fold(failure) { acc, (newSubId, newKind, superJType) ->
-                                acc `|||` and (
+                                acc `|||` and(
                                         subId `===` newSubId,
                                         subKind `===` newKind,
                                         rez `===` Some(superJType)
@@ -883,17 +974,19 @@ class JGSstandard {
 
                         val infoAboutSuper = findFirstMap(parentsList) {
                             when (it) {
-                                is Interface  -> {
+                                is Interface -> {
                                     if ((it.id as LogicInt).n == sortOfGroundness.superId)
-                                    Interface_kind to it
+                                        Interface_kind to it
                                     else null
 
                                 }
+
                                 is Class_ -> {
                                     if ((it.id as LogicInt).n == sortOfGroundness.superId)
                                         Class_kind to it
                                     else null
                                 }
+
                                 else -> TODO("The table is full of shit")
                             }
                         }

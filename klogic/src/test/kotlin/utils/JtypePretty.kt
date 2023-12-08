@@ -24,7 +24,7 @@ class JtypePretty(val getName: (Int) -> String?) {
                             is Super -> b.append(" super ")
                             else -> TODO()
                         }
-                        b.append(p.second)
+                        ppJtype( p.second as Jtype<ID>, b )
                     }
                 }
             }
@@ -36,7 +36,6 @@ class JtypePretty(val getName: (Int) -> String?) {
 
     private fun ppJtype(jt: Term<Jtype<ID>>, b: StringBuilder) : Unit =
         when (jt) {
-            //is Null -> b.append("Null")
             is CustomTerm<*> -> {
                 when (val t = jt.asReified()) {
                     is Intersect -> {
@@ -51,7 +50,7 @@ class JtypePretty(val getName: (Int) -> String?) {
                                     getName(id)!!
                                 }
                                 else -> "FUCK"
-                            }.replace("$", "\$")
+                            }
 
                         b.append("Class $name")
 
@@ -86,7 +85,7 @@ class JtypePretty(val getName: (Int) -> String?) {
                                 }
 
                                 else ->  "FUCK"
-                            }.replace("$", "\$")
+                            }
 
                         b.append("Interface $name")
                         when (t.args) {
@@ -127,6 +126,6 @@ class JtypePretty(val getName: (Int) -> String?) {
     fun ppJtype(jt: Term<Jtype<ID>>): String {
         val b = StringBuilder()
         ppJtype(jt, b)
-        return b.toString()
+        return b.toString().replace("$", "\\$")
     }
 }
