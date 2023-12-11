@@ -232,9 +232,10 @@ class JGSstandard {
                 val superBounds = superClasses.map {
                     classTable.data.toJtype(it, classpath, 0)
                 }
+                println("superBounds = $superBounds")
                 val v = Verifier(classTable)
                 val closureBuilder = Closure(classTable)
-                val count = 1
+
 
                 withEmptyContext {
                     val g = { q: Term<Jtype<ID>> ->
@@ -260,29 +261,40 @@ class JGSstandard {
                         answerStartTimeMark = nextMark
                         println("... in $delta ms")
                     }
-                    val answers = run(count, g, elementConsumer = elementConsumer).map { p -> p.term }.toList()
+                    val answers = run(1, g, elementConsumer = elementConsumer).map { p -> p.term }.toList()
+                    if (answers.isEmpty())
+                        return null
+                    val answer = answers[0]
 
                     val pp = JtypePretty { classTable.nameOfId(it) }
-                    val answers2 = answers.map { pp.ppJtype(it) }
-                    answers2.run {
-                        forEachIndexed { i, x -> println("//$i\n\"${x.toString().replace("$", "\\$")}\",") }
-                    }
+                    val answer2 = pp.ppJtype(answer)
+                    println(answer2)
+                    return toJCDBType(answer)
                 }
-                    //TODO("Not yet implemented")
-                return null
             }
 
         }
     }
 
+    fun toJCDBType(x:  Term<Jtype<ID>>): JcClassOrInterface? {
+//        when (x) {
+//            is Class_ -> return object: JcClassOrInterface() {
+//
+//            }
+//        }
+        return null
+    }
+
     @Test
-    @DisplayName("111")
+    @DisplayName("111 Iterable")
     fun testIntegration1() {
         // TODO: dirty hack
         val classTable = BigCT(data.second, data.first)
         val classpath = data.first.classPath!!
         val solver = solverOfBigCT(classTable, classpath)
-        val aList = classpath.findClassOrNull("java.util.List") as JcClassOrInterface
+        // construction with arguments could be an issue
+        val aList = classpath.findClassOrNull("java.lang.Iterable") as JcClassOrInterface
+//        val aList = classpath.findClassOrNull("java.lang.Object") as JcClassOrInterface
         val answer = solver.getRandomSubclassOf(listOf ( aList ))
         println("... $answer")
     }
@@ -350,7 +362,7 @@ class JGSstandard {
     }
 
     @Test
-    @DisplayName("111")
+    @DisplayName("Graph check")
     fun test1() {
         val ct = data.first
         val moreDependencyFirstIterator = TopologicalOrderIterator(data.second)

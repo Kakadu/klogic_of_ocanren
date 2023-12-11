@@ -234,6 +234,13 @@ data class ClassesTable(
         }.toLogicList()
 
         val name = coi.name
+        if (idOfName.containsKey(name)) {
+            val id = idOfName[name]!!
+            return when (kindOfId[id]!!) {
+                is Class_kind -> Class_(id.toLogic(), typeParams)
+                is Interface_kind -> Interface(id.toLogic(), typeParams)
+            }
+        }
         return when (name) {
             "java.lang.Object" -> Class_(0.toLogic(), typeParams)
             "java.lang.Cloneable" -> Interface(1.toLogic(), typeParams)
