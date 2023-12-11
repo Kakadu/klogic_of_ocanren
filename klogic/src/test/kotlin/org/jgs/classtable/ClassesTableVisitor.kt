@@ -58,6 +58,7 @@ data class ClassesTable(
     )
 ) {
 
+    public var classPath : JcClasspath? = null
     private fun addName(name: String, id: Int) {
         check(!idOfName.containsKey(name))
         check(!nameOfId.containsKey(id))
@@ -66,7 +67,7 @@ data class ClassesTable(
     }
 
     private var lastID = 10
-    private fun JcClassOrInterface.mkId(name: String, kind: Jtype_kind): Int {
+    private fun mkId(name: String, kind: Jtype_kind): Int {
         assert(!name.contains('<'))
         return if (idOfName.containsKey(name)) {
             val id = idOfName[name]!!
@@ -75,11 +76,7 @@ data class ClassesTable(
             }
             idOfName[name]!!
         } else {
-            lastID++;
-//            if (lastID == 10027)
-//                print("")
-//            if (name.contains("<"))
-//                print("")
+            lastID++
             addName(name, lastID)
             kindOfId[lastID] = kind
             lastID
@@ -99,7 +96,7 @@ data class ClassesTable(
             isInterface -> I(typeParams, supers)
             else -> C(
                 typeParams,
-                type.superType?.toJtype(classpath, depth = 0) ?: classpath.objectClass.toJtype(
+                type.superType?.toJtype(classpath, depth = 0) ?: toJtype(classpath.objectClass,
                     classpath, 0
                 ), supers
             )
@@ -134,7 +131,7 @@ data class ClassesTable(
         }.toLogicList()
 
         val kind = if (jcClass.isInterface) Interface_kind else Class_kind
-        val id = jcClass.mkId(this.jcClass.name, kind)
+        val id = mkId(this.jcClass.name, kind)
         return if (jcClass.isInterface) Interface(id.toLogic(), typeParams)
         else Class_(id.toLogic(), typeParams)
     }
@@ -201,7 +198,7 @@ data class ClassesTable(
         val typeBounds = bounds
 
         val upperBound = when {
-            typeBounds.isEmpty() -> classpath.objectClass.toJtype(classpath, depth + 1)
+            typeBounds.isEmpty() -> toJtype(classpath.objectClass, classpath, depth + 1)
             typeBounds.size == 1 -> typeBounds.single().toJtype(depth + 1, classpath, index)
             else -> Intersect(
                 typeBounds.map { it.toJtype(depth + 1, classpath, index) }.toLogicList()
@@ -219,7 +216,7 @@ data class ClassesTable(
         val typeBounds = bounds
 
         val upperBound = when {
-            typeBounds.isEmpty() -> classpath.objectClass.toJtype(classpath, depth + 1)
+            typeBounds.isEmpty() -> toJtype(classpath.objectClass, classpath, depth + 1)
             typeBounds.size == 1 -> typeBounds.single().toJtype(depth + 1, classpath, index)
             else -> Intersect(
                 typeBounds.map { it.toJtype(depth + 1, classpath, index) }.toLogicList()
@@ -231,26 +228,20 @@ data class ClassesTable(
         )
     }
 
-    fun JcClassOrInterface.toJtype(classpath: JcClasspath, depth: Int): Jtype<LogicInt> {
-        val typeParams = toType().typeArguments.mapIndexed { index, param ->
+    public fun toJtype(coi: JcClassOrInterface, classpath: JcClasspath, depth: Int): Jtype<LogicInt> {
+        val typeParams = coi.toType().typeArguments.mapIndexed { index, param ->
             param.toJvmTypeArgument(index, classpath, depth + 1)
         }.toLogicList()
 
-        val name = this.name
-        //        if (name == "Cloneable") {
-        //            println("FUCK")
-        //        }
+        val name = coi.name
         return when (name) {
             "java.lang.Object" -> Class_(0.toLogic(), typeParams)
             "java.lang.Cloneable" -> Interface(1.toLogic(), typeParams)
             "java.io.Serializable" -> Interface(2.toLogic(), typeParams)
             else -> {
-                val kind = if (this.isInterface) Interface_kind else Class_kind
-                val id: Int = mkId(this.javaClass.name, kind)
-                if (id == 10015)
-                    println("FUCK")
-
-                if (isInterface) Interface(id.toLogic(), typeParams) else Class_(id.toLogic(),
+                val kind = if (coi.isInterface) Interface_kind else Class_kind
+                val id: Int = this.mkId(coi.javaClass.name, kind)
+                if (coi.isInterface) Interface(id.toLogic(), typeParams) else Class_(id.toLogic(),
                     typeParams)
             }
         }
@@ -295,6 +286,7 @@ data class ClassesTable(
                     ".Iterable"]
             }")
             println("table.nameOfId[9137] = ${table.nameOfId[9137]}")
+            table.classPath = classpath
             return table
         }
     }

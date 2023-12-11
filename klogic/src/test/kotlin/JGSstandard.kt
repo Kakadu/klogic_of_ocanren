@@ -1,6 +1,13 @@
 @file:Suppress("SpellCheckingInspection", "MUST_BE_INITIALIZED_OR_FINAL_OR_ABSTRACT_WARNING")
 
 import JGSBackward.ClosureType
+import kotlinx.coroutines.runBlocking
+import org.jacodb.api.JcClassOrInterface
+import org.jacodb.api.JcClassType
+import org.jacodb.api.JcClasspath
+import org.jacodb.api.ext.findTypeOrNull
+import org.jacodb.impl.features.InMemoryHierarchy
+import org.jacodb.impl.jacodb
 import org.jgrapht.graph.DefaultEdge
 import org.jgrapht.graph.DirectedAcyclicGraph
 import org.jgrapht.traverse.TopologicalOrderIterator
@@ -20,6 +27,11 @@ import utils.LogicInt.Companion.toLogic
 import utils.freshTypedVars
 import kotlin.time.ExperimentalTime
 import kotlin.time.TimeSource
+
+interface TypeSolver {
+    //fun getSuitableTypes(type: JcTypeVariableDeclaration): Sequence<JcClassOrInterface>
+    fun getRandomSubclassOf(superClasses: List<JcClassOrInterface>): JcClassOrInterface?
+}
 
 class JGSstandard {
     companion object {
@@ -211,6 +223,69 @@ class JGSstandard {
         return answers.zip(timings.reversed()) { l, r -> l to r }
     }
     */
+
+
+    @OptIn(ExperimentalTime::class)
+    fun solverOfBigCT(classTable: BigCT, classpath: org.jacodb.api.JcClasspath): TypeSolver {
+        return object: TypeSolver {
+            override fun getRandomSubclassOf(superClasses: List<JcClassOrInterface>): JcClassOrInterface? {
+                val superBounds = superClasses.map {
+                    classTable.data.toJtype(it, classpath, 0)
+                }
+                val v = Verifier(classTable)
+                val closureBuilder = Closure(classTable)
+                val count = 1
+
+                withEmptyContext {
+                    val g = { q: Term<Jtype<ID>> ->
+                        val direct: (v29: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal, v30: Term<Jtype<LogicInt>>, v31: Term<Jtype<LogicInt>>, v32: Term<LogicBool>) -> (State) -> RecursiveStream<State> =
+                            { a, b, c, d ->
+                                v.minus_less_minus(a, b, c, d)
+                            }
+                        and(
+                            only_classes_interfaces_and_arrays(q),
+                            superBounds.fold(success) { acc, bound ->
+                                acc and
+                                        JGSBackward.MakeClosure2(closureBuilder)
+                                            .closure(direct, bound, q)
+                            }
+                        )
+                    }
+
+                    var answerStartTimeMark = TimeSource.Monotonic.markNow()
+//
+                    val elementConsumer: State.() -> Unit = {
+                        val nextMark = TimeSource.Monotonic.markNow()
+                        val delta = (nextMark - answerStartTimeMark).inWholeMilliseconds
+                        answerStartTimeMark = nextMark
+                        println("... in $delta ms")
+                    }
+                    val answers = run(count, g, elementConsumer = elementConsumer).map { p -> p.term }.toList()
+
+                    val pp = JtypePretty { classTable.nameOfId(it) }
+                    val answers2 = answers.map { pp.ppJtype(it) }
+                    answers2.run {
+                        forEachIndexed { i, x -> println("//$i\n\"${x.toString().replace("$", "\\$")}\",") }
+                    }
+                }
+                    //TODO("Not yet implemented")
+                return null
+            }
+
+        }
+    }
+
+    @Test
+    @DisplayName("111")
+    fun testIntegration1() {
+        // TODO: dirty hack
+        val classTable = BigCT(data.second, data.first)
+        val classpath = data.first.classPath!!
+        val solver = solverOfBigCT(classTable, classpath)
+        val aList = classpath.findClassOrNull("java.util.List") as JcClassOrInterface
+        val answer = solver.getRandomSubclassOf(listOf ( aList ))
+        println("... $answer")
+    }
 
     @OptIn(ExperimentalTime::class)
     private fun testManyConstraints(
@@ -970,6 +1045,8 @@ class JGSstandard {
 
                     is GroundGround -> {
                         val curId = sortOfGroundness.subId
+                        if (data.table[curId] == null)
+                            TODO("Table is bad, not value for $curId")
                         val decl = data.table[curId]!!
                         val parentsList = parents(decl)
 
