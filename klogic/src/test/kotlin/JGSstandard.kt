@@ -5,6 +5,7 @@ import kotlinx.coroutines.runBlocking
 import org.jacodb.api.JcClassOrInterface
 import org.jacodb.api.JcClassType
 import org.jacodb.api.JcClasspath
+import org.jacodb.api.ext.findClass
 import org.jacodb.api.ext.findTypeOrNull
 import org.jacodb.impl.features.InMemoryHierarchy
 import org.jacodb.impl.jacodb
@@ -226,7 +227,7 @@ class JGSstandard {
 
 
     @OptIn(ExperimentalTime::class)
-    fun solverOfBigCT(classTable: BigCT, classpath: org.jacodb.api.JcClasspath): TypeSolver {
+    fun solverOfBigCT(classTable: BigCT, classpath: JcClasspath): TypeSolver {
         return object: TypeSolver {
             override fun getRandomSubclassOf(superClasses: List<JcClassOrInterface>): JcClassOrInterface? {
                 val superBounds = superClasses.map {
@@ -269,20 +270,26 @@ class JGSstandard {
                     val pp = JtypePretty { classTable.nameOfId(it) }
                     val answer2 = pp.ppJtype(answer)
                     println(answer2)
-                    return toJCDBType(answer)
+                    return toJCDBType(answer, classpath ) {
+                        when (it) {
+                            is LogicInt -> classTable.nameOfId(it.n)
+                            else -> TODO("Logical unspecified ID")
+                        }
+                    }
                 }
             }
 
         }
     }
 
-    fun toJCDBType(x:  Term<Jtype<ID>>): JcClassOrInterface? {
-//        when (x) {
-//            is Class_ -> return object: JcClassOrInterface() {
-//
-//            }
-//        }
-        return null
+    fun toJCDBType(x:  Term<Jtype<ID>>, jcClasspath: JcClasspath, nameOfID: (Term<LogicInt>) -> String?): JcClassOrInterface? {
+        return when (x) {
+            is Class_ ->
+                jcClasspath.findClass(nameOfID(x.id)!!)
+            is Interface ->
+                jcClasspath.findClass(nameOfID(x.id)!!)
+            else -> TODO("Not implemented")
+        }
     }
 
     @Test
@@ -292,11 +299,19 @@ class JGSstandard {
         val classTable = BigCT(data.second, data.first)
         val classpath = data.first.classPath!!
         val solver = solverOfBigCT(classTable, classpath)
-        // construction with arguments could be an issue
-        val aList = classpath.findClassOrNull("java.lang.Iterable") as JcClassOrInterface
-//        val aList = classpath.findClassOrNull("java.lang.Object") as JcClassOrInterface
-        val answer = solver.getRandomSubclassOf(listOf ( aList ))
+
+        val className1 = "java.lang.Iterable"
+        val aList = classpath.findClassOrNull(className1) as JcClassOrInterface
+        val answer = solver.getRandomSubclassOf(listOf(aList))
         println("... $answer")
+        assert(answer.toString().contains("java.lang.Iterable"))
+
+//        val className2 = "javax.print.attribute.standard.PrinterStateReasons"
+//        val printerState = classpath.findClassOrNull(className2) as JcClassOrInterface
+//        val answer2 = solver.getRandomSubclassOf(listOf(printerState))
+//        println("... $answer2")
+//        assert(answer.toString().contains(className2))
+
     }
 
     @OptIn(ExperimentalTime::class)
