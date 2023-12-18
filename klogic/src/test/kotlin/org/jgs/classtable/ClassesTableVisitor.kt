@@ -44,21 +44,24 @@ data class ClassesTable(
         1 to C(
             params = logicListOf(), superClass = Class_(1.toLogic(), logicListOf()), logicListOf()
         ), 2 to I(
-        params = logicListOf(), supers = logicListOf()
-    ), 3 to I(
-        params = logicListOf(), supers = logicListOf()
-    )
-    ), val idOfName: MutableMap<String, Int> = mutableMapOf(
+            params = logicListOf(), supers = logicListOf()
+        ), 3 to I(
+            params = logicListOf(), supers = logicListOf()
+        )
+    ),
+    val idOfName: MutableMap<String, Int> = mutableMapOf(
         "java.lang.Object" to 1, "java.lang.Cloneable" to 2, "java.io.Serializable" to 3
-    ), val nameOfId: MutableMap<Int, String> = mutableMapOf(
+    ),
+    val nameOfId: MutableMap<Int, String> = mutableMapOf(
         1 to "java.lang.Object", 2 to "java.lang.Cloneable", 3 to "java.io.Serializable"
-    ), val missingTypes: MutableSet<String> = mutableSetOf(),
+    ),
+    val missingTypes: MutableSet<String> = mutableSetOf(),
     val kindOfId: MutableMap<Int, Jtype_kind> = mutableMapOf(
         1 to Class_kind, 2 to Interface_kind, 3 to Interface_kind
-    )
+    ),
 ) {
 
-    public var classPath : JcClasspath? = null
+    public var classPath: JcClasspath? = null
     private fun addName(name: String, id: Int) {
         check(!idOfName.containsKey(name))
         check(!nameOfId.containsKey(id))
@@ -90,24 +93,36 @@ data class ClassesTable(
         val typeParams = type.typeParameters.mapIndexed { index, param ->
             param.toJtype(index, classpath, depth = 0)
         }.toLogicList()
-        val supers = type.interfaces.map { it.toJtype(classpath, depth = 0) }.toLogicList()
+        val preInterfaces =
+            try { type.interfaces }
+            catch (exc: org.jacodb.api.NoClassInClasspathException) {
+                println("Class Load error for interfaces: $exc")
+                listOf()
+            }
+        val supers = preInterfaces.map { it.toJtype(classpath, depth = 0) }.toLogicList()
 
         val decl = when {
             isInterface -> I(typeParams, supers)
-            else -> C(
-                typeParams,
-                type.superType?.toJtype(classpath, depth = 0) ?: toJtype(classpath.objectClass,
-                    classpath, 0
-                ), supers
-            )
+            else -> {
+                val superTyp =
+                    try {
+                        type.superType?.toJtype(classpath, depth = 0) ?: toJtype(
+                            classpath.objectClass,
+                            classpath, 0
+                        )
+                    } catch (exc: org.jacodb.api.NoClassInClasspathException) {
+                        println("Substituting Object: $exc")
+                        toJtype(classpath.objectClass,classpath, 0)
+                    }
+                C(typeParams, superTyp, supers)
+            }
         }
         val name = this.name
 
         if (idOfName.containsKey(name) && table.containsKey(idOfName[name]!!)) {
             // We have already visited this type
             return
-        }
-        else {
+        } else {
             val kind = if (this.isInterface) Interface_kind else Class_kind
             val id = // TODO: only else is needed
                 if (idOfName[name] != null) idOfName[name]!! else mkId(name, kind)
@@ -118,7 +133,7 @@ data class ClassesTable(
             //                checkt(!table.containsKey(id)) { String.format("Duplicate ID generated: $id") }
             //            }
             table[id] = decl
-            check(idOfName[name] == id){
+            check(idOfName[name] == id) {
                 "FUCK"
             }
             table.containsKey(id)
@@ -137,7 +152,7 @@ data class ClassesTable(
     }
 
     private fun JcType.toJtype(
-        index: Int, classpath: JcClasspath, depth: Int
+        index: Int, classpath: JcClasspath, depth: Int,
     ): Jtype<LogicInt> = when (this) {
         is JcRefType -> toJtype(index, classpath, depth + 1)
         is JcPrimitiveType -> typeName.toPrimitiveType()
@@ -159,7 +174,7 @@ data class ClassesTable(
     }
 
     private fun JcRefType.toJvmTypeArgument(
-        index: Int, classpath: JcClasspath, depth: Int
+        index: Int, classpath: JcClasspath, depth: Int,
     ): Jarg<Jtype<LogicInt>> = when (this) {
         is JcArrayType -> Array_(
             elementType.toJtype(index, classpath, depth + 1)
@@ -173,7 +188,7 @@ data class ClassesTable(
     }
 
     private fun JcBoundedWildcard.toJvmTypeArgument(
-        index: Int, classpath: JcClasspath, depth: Int
+        index: Int, classpath: JcClasspath, depth: Int,
     ): Jarg<Jtype<LogicInt>> {
         require(lowerBounds.isEmpty() != upperBounds.isEmpty())
 
@@ -211,7 +226,7 @@ data class ClassesTable(
     }
 
     fun JcTypeVariableDeclaration.toJtype(
-        index: Int, classpath: JcClasspath, depth: Int
+        index: Int, classpath: JcClasspath, depth: Int,
     ): Jtype<LogicInt> {
         val typeBounds = bounds
 
@@ -248,8 +263,10 @@ data class ClassesTable(
             else -> {
                 val kind = if (coi.isInterface) Interface_kind else Class_kind
                 val id: Int = this.mkId(coi.javaClass.name, kind)
-                if (coi.isInterface) Interface(id.toLogic(), typeParams) else Class_(id.toLogic(),
-                    typeParams)
+                if (coi.isInterface) Interface(id.toLogic(), typeParams) else Class_(
+                    id.toLogic(),
+                    typeParams
+                )
             }
         }
     }
@@ -288,10 +305,12 @@ data class ClassesTable(
             check(table.table.containsKey(3)) { "No object with ID=3 generated" }
             println("Table's last ID = ${table.lastID}")
             println("9137 = ${table.table[9137]}")
-            println("table.idOfName[\"java.lang.Iterable\"] = ${
-                table.idOfName["java.lang" +
-                    ".Iterable"]
-            }")
+            println(
+                "table.idOfName[\"java.lang.Iterable\"] = ${
+                    table.idOfName["java.lang" +
+                            ".Iterable"]
+                }"
+            )
             println("table.nameOfId[9137] = ${table.nameOfId[9137]}")
             table.classPath = classpath
             return table

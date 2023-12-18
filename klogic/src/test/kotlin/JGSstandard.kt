@@ -306,11 +306,11 @@ class JGSstandard {
         println("... $answer")
         assert(answer.toString().contains("java.lang.Iterable"))
 
-//        val className2 = "javax.print.attribute.standard.PrinterStateReasons"
-//        val printerState = classpath.findClassOrNull(className2) as JcClassOrInterface
-//        val answer2 = solver.getRandomSubclassOf(listOf(printerState))
-//        println("... $answer2")
-//        assert(answer.toString().contains(className2))
+        val className2 = "javax.print.attribute.standard.PrinterStateReasons"
+        val printerState = classpath.findClassOrNull(className2) as JcClassOrInterface
+        val answer2 = solver.getRandomSubclassOf(listOf(printerState))
+        println("... $answer2")
+        assert(answer.toString().contains(className2))
 
     }
 
