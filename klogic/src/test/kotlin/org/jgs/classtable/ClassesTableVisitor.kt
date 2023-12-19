@@ -91,7 +91,7 @@ data class ClassesTable(
     fun JcClassOrInterface.toDeclaration(classpath: JcClasspath) {
         val type = toType()
         val typeParams = type.typeParameters.mapIndexed { index, param ->
-            param.toJtype(index, classpath, depth = 0)
+            toJtype(param, index, classpath, depth = 0)
         }.toLogicList()
         val preInterfaces =
             try { type.interfaces }
@@ -225,10 +225,11 @@ data class ClassesTable(
         )
     }
 
-    fun JcTypeVariableDeclaration.toJtype(
+    fun toJtype(varDecl: JcTypeVariableDeclaration,
         index: Int, classpath: JcClasspath, depth: Int,
     ): Jtype<LogicInt> {
-        val typeBounds = bounds
+        val typeBounds = varDecl.bounds
+        val symbol = varDecl.symbol
 
         val upperBound = when {
             typeBounds.isEmpty() -> toJtype(classpath.objectClass, classpath, depth + 1)
@@ -243,7 +244,7 @@ data class ClassesTable(
         )
     }
 
-    public fun toJtype(coi: JcClassOrInterface, classpath: JcClasspath, depth: Int): Jtype<LogicInt> {
+    fun toJtype(coi: JcClassOrInterface, classpath: JcClasspath, depth: Int): Jtype<LogicInt> {
         val typeParams = coi.toType().typeArguments.mapIndexed { index, param ->
             param.toJvmTypeArgument(index, classpath, depth + 1)
         }.toLogicList()

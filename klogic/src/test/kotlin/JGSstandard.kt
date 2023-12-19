@@ -1,38 +1,37 @@
 @file:Suppress("SpellCheckingInspection", "MUST_BE_INITIALIZED_OR_FINAL_OR_ABSTRACT_WARNING")
 
 import JGSBackward.ClosureType
-import kotlinx.coroutines.runBlocking
 import org.jacodb.api.JcClassOrInterface
 import org.jacodb.api.JcClassType
 import org.jacodb.api.JcClasspath
+import org.jacodb.api.JcTypeVariableDeclaration
 import org.jacodb.api.ext.findClass
 import org.jacodb.api.ext.findTypeOrNull
-import org.jacodb.impl.features.InMemoryHierarchy
-import org.jacodb.impl.jacodb
 import org.jgrapht.graph.DefaultEdge
 import org.jgrapht.graph.DirectedAcyclicGraph
 import org.jgrapht.traverse.TopologicalOrderIterator
 import org.jgs.classtable.ClassesTable
+import org.jgs.classtable.TypeSolver
 import org.jgs.classtable.extractClassesTable
-import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Test
 import org.klogic.core.*
 import org.klogic.core.Var
 import org.klogic.utils.terms.*
 import org.klogic.utils.terms.LogicList.Companion.logicListOf
-import utils.*
 import utils.JGS.*
 import utils.JGS.Closure.Closure
 import utils.JGS.Wildcard
+import utils.JtypePretty
+import utils.LogicInt
 import utils.LogicInt.Companion.toLogic
+import utils.LogicOption
+import utils.Some
 import utils.freshTypedVars
 import kotlin.time.ExperimentalTime
 import kotlin.time.TimeSource
-
-interface TypeSolver {
-    //fun getSuitableTypes(type: JcTypeVariableDeclaration): Sequence<JcClassOrInterface>
-    fun getRandomSubclassOf(superClasses: List<JcClassOrInterface>): JcClassOrInterface?
-}
 
 class JGSstandard {
     companion object {
@@ -51,7 +50,7 @@ class JGSstandard {
             data = prepareGraph(ct, verbose = false)
         }
 
-        private fun prepareGraph(
+        fun prepareGraph(
                 ct: ClassesTable,
                 verbose: Boolean = false
         ): Pair<ClassesTable, DirectedAcyclicGraph<Int, DefaultEdge>> {
@@ -126,8 +125,127 @@ class JGSstandard {
             //        println(" Object with id=7671 is ${ct.table[7671]}")
             return (ct to directedGraph)
         }
-    }
 
+        fun toJCDBType(x:  Term<Jtype<ID>>, jcClasspath: JcClasspath, nameOfID: (Term<LogicInt>) -> String?): JcClassOrInterface? {
+            return when (x) {
+                is Class_ ->
+                    jcClasspath.findClass(nameOfID(x.id)!!)
+                is Interface ->
+                    jcClasspath.findClass(nameOfID(x.id)!!)
+                else -> TODO("Not implemented")
+            }
+        }
+
+        @OptIn(ExperimentalTime::class)
+        fun solverOfBigCT(classTable: BigCT, classpath: JcClasspath,
+                          toJCDBType: (Term<Jtype<ID>>, JcClasspath, (Term<LogicInt>) -> String? ) -> JcClassOrInterface?
+                          ): TypeSolver {
+            return object: TypeSolver {
+                override fun getSuitableTypes(type: JcTypeVariableDeclaration, printTime: Boolean): JcClassOrInterface? {
+                    val index = 0 // TODO: Fix this dummy index.
+                    val superBound = classTable.data.toJtype(type, index, classpath, 0)
+                    val v = Verifier(classTable)
+                    val closureBuilder = Closure(classTable)
+                    println("superBound = $superBound")
+
+                    withEmptyContext {
+                        val g = { q: Term<Jtype<ID>> ->
+                            val direct: (v29: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal, v30: Term<Jtype<LogicInt>>, v31: Term<Jtype<LogicInt>>, v32: Term<LogicBool>) -> (State) -> RecursiveStream<State> =
+                                { a, b, c, d ->
+                                    v.minus_less_minus(a, b, c, d)
+                                }
+                            and(
+                                only_classes_interfaces_and_arrays(q),
+                                JGSBackward.MakeClosure2(closureBuilder)
+                                    .closure(direct, superBound, q)
+                            )
+                        }
+
+                        var answerStartTimeMark =
+                            if (printTime) (TimeSource.Monotonic.markNow()) else null
+//
+                        val elementConsumer: State.() -> Unit =
+                            if (printTime) { {
+                                val nextMark = TimeSource.Monotonic.markNow()
+                                val delta = (nextMark - answerStartTimeMark!!).inWholeMilliseconds
+                                answerStartTimeMark = nextMark
+                                println("... in $delta ms")
+                            }}
+                            else { { } }
+                        val answers = run(1, g, elementConsumer = elementConsumer).map { p -> p.term }.toList()
+                        if (answers.isEmpty()) {
+                            println("No answers")
+                            return null
+                        }
+
+                        val pp = JtypePretty { classTable.nameOfId(it) }
+                        val answer2 = pp.ppJtype(answers[0])
+                        println(answer2)
+                        return toJCDBType(answers[0], classpath) {
+                            when (it) {
+                                is LogicInt -> classTable.nameOfId(it.n)
+                                else -> TODO("Logical unspecified ID")
+                            }
+                        }
+                    }
+                }
+
+                override fun getRandomSubclassOf(superClasses: List<JcClassOrInterface>, printTime: Boolean): JcClassOrInterface? {
+                    val superBounds = superClasses.map {
+                        classTable.data.toJtype(it, classpath, 0)
+                    }
+                    println("superBounds = $superBounds")
+                    val v = Verifier(classTable)
+                    val closureBuilder = Closure(classTable)
+
+                    withEmptyContext {
+                        val g = { q: Term<Jtype<ID>> ->
+                            val direct: (v29: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal, v30: Term<Jtype<LogicInt>>, v31: Term<Jtype<LogicInt>>, v32: Term<LogicBool>) -> (State) -> RecursiveStream<State> =
+                                { a, b, c, d ->
+                                    v.minus_less_minus(a, b, c, d)
+                                }
+                            and(
+                                only_classes_interfaces_and_arrays(q),
+                                superBounds.fold(success) { acc, bound ->
+                                    acc and
+                                            JGSBackward.MakeClosure2(closureBuilder)
+                                                .closure(direct, bound, q)
+                                }
+                            )
+                        }
+
+
+                        var answerStartTimeMark =
+                            if (printTime) (TimeSource.Monotonic.markNow()) else null
+//
+                        val elementConsumer: State.() -> Unit =
+                            if (printTime) { {
+                                val nextMark = TimeSource.Monotonic.markNow()
+                                val delta = (nextMark - answerStartTimeMark!!).inWholeMilliseconds
+                                answerStartTimeMark = nextMark
+                                println("... in $delta ms")
+                            }}
+                            else { { } }
+                        val answers = run(1, g, elementConsumer = elementConsumer).map { p -> p.term }.toList()
+                        if (answers.isEmpty())
+                            return null
+                        val answer = answers[0]
+
+                        val pp = JtypePretty { classTable.nameOfId(it) }
+                        val answer2 = pp.ppJtype(answer)
+                        println(answer2)
+                        return toJCDBType(answer, classpath) {
+                            when (it) {
+                                is LogicInt -> classTable.nameOfId(it.n)
+                                else -> TODO("Logical unspecified ID")
+                            }
+                        }
+                    }
+                }
+
+            }
+        }
+    }
 
     private fun <T> Iterable<T>.toCountMap(): Map<out T, Int> = groupingBy { it }.eachCount()
 
@@ -225,92 +343,48 @@ class JGSstandard {
     }
     */
 
-
-    @OptIn(ExperimentalTime::class)
-    fun solverOfBigCT(classTable: BigCT, classpath: JcClasspath): TypeSolver {
-        return object: TypeSolver {
-            override fun getRandomSubclassOf(superClasses: List<JcClassOrInterface>): JcClassOrInterface? {
-                val superBounds = superClasses.map {
-                    classTable.data.toJtype(it, classpath, 0)
-                }
-                println("superBounds = $superBounds")
-                val v = Verifier(classTable)
-                val closureBuilder = Closure(classTable)
-
-
-                withEmptyContext {
-                    val g = { q: Term<Jtype<ID>> ->
-                        val direct: (v29: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal, v30: Term<Jtype<LogicInt>>, v31: Term<Jtype<LogicInt>>, v32: Term<LogicBool>) -> (State) -> RecursiveStream<State> =
-                            { a, b, c, d ->
-                                v.minus_less_minus(a, b, c, d)
-                            }
-                        and(
-                            only_classes_interfaces_and_arrays(q),
-                            superBounds.fold(success) { acc, bound ->
-                                acc and
-                                        JGSBackward.MakeClosure2(closureBuilder)
-                                            .closure(direct, bound, q)
-                            }
-                        )
-                    }
-
-                    var answerStartTimeMark = TimeSource.Monotonic.markNow()
-//
-                    val elementConsumer: State.() -> Unit = {
-                        val nextMark = TimeSource.Monotonic.markNow()
-                        val delta = (nextMark - answerStartTimeMark).inWholeMilliseconds
-                        answerStartTimeMark = nextMark
-                        println("... in $delta ms")
-                    }
-                    val answers = run(1, g, elementConsumer = elementConsumer).map { p -> p.term }.toList()
-                    if (answers.isEmpty())
-                        return null
-                    val answer = answers[0]
-
-                    val pp = JtypePretty { classTable.nameOfId(it) }
-                    val answer2 = pp.ppJtype(answer)
-                    println(answer2)
-                    return toJCDBType(answer, classpath ) {
-                        when (it) {
-                            is LogicInt -> classTable.nameOfId(it.n)
-                            else -> TODO("Logical unspecified ID")
-                        }
-                    }
-                }
-            }
-
-        }
-    }
-
-    fun toJCDBType(x:  Term<Jtype<ID>>, jcClasspath: JcClasspath, nameOfID: (Term<LogicInt>) -> String?): JcClassOrInterface? {
-        return when (x) {
-            is Class_ ->
-                jcClasspath.findClass(nameOfID(x.id)!!)
-            is Interface ->
-                jcClasspath.findClass(nameOfID(x.id)!!)
-            else -> TODO("Not implemented")
-        }
-    }
-
     @Test
     @DisplayName("111 Iterable")
     fun testIntegration1() {
         // TODO: dirty hack
         val classTable = BigCT(data.second, data.first)
         val classpath = data.first.classPath!!
-        val solver = solverOfBigCT(classTable, classpath)
+        val solver = solverOfBigCT(classTable, classpath, ::toJCDBType)
 
         val className1 = "java.lang.Iterable"
         val aList = classpath.findClassOrNull(className1) as JcClassOrInterface
-        val answer = solver.getRandomSubclassOf(listOf(aList))
+        val answer = solver.getRandomSubclassOf(listOf(aList), printTime = true)
         println("... $answer")
         assert(answer.toString().contains("java.lang.Iterable"))
 
-        val className2 = "javax.print.attribute.standard.PrinterStateReasons"
-        val printerState = classpath.findClassOrNull(className2) as JcClassOrInterface
-        val answer2 = solver.getRandomSubclassOf(listOf(printerState))
-        println("... $answer2")
-        assert(answer.toString().contains(className2))
+//        val className2 = "javax.print.attribute.standard.PrinterStateReasons"
+//        val printerState = classpath.findClassOrNull(className2) as JcClassOrInterface
+//        val answer2 = solver.getRandomSubclassOf(listOf(printerState))
+//        println("... $answer2")
+//        assert(answer.toString().contains(className2))
+
+    }
+    @Test
+    @DisplayName("222")
+    fun testIntegration2() {
+        // TODO: dirty hack
+        val classTable = BigCT(data.second, data.first)
+        val classpath = data.first.classPath!!
+        val solver = solverOfBigCT(classTable, classpath, ::toJCDBType)
+
+        val className1 = "java.lang.Iterable"
+        val jcList = classpath.findTypeOrNull<List<*>>() as JcClassType
+//        val answer = solver.getRandomSubclassOf(listOf(aList), printTime = true)
+        println( jcList.typeParameters.first() )
+        val randomConcreteType = solver.getSuitableTypes(jcList.typeParameters.first())
+        println("... $randomConcreteType")
+        assert(randomConcreteType.toString().contains("java.lang.List"))
+
+//        val className2 = "javax.print.attribute.standard.PrinterStateReasons"
+//        val printerState = classpath.findClassOrNull(className2) as JcClassOrInterface
+//        val answer2 = solver.getRandomSubclassOf(listOf(printerState))
+//        println("... $answer2")
+//        assert(answer.toString().contains(className2))
 
     }
 
@@ -410,6 +484,23 @@ class JGSstandard {
                 count = 5,
                 ClosureType.Subtyping, { _, ct -> ct.object_t },
                 verbose = false
+        )
+    }
+
+    @Test
+    @DisplayName("Subclasses of Pseudo Object")
+    fun test21() {
+        val expectedResult: (CLASSTABLE) -> Collection<String> = { _ ->
+            listOf(
+            )
+        }
+        testSingleConstraint(
+            expectedResult,
+            count = 5,
+            ClosureType.Subtyping, { _, ct ->
+                ct.makeTVar(0, ct.object_t)
+            },
+            verbose = false
         )
     }
 
