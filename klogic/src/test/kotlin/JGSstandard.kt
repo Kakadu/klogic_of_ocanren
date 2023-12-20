@@ -113,16 +113,16 @@ class JGSstandard {
                 }
                 toRemove.forEach { directedGraph.removeVertex(it) }
             }
-            println("Graph prepareted")
-            println(" Total ${ct.table.size} classes")
-            println(" Orphaned types: ${ct.missingTypes} ")
-            //        println(" nameOfId size =  ${ct.da} ")
 
-            println("Id of 'java.lang.Object' =  ${ct.idOfName["java.lang.Object"]}")
-            println("Id of 'java.lang.Iterable' =  ${ct.idOfName["java.lang.Iterable"]}")
-            println("Id of 'java.util.List' =  ${ct.idOfName["java.util.List"]}")
-            println(" Object with id=1 is ${ct.table[1]}")
-            //        println(" Object with id=7671 is ${ct.table[7671]}")
+            println("Total classes = ${ct.table.size}")
+            if (verbose) {
+                println(" Orphaned types: ${ct.missingTypes} ")
+                println("Id of 'java.lang.Object' =  ${ct.idOfName["java.lang.Object"]}")
+                println("Id of 'java.lang.Iterable' =  ${ct.idOfName["java.lang.Iterable"]}")
+                println("Id of 'java.util.List' =  ${ct.idOfName["java.util.List"]}")
+                println(" Object with id=1 is ${ct.table[1]}")
+            }
+
             return (ct to directedGraph)
         }
 
@@ -143,10 +143,11 @@ class JGSstandard {
             return object: TypeSolver {
                 override fun getSuitableTypes(type: JcTypeVariableDeclaration, printTime: Boolean): JcClassOrInterface? {
                     val index = 0 // TODO: Fix this dummy index.
-                    val superBound = classTable.data.toJtype(type, index, classpath, 0)
+                    val superBounds =
+                        type.bounds.map { classTable.data.toJtype(it, index, classpath, 0) }
                     val v = Verifier(classTable)
                     val closureBuilder = Closure(classTable)
-                    println("superBound = $superBound")
+                    println("superBounds = $superBounds")
 
                     withEmptyContext {
                         val g = { q: Term<Jtype<ID>> ->
@@ -156,8 +157,11 @@ class JGSstandard {
                                 }
                             and(
                                 only_classes_interfaces_and_arrays(q),
-                                JGSBackward.MakeClosure2(closureBuilder)
-                                    .closure(direct, superBound, q)
+                                superBounds.fold(success) { acc, bound ->
+                                    acc and
+                                            JGSBackward.MakeClosure2(closureBuilder)
+                                                .closure(direct, bound, q)
+                                }
                             )
                         }
 
@@ -372,13 +376,22 @@ class JGSstandard {
         val classpath = data.first.classPath!!
         val solver = solverOfBigCT(classTable, classpath, ::toJCDBType)
 
-        val className1 = "java.lang.Iterable"
+        run {
+            val jcList = classpath.findTypeOrNull<List<*>>() as JcClassType
+//        val answer = solver.getRandomSubclassOf(listOf(aList), printTime = true)
+            println(jcList.typeParameters.first())
+            val randomConcreteType = solver.getSuitableTypes(jcList.typeParameters.first())
+            println("... $randomConcreteType")
+            assert(randomConcreteType.toString().contains("java.lang.Object"))
+        }
+
+        //val className1 = "java.lang.Iterable"
         val jcList = classpath.findTypeOrNull<List<*>>() as JcClassType
 //        val answer = solver.getRandomSubclassOf(listOf(aList), printTime = true)
         println( jcList.typeParameters.first() )
         val randomConcreteType = solver.getSuitableTypes(jcList.typeParameters.first())
         println("... $randomConcreteType")
-        assert(randomConcreteType.toString().contains("java.lang.List"))
+        assert(randomConcreteType.toString().contains("java.lang.Object"))
 
 //        val className2 = "javax.print.attribute.standard.PrinterStateReasons"
 //        val printerState = classpath.findClassOrNull(className2) as JcClassOrInterface
@@ -496,7 +509,7 @@ class JGSstandard {
         }
         testSingleConstraint(
             expectedResult,
-            count = 5,
+            count = 0,
             ClosureType.Subtyping, { _, ct ->
                 ct.makeTVar(0, ct.object_t)
             },

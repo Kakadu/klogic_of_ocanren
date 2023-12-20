@@ -154,19 +154,19 @@ data class ClassesTable(
     private fun JcType.toJtype(
         index: Int, classpath: JcClasspath, depth: Int,
     ): Jtype<LogicInt> = when (this) {
-        is JcRefType -> toJtype(index, classpath, depth + 1)
+        is JcRefType -> toJtype(this, index, classpath, depth + 1)
         is JcPrimitiveType -> typeName.toPrimitiveType()
         else -> error("Unknown JcType $this")
     }
 
-    private fun JcRefType.toJtype(index: Int, classpath: JcClasspath, depth: Int): Jtype<LogicInt> {
+    fun toJtype(refTyp: JcRefType, index: Int, classpath: JcClasspath, depth: Int): Jtype<LogicInt> {
         if (depth > 50) {
             TODO("Too deep recursive type")
         }
-        return when (this) {
-            is JcArrayType -> Array_(elementType.toJtype(index, classpath, depth + 1))
-            is JcClassType -> toJtype(classpath, depth + 1)
-            is JcTypeVariable -> toJtype(index, classpath, depth + 1)
+        return when (refTyp) {
+            is JcArrayType -> Array_(refTyp.elementType.toJtype(index, classpath, depth + 1))
+            is JcClassType -> refTyp.toJtype(classpath, depth + 1)
+            is JcTypeVariable -> refTyp.toJtype(index, classpath, depth + 1)
             is JcBoundedWildcard -> error("Unexpected $this")
             is JcUnboundWildcard -> error("Unexpected $this")
             else -> error("Unknown ref type $this")
@@ -233,9 +233,9 @@ data class ClassesTable(
 
         val upperBound = when {
             typeBounds.isEmpty() -> toJtype(classpath.objectClass, classpath, depth + 1)
-            typeBounds.size == 1 -> typeBounds.single().toJtype(depth + 1, classpath, index)
+            typeBounds.size == 1 -> toJtype(typeBounds.single(), depth + 1, classpath, index)
             else -> Intersect(
-                typeBounds.map { it.toJtype(depth + 1, classpath, index) }.toLogicList()
+                typeBounds.map { toJtype(it, depth + 1, classpath, index) }.toLogicList()
             )
         }
 
@@ -305,14 +305,14 @@ data class ClassesTable(
             check(table.table.containsKey(2)) { "No object with ID=2 generated" }
             check(table.table.containsKey(3)) { "No object with ID=3 generated" }
             println("Table's last ID = ${table.lastID}")
-            println("9137 = ${table.table[9137]}")
-            println(
-                "table.idOfName[\"java.lang.Iterable\"] = ${
-                    table.idOfName["java.lang" +
-                            ".Iterable"]
-                }"
-            )
-            println("table.nameOfId[9137] = ${table.nameOfId[9137]}")
+//            println("9137 = ${table.table[9137]}")
+//            println(
+//                "table.idOfName[\"java.lang.Iterable\"] = ${
+//                    table.idOfName["java.lang" +
+//                            ".Iterable"]
+//                }"
+//            )
+//            println("table.nameOfId[9137] = ${table.nameOfId[9137]}")
             table.classPath = classpath
             return table
         }
