@@ -1,8 +1,11 @@
 [submodule "OCanren"]
 	path = OCanren
 	url = https://github.com/Kakadu/OCanren.git
-	branch = wildcards+var_ordering_statistics
+	branch = wildcards-2024
+	shallow = true
 [submodule "noCanren"]
 	path = noCanren
 	url = https://github.com/PLTools/noCanren.git
 	branch = wildcard
+	shallow = true
+

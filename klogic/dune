@@ -25,6 +25,8 @@
   ;./README.md
   ./build.gradle.kts
   ./settings.gradle.kts
+  ./src/main/kotlin/org/jgs/classtable/ClassesExtractorTask.kt
+  ./src/test/kotlin/org/jgs/classtable/ClassesTableVisitor.kt
   ./src/test/kotlin/utils/Closure.kt
   ./src/test/kotlin/utils/JGS_Helpers.kt
   ./src/test/kotlin/utils/JGS.kt
