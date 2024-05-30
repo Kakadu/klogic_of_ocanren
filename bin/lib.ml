@@ -555,16 +555,19 @@ let translate_implementation stru =
 
 let analyze_cmt _source_file out_file stru =
   Out_channel.with_file out_file ~f:(fun ch ->
+    let ppf = Format.formatter_of_out_channel ch in
     match translate_implementation stru with
-    | Stdlib.Result.Ok info ->
-      Printf.fprintf ch "%s\n" (Inh_info.preamble info);
-      Printf.fprintf ch "// There are %d relations\n" (List.length info.Inh_info.rvbs);
-      let ppf = Format.formatter_of_out_channel ch in
-      Inh_info.iter_vbs info ~f:(pp_item ~toplevel:true info ppf);
-      Printf.fprintf ch "%s\n" (Inh_info.epilogue info);
-      Format.pp_print_flush ppf ();
-      flush ch
-    | Error _ -> assert false)
+    | Error _ -> assert false
+    | Ok info ->
+      (match Trans_config.config.lang with
+      | Trans_config.Kotlin ->
+        Printf.fprintf ch "%s\n" (Inh_info.preamble info);
+        Printf.fprintf ch "// There are %d relations\n" (List.length info.Inh_info.rvbs);
+        Inh_info.iter_vbs info ~f:(pp_item ~toplevel:true info ppf);
+        Printf.fprintf ch "%s\n" (Inh_info.epilogue info);
+        Format.pp_print_flush ppf ();
+        flush ch
+      | Scheme -> Format.fprintf ppf "%a%!" Pp_scheme.pp info))
 ;;
 
 let run source_file out_file =

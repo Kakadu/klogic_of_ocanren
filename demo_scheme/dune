@@ -1,0 +1,18 @@
+(rule
+ (deps
+  %{project_root}/bin/klogic_of_ocanren.exe
+  %{cmo:../oleg_numbers}
+  ;
+  )
+ (target OlegNumbers.scm)
+ (mode promote)
+ (action
+  (run
+   %{project_root}/bin/klogic_of_ocanren.exe
+   ../.oleg_numbers.objs/byte/oleg_numbers.cmt
+   -scheme
+   -o
+   %{target})))
+
+(cram
+ (deps ./OlegNumbers.scm))

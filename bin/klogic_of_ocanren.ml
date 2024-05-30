@@ -5,6 +5,7 @@ let () =
   Arg.parse
     [ "-o", Arg.String (fun s -> config.out_file <- s), ""
     ; "-pretty", Arg.Unit (fun () -> config.pretty <- true), ""
+    ; "-scheme", Arg.Unit (fun () -> config.lang <- Scheme), " Output scheme"
     ]
     (fun s -> config.input_file <- s)
     "";
