@@ -2,6 +2,8 @@
 
 (generate_opam_files true)
 
+(cram enable)
+
 (package
  (name kotlin_of_ocanren)
  (synopsis "")

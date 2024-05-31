@@ -15,4 +15,25 @@
    %{target})))
 
 (cram
- (deps ./OlegNumbers.scm))
+ (deps
+  ./OlegNumbers.scm
+  %{project_root}/faster-miniKanren/mk.scm
+  ;
+  ))
+
+;(copy %{project_root}/faster-miniKanren/mk.scm .)
+
+; (cram
+;  (deps
+;   ;   %{project_root}/faster-miniKanren/mk.scm
+;   ../../faster-miniKanren/mk.scm
+;   ;
+;   ))
+
+(cram
+ (deps
+  ;%{project_root}/faster-miniKanren/private-unstable.rkt
+  ;   ../faster-miniKanren/private-unstable.rkt
+  ;%{project_root}/faster-minikanren/mk.scm
+  ;
+  ))

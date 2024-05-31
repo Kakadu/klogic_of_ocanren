@@ -567,7 +567,11 @@ let analyze_cmt _source_file out_file stru =
         Printf.fprintf ch "%s\n" (Inh_info.epilogue info);
         Format.pp_print_flush ppf ();
         flush ch
-      | Scheme -> Format.fprintf ppf "%a%!" Pp_scheme.pp info))
+      | Scheme ->
+        Format.fprintf ppf "; FUCK\n";
+        Format.fprintf ppf "%a%!" Pp_scheme.pp info;
+        Format.pp_print_flush ppf ();
+        flush ch))
 ;;
 
 let run source_file out_file =
