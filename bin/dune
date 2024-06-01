@@ -19,4 +19,4 @@
  (libraries str Tast_pattern ppxlib.stdppx compiler-libs.common ppx_deriving)
  (inline_tests)
  (preprocess
-  (pps ppx_expect ppx_deriving.map)))
+  (pps ppx_expect ppx_deriving.map ppx_deriving.show)))

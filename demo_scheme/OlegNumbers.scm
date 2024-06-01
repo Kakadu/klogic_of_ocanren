@@ -1,23 +1,22 @@
 ; FUCK
 
 ;;; There are 4 relations
-; zeroo 143
+; zeroo 162
 (define zeroo (lambda (n)
-                                                n `===` nilLogicList())
-; poso 143
-(define poso (lambda (n)
-             freshTypedVars { h: Term<LogicInt> t: Term<LogicList<LogicInt>> ->
-             (n `===` (h + t)) })
-; appendo 143
+                                                (== n '()))
+; poso 162
+(define poso (lambda (n) (fresh (h  t ) (== n (h + t)) )
+; appendo 162
 (define appendo (lambda (l, s, out)
-                conde(and(l `===` nilLogicList(), s `===` out),
-                      freshTypedVars { a: Term<LogicInt> d: Term<LogicList<LogicInt>> 
-                        res: Term<LogicList<LogicInt>> ->
-                      and((a + d) `===` l,
-                          (a + res) `===` out,
-                          appendo(d s res))
-                      }))
-; gt1o 143
+                (conde ((== l '())
+                      (== s out))
+                      ((fresh (a d res)
+                         (== (a + d) l)
+                         (== (a + res) out)
+                         (appendo d s res)
+                         )
+                      )
+                 )
+; gt1o 162
 (define gt1o (lambda (n)
-             freshTypedVars { a: Term<LogicInt> ad: Term<LogicInt> dd: Term<LogicList<LogicInt>> ->
-             (n `===` (a + (ad + dd))) })
+             (fresh (a  ad  dd ) (== n (a + (ad + dd))) )

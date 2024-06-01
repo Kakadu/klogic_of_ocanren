@@ -14,21 +14,24 @@ type 'a ast =
   | Infix_conj2 of 'a * 'a
   | New_scope of 'a
   | Bind of 'a * 'a
-  | Fresh of (string * Types.type_expr) list * 'a
-  | Wildcard of string * Types.type_expr * 'a
+  | Fresh of (string * (Types.type_expr[@printer fun fmt _ -> fprintf fmt "?"])) list * 'a
+  | Wildcard of string * (Types.type_expr[@printer fun fmt _ -> fprintf fmt "?"]) * 'a
   | Unify of 'a * 'a
   | Diseq of 'a * 'a
-  | Call_rel of Path.t * 'a list
+  | Call_rel of (Path.t[@printer fun fmt _ -> fprintf fmt "?"]) * 'a list
   | Tapp of 'a * 'a list (** Application of terms. Is similar to Call_rel *)
   | T_int of int
   | T_bool of bool
   | T_list_init of 'a list
   | T_list_nil
   | T_list_cons of 'a * 'a
-  | Tabstr of ((string * Types.type_expr) list * 'a) (** TODO: Types? *)
-  | Tident of Path.t (** TODO: Do we need this? *)
+  | Tabstr of
+      ((string * (Types.type_expr[@printer fun fmt _ -> fprintf fmt "?"])) list * 'a)
+  (** TODO: Types? *)
+  | Tident of Path.t [@printer fun fmt _ -> fprintf fmt "?"] (** TODO: Do we need this? *)
   | Tunit
-  | Other of Typedtree.expression
+  | Other of (Typedtree.expression[@printer fun fmt _ -> fprintf fmt "?"])
+[@@deriving show]
 
 (** Relational value bindings *)
 module Rvb = struct
