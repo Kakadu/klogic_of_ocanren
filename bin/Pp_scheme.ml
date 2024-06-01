@@ -1,5 +1,6 @@
 open Stdppx
 open AST
+open Trans_config
 
 let pp_ast_as_scheme inh_info =
   let path_is_none path =
@@ -34,46 +35,21 @@ let pp_ast_as_scheme inh_info =
            | _ -> true ->
       (match check_uses v1 rhs with
       | Uses_count.Once -> with_once_used v1 (fun () -> default ppf rhs)
-      | _ ->
-        fprintf
-          ppf
-          "@[freshTypesVars { %s: %a -> %a}]"
-          v1
-          (pp_typ_as_kotlin inh_info)
-          vtyp
-          default
-          rhs)
+      | _ -> fprintf ppf "@[fresh { %s  -> %a}]" v1 default rhs)
     | Fresh (xs, Pause e) ->
-      fprintf ppf "@[@[<hov 2>freshTypedVars { ";
-      pp_comma_list
-        (fun ppf (name, typ) ->
-          fprintf ppf "@[%s: %a@]" name (pp_typ_as_kotlin inh_info) typ)
-        ppf
-        xs;
+      fprintf ppf "@[@[<hov 2>fresh { ";
+      pp_list (fun ppf (name, _) -> fprintf ppf "%s " name) ppf xs;
       fprintf ppf " ->@]@ %a@ @[}@]@]" default e
     | Fresh (xs, e) ->
       (* fprintf ppf "/* NOTE: fresh without delay */@ "; *)
-      fprintf ppf "@[<hov>@[freshTypedVars {";
-      pp_comma_list
-        (fun ppf (name, typ) ->
-          fprintf ppf "@[ %s : %a@]" name (pp_typ_as_kotlin inh_info) typ)
-        ppf
-        xs;
+      fprintf ppf "@[<hov>@[fresh {";
+      pp_list (fun ppf (name, _) -> fprintf ppf " %s " name) ppf xs;
       fprintf ppf " ->@]@ %a@ @[}@]@]" default e
     | Wildcard (v, _t, e) -> with_wc v (fun () -> default ppf e)
-    | Unify (l, r) when par ->
-      (* TODO: if left argument is an empty list, swap the arguments to make Kotlin typecheck this *)
-      fprintf ppf "(%a `===` %a)" default l default r
-    (* fprintf ppf "(%a debugUnify %a)" pp_term_as_kotlin l pp_term_as_kotlin r *)
     | Unify (l, r) ->
       (* TODO: if left argument is an empty list, swap the arguments to make Kotlin typecheck this *)
-      fprintf ppf "%a `===` %a" default l default r
-    | Diseq (l, r) when par ->
-      (* TODO: if left argument is an empty list, swap the arguments to make Kotlin typecheck this *)
-      fprintf ppf "(%a `!==` %a)" default l default r
-    | Diseq (l, r) ->
-      (* TODO: if left argument is an empty list, swap the arguments to make Kotlin typecheck this *)
-      fprintf ppf "%a `!==` %a" default l default r
+      fprintf ppf "(== %a %a)" default l default r
+    | Diseq (l, r) -> fprintf ppf "(=/= %a %a)" default l default r
     | Call_rel (path, [ Tunit ]) when path_is_none path -> fprintf ppf "None()"
     | Call_rel (p, args) ->
       let kotlin_func =
@@ -83,12 +59,12 @@ let pp_ast_as_scheme inh_info =
         | exception Not_found -> Format.asprintf "%a" print_path p
         | s -> s
       in
-      fprintf ppf "@[%s(%a)@]" kotlin_func (pp_comma_list default) args
+      fprintf ppf "@[%s(%a)@]" kotlin_func (pp_list default) args
     | Tapp (Tident path, [ Tunit ]) when path_is_none path -> fprintf ppf "None()"
     | Tapp (f, args) ->
       Format.printf "Application %d\n%!" __LINE__;
       (*  *)
-      fprintf ppf "@[%a(%a)@]" default f (pp_comma_list default) args
+      fprintf ppf "@[%a(%a)@]" default f (pp_list default) args
     | Tident p ->
       let repr = Path.name p in
       if SS.mem repr !wcs
@@ -123,15 +99,14 @@ let pp_ast_as_scheme inh_info =
     | T_bool n -> fprintf ppf "%b.toLogicBool()" n
     | T_list_init ls ->
       fprintf ppf "@[%a@]" (pp_print_list ~pp_sep:pp_print_space helper) ls
-    | T_list_nil -> fprintf ppf "nilLogicList()"
+    | T_list_nil -> fprintf ppf "'()"
     | T_list_cons (h, tl) -> fprintf ppf "@[(%a + %a)@]" default h default tl
-    | Tabstr ([ (name, typ) ], rhs) ->
-      fprintf ppf "@[{ %s: %a -> %a }@]" name (pp_typ_as_kotlin inh_info) typ nopar rhs
+    | Tabstr ([ (name, _) ], rhs) -> fprintf ppf "@[{ %s  -> %a }@]" name nopar rhs
     | Tabstr (names, rhs) ->
       fprintf ppf "@[{ ";
-      List.iteri names ~f:(fun i (name, typ) ->
+      List.iteri names ~f:(fun i (name, _) ->
         if i <> 0 then fprintf ppf ", ";
-        fprintf ppf "@[%a: %a@]" print_ident name (pp_typ_as_kotlin inh_info) typ);
+        fprintf ppf "@[%a @]" print_ident name);
       fprintf ppf " -> %a }@]" nopar rhs
     | Tunit -> fprintf ppf "" (* fprintf ppf "/* Unit */" *)
     | Other e -> fprintf ppf "@[{| Other %a |}@]" Pprintast.expression (MyUntype.expr e)
@@ -145,8 +120,7 @@ let pp_rvb_as_scheme inh_info ppf { Rvb.name; args; body } =
   let pp_args ppf =
     pp_print_list
       ~pp_sep:(fun ppf () -> fprintf ppf ",@ ")
-      (fun ppf (name, typ) ->
-        fprintf ppf "@[%a: %a@]" print_ident name (pp_typ_as_kotlin inh_info) typ)
+      (fun ppf (name, _) -> fprintf ppf "%a" print_ident name)
       ppf
   in
   let tvars =
@@ -155,30 +129,10 @@ let pp_rvb_as_scheme inh_info ppf { Rvb.name; args; body } =
       ~init:S.empty
       args
   in
-  fprintf ppf "@[<v>";
-  fprintf ppf "@[context(RelationalContext)@]@ ";
-  fprintf
-    ppf
-    "@[<v 2>@[<hov 6>%sfun %s %a(%a@,@[): Goal =@]@]@ "
-    ""
-    (if S.is_empty tvars
-     then ""
-     else (
-       let names =
-         S.fold
-           (fun s acc ->
-             let mangled = ocaml_to_kotlin_tvar s in
-             sprintf "%s : Term<%s>" mangled mangled :: acc)
-           tvars
-           []
-       in
-       "<" ^ String.concat ~sep:", " names ^ ">"))
-    print_ident
-    name
-    pp_args
-    args;
-  fprintf ppf "%a" (pp_ast_as_kotlin inh_info) body;
-  fprintf ppf "@]@ @,@]"
+  (* fprintf ppf "@[context(RelationalContext)@]@ "; *)
+  fprintf ppf "@[<hov 2>@[(define %a (lambda (%a)@]@ " print_ident name pp_args args;
+  fprintf ppf "@[%a@]" (pp_ast_as_kotlin inh_info) body;
+  fprintf ppf ")@]@ "
 ;;
 
 let pp_item ~toplevel:_ info fmt =
@@ -188,15 +142,14 @@ let pp_item ~toplevel:_ info fmt =
   | Inh_info.RVB rvb ->
     printfn "; %s %d\n" rvb.name __LINE__;
     pp_rvb_as_scheme info fmt rvb (* printfn "%a" (pp_ast_as_scheme info) body *)
-  | Plain_kotlin _ -> printfn "; fuck %d" __LINE__
-  | Functor1 { name = _; typ = _; arg_name = _; arg_typ = _; body = _ } ->
-    printfn "; fuck %d" __LINE__
-  | _ -> printfn "; fuck %d" __LINE__
+  | Plain_kotlin s -> Format.fprintf fmt "%s" s
+  | Functor1 _ -> printfn "; Functors are not supported"
+  | MT_as_interface _ -> printfn "; Interfaces are not supported"
 ;;
 
 let pp : Format.formatter -> AST.Inh_info.t -> unit =
  fun ppf info ->
-  Format.fprintf ppf "%s\n" (Inh_info.preamble info);
+  Format.fprintf ppf "%s\n" (List.assoc Scheme (Inh_info.preamble info));
   Format.fprintf ppf ";;; There are %d relations\n" (List.length info.Inh_info.rvbs);
   Inh_info.iter_vbs info ~f:(pp_item ~toplevel:true info ppf)
 ;;

@@ -41,9 +41,11 @@ module Rvb = struct
   let mk name args body = { name; args; body }
 end
 
-let pp_comma_list ppf =
+(* let pp_comma_list ppf =
   Format.pp_print_list ~pp_sep:(fun ppf () -> Format.fprintf ppf ",@ ") ppf
-;;
+;; *)
+
+let pp_list ppf = Format.pp_print_list ~pp_sep:(fun ppf () -> Format.fprintf ppf " ") ppf
 
 let map_ast f = function
   | Pause x -> Pause (f x)
@@ -101,16 +103,16 @@ module Inh_info = struct
     { type_mangle_hints : (string, string) Hashtbl.t
     ; expr_mangle_hints : (string, string) Hashtbl.t
     ; mutable rvbs : item list
-    ; mutable preamble : string
-    ; mutable epilogue : string
+    ; mutable preamble : (Trans_config.transl_lang * string) list
+    ; mutable epilogue : (Trans_config.transl_lang * string) list
     }
 
   let create () =
     { type_mangle_hints = Hashtbl.create 13
     ; expr_mangle_hints = Hashtbl.create 13
     ; rvbs = []
-    ; preamble = ""
-    ; epilogue = ""
+    ; preamble = [ Trans_config.Scheme, ""; Trans_config.Kotlin, "" ]
+    ; epilogue = [ Trans_config.Scheme, ""; Trans_config.Kotlin, "" ]
     }
   ;;
 
@@ -138,10 +140,28 @@ module Inh_info = struct
   ;;
 
   let iter_vbs { rvbs; _ } ~f = List.iter (List.rev rvbs) ~f
-  let add_preamble t s = t.preamble <- t.preamble ^ s
-  let add_epilogue t s = t.epilogue <- t.epilogue ^ s
+
+  let add_preamble kind t s =
+    t.preamble
+    <- List.map t.preamble ~f:(fun (k, p) ->
+         match k, kind with
+         | Trans_config.Scheme, Trans_config.Scheme | Kotlin, Kotlin -> k, p ^ s
+         | _ -> k, p)
+  ;;
+
+  let add_epilogue kind t s =
+    (* TODO: avoid copypaste *)
+    t.epilogue
+    <- List.map t.epilogue ~f:(fun (k, p) ->
+         match k, kind with
+         | Trans_config.Scheme, Trans_config.Scheme | Kotlin, Kotlin -> k, p ^ s
+         | _ -> k, p)
+  ;;
+
   let preamble { preamble; _ } = preamble
   let epilogue { epilogue; _ } = epilogue
+  let get_preamble kind t = List.assoc kind (preamble t)
+  let get_epilogue kind t = List.assoc kind (epilogue t)
 end
 
 let unparse_arrows typ =
@@ -652,7 +672,7 @@ let pp_ast_as_kotlin inh_info =
           rhs)
     | Fresh (xs, Pause e) ->
       fprintf ppf "@[@[<hov 2>freshTypedVars { ";
-      pp_comma_list
+      pp_list
         (fun ppf (name, typ) ->
           fprintf ppf "@[%s: %a@]" name (pp_typ_as_kotlin inh_info) typ)
         ppf
@@ -660,8 +680,8 @@ let pp_ast_as_kotlin inh_info =
       fprintf ppf " ->@]@ %a@ @[}@]@]" default e
     | Fresh (xs, e) ->
       (* fprintf ppf "/* NOTE: fresh without delay */@ "; *)
-      fprintf ppf "@[<hov>@[freshTypedVars {";
-      pp_comma_list
+      fprintf ppf "@[<hov>@[fresh {";
+      pp_list
         (fun ppf (name, typ) ->
           fprintf ppf "@[ %s : %a@]" name (pp_typ_as_kotlin inh_info) typ)
         ppf
@@ -690,12 +710,12 @@ let pp_ast_as_kotlin inh_info =
         | exception Not_found -> Format.asprintf "%a" print_path p
         | s -> s
       in
-      fprintf ppf "@[%s(%a)@]" kotlin_func (pp_comma_list default) args
+      fprintf ppf "@[%s(%a)@]" kotlin_func (pp_list default) args
     | Tapp (Tident path, [ Tunit ]) when path_is_none path -> fprintf ppf "None()"
     | Tapp (f, args) ->
       Format.printf "Application %d\n%!" __LINE__;
       (*  *)
-      fprintf ppf "@[%a(%a)@]" default f (pp_comma_list default) args
+      fprintf ppf "@[%a(%a)@]" default f (pp_list default) args
     | Tident p ->
       let repr = Path.name p in
       if SS.mem repr !wcs

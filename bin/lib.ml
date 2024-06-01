@@ -495,7 +495,7 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
                         ]
                   ; _
                   } ->
-                Inh_info.add_preamble inh s;
+                Inh_info.add_preamble Kotlin inh s;
                 (), si
               | Tstr_attribute
                   { attr_name = { txt = "klogic.epilogue"; _ }
@@ -514,7 +514,7 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
                         ]
                   ; _
                   } ->
-                Inh_info.add_epilogue inh s;
+                Inh_info.add_epilogue Kotlin inh s;
                 (), si
               | Tstr_attribute
                   { attr_name = { txt = "klogic.type.mangle"; _ }; attr_payload; _ } ->
@@ -561,10 +561,10 @@ let analyze_cmt _source_file out_file stru =
     | Ok info ->
       (match Trans_config.config.lang with
       | Trans_config.Kotlin ->
-        Printf.fprintf ch "%s\n" (Inh_info.preamble info);
+        Printf.fprintf ch "%s\n" (Inh_info.get_preamble Trans_config.Kotlin info);
         Printf.fprintf ch "// There are %d relations\n" (List.length info.Inh_info.rvbs);
         Inh_info.iter_vbs info ~f:(pp_item ~toplevel:true info ppf);
-        Printf.fprintf ch "%s\n" (Inh_info.epilogue info);
+        Printf.fprintf ch "%s\n" (Inh_info.get_epilogue Trans_config.Kotlin info);
         Format.pp_print_flush ppf ();
         flush ch
       | Scheme ->
