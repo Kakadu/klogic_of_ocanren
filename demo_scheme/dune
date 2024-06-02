@@ -17,7 +17,9 @@
 (cram
  (deps
   ./OlegNumbers.scm
+  test_oleg.scm
   %{project_root}/faster-miniKanren/mk.scm
+  %{project_root}/faster-miniKanren/mk-vicare.scm
   ;
   ))
 

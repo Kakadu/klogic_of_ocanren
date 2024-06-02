@@ -498,6 +498,25 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
                 Inh_info.add_preamble Kotlin inh s;
                 (), si
               | Tstr_attribute
+                  { attr_name = { txt = "scheme.preamble" | "scheme.prologue"; _ }
+                  ; attr_payload =
+                      Parsetree.PStr
+                        [ { pstr_desc =
+                              Pstr_eval
+                                ( { pexp_desc =
+                                      Pexp_constant
+                                        (Pconst_string (s, _, (None | Some "")))
+                                  ; _
+                                  }
+                                , _ )
+                          ; _
+                          }
+                        ]
+                  ; _
+                  } ->
+                Inh_info.add_preamble Scheme inh s;
+                (), si
+              | Tstr_attribute
                   { attr_name = { txt = "klogic.epilogue"; _ }
                   ; attr_payload =
                       Parsetree.PStr
@@ -568,7 +587,6 @@ let analyze_cmt _source_file out_file stru =
         Format.pp_print_flush ppf ();
         flush ch
       | Scheme ->
-        Format.fprintf ppf "; FUCK\n";
         Format.fprintf ppf "%a%!" Pp_scheme.pp info;
         Format.pp_print_flush ppf ();
         flush ch))

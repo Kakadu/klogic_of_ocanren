@@ -33,6 +33,8 @@ type 'a ast =
   | Other of (Typedtree.expression[@printer fun fmt _ -> fprintf fmt "?"])
 [@@deriving show]
 
+let rec pp fmt x = pp_ast pp fmt x
+
 (** Relational value bindings *)
 module Rvb = struct
   type t =
@@ -72,6 +74,36 @@ let map_ast f = function
   | Diseq (a, b) -> Diseq (f a, f b)
 ;;
 
+let has_vars_inside =
+  let exception Found in
+  let rec helper = function
+    | Tident _ -> raise Found
+    | Other _ | T_int _ | T_bool _ | Tunit | T_list_nil -> ()
+    | ( Pause _ | St_abstr _ | St_app _
+      | Mplus (_, _)
+      | Conde _ | Conj_multi _
+      | Infix_conj2 (_, _)
+      | New_scope _
+      | Bind (_, _)
+      | Fresh (_, _)
+      | Wildcard (_, _, _)
+      | Unify (_, _)
+      | Diseq (_, _)
+      | Call_rel (_, _)
+      | Tapp (_, _)
+      | T_list_init _
+      | T_list_cons (_, _)
+      | Tabstr _ ) as x -> ignore (map_ast helper x)
+    (* | _ -> false *)
+  in
+  fun t ->
+    try
+      let _ = helper t in
+      false
+    with
+    | Found -> true
+;;
+
 let simplify_ast =
   let rec helper = function
     | Infix_conj2 (Infix_conj2 (a, b), Infix_conj2 (c, d)) ->
@@ -82,11 +114,57 @@ let simplify_ast =
       Conj_multi
         (List.concat_map xs ~f:(function
           | Conj_multi xs -> xs
-          | Infix_conj2 (a, b) -> [ a; b ]
-          | x -> [ x ]))
+          | Infix_conj2 (a, b) -> [ helper a; helper b ]
+          | x -> [ helper x ]))
     | other -> map_ast helper other
   in
-  helper
+  fun x ->
+    (* print_endline "Call simplify_ast"; *)
+    helper x
+;;
+
+let%expect_test "simplify AST" =
+  let u = Unify (T_int 0, T_int 1) in
+  let input =
+    Conde [ Conj_multi [ Infix_conj2 (u, u); u ]; Conj_multi [ Infix_conj2 (u, u); u ] ]
+  in
+  let out = simplify_ast input in
+  Format.printf "%a\n%!" pp out;
+  [%expect
+    {|
+    (AST.Conde
+       [(AST.Conj_multi
+           [(AST.Unify ((AST.T_int 0), (AST.T_int 1)));
+             (AST.Unify ((AST.T_int 0), (AST.T_int 1)));
+             (AST.Unify ((AST.T_int 0), (AST.T_int 1)))]);
+         (AST.Conj_multi
+            [(AST.Unify ((AST.T_int 0), (AST.T_int 1)));
+              (AST.Unify ((AST.T_int 0), (AST.T_int 1)));
+              (AST.Unify ((AST.T_int 0), (AST.T_int 1)))])
+         ]) |}];
+  let input =
+    let rel = Call_rel (Path.Pident (Ident.create_local "r1"), [ u ]) in
+    (* let typ =
+      Types.Transient_expr.create (Types.Tvar None) ~level:0 ~scope:0 ~id:0
+      |> Types.Transient_expr.type_expr
+    in *)
+    Conj_multi [ Conde [ Infix_conj2 (Infix_conj2 (u, u), rel) ] ]
+  in
+  let out = simplify_ast input in
+  Format.printf "%a\n%!" pp out;
+  [%expect
+    {|
+    (AST.Conj_multi
+       [(AST.Conde
+           [(AST.Conj_multi
+               [(AST.Unify ((AST.T_int 0), (AST.T_int 1)));
+                 (AST.Unify ((AST.T_int 0), (AST.T_int 1)));
+                 (AST.Call_rel (?, [(AST.Unify ((AST.T_int 0), (AST.T_int 1)))]))
+                 ])
+             ])
+         ])
+
+    |}]
 ;;
 
 module Inh_info = struct
