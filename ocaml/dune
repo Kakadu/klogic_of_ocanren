@@ -1,0 +1,37 @@
+(library
+ (name FCPM)
+ (modules FCPM))
+
+(library
+ (name counters)
+ ;(public_name kanren_benchmarks.counters)
+ (modules counters)
+ (wrapped false))
+
+(library
+ (name scheme_interpret)
+ (modules scheme_ast scheme_interpret)
+ (wrapped false)
+ (libraries OCanren counters FCPM)
+ (flags
+  (:standard
+   -rectypes
+   ;-dsource
+   ;
+   ))
+ (inline_tests)
+ (preprocessor_deps %{project_root}/ocaml/bench/pp5+dump.exe)
+ (preprocess
+  (pps
+   OCanren-ppx.ppx_fresh
+   GT.ppx_all
+   OCanren-ppx.ppx_distrib
+   OCanren-ppx.ppx_repr
+   ppx_optcomp
+   ppx_expect
+   --
+   -pp
+   ;"ocaml/bench/pp5+dump.exe -D TRACE"
+   "ocaml/bench/pp5+dump.exe"
+   ;
+   )))

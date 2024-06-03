@@ -15,9 +15,36 @@
    %{target})))
 
 (cram
+ (applies_to oleg)
  (deps
   ./OlegNumbers.scm
   test_oleg.scm
+  %{project_root}/faster-miniKanren/mk.scm
+  %{project_root}/faster-miniKanren/mk-vicare.scm
+  ;
+  ))
+
+(rule
+ (deps
+  %{project_root}/bin/klogic_of_ocanren.exe
+  %{cmo:../ocaml/scheme_interpret}
+  ;
+  )
+ (target scheme_interpret.scm)
+ (mode promote)
+ (action
+  (run
+   %{project_root}/bin/klogic_of_ocanren.exe
+   ../ocaml/.scheme_interpret.objs/byte/scheme_interpret.cmt
+   -scheme
+   -o
+   %{target})))
+
+(cram
+ (applies_to scheme_interpret)
+ (deps
+  ./scheme_interpret.scm
+  test_interpret.scm
   %{project_root}/faster-miniKanren/mk.scm
   %{project_root}/faster-miniKanren/mk-vicare.scm
   ;

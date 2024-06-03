@@ -939,18 +939,7 @@ let pp_rvb_as_kotlin ?(override = true) inh_info ppf { Rvb.name; args; body } =
   fprintf ppf "@]@ @,@]"
 ;;
 
-let has_attr name xs =
-  try
-    let _ =
-      List.find
-        ~f:(function
-          | { Parsetree.attr_name = { txt }; _ } -> String.equal txt name)
-        xs
-    in
-    true
-  with
-  | Not_found -> false
-;;
+let has_attr = Tast_folder.has_attr
 
 let lookup_doc_attr =
   List.find_map ~f:(function

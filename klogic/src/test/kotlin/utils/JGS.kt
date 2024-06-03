@@ -37,12 +37,12 @@ fun <B : Term<B>, A : Term<A>> mapo(f: (Term<A>, Term<B>) -> Goal,
       l: Term<LogicList<A>>, res: Term<LogicList<B>>): Goal =
   conde(and(l `===` nilLogicList(),
             res `===` nilLogicList()),
-        freshTypedVars { l_hd: Term<A>, l_tl: Term<LogicList<A>>,
-          res_hd: Term<B>, res_tl: Term<LogicList<B>> ->
+        freshTypedVars { l_hd: Term<A> l_tl: Term<LogicList<A>> res_hd: Term<B> 
+          res_tl: Term<LogicList<B>> ->
         and(l `===` (l_hd + l_tl),
             res `===` (res_hd + res_tl),
-            f(l_hd, res_hd),
-            mapo(f, l_tl, res_tl))
+            f(l_hd res_hd),
+            mapo(f l_tl res_tl))
         })
 
 context(RelationalContext)
@@ -51,42 +51,42 @@ fun <B : Term<B>, A : Term<A>> mapio_helper(f: (Term<PeanoLogicNumber>, Term<A>,
       res: Term<LogicList<B>>): Goal =
   conde(and(l `===` nilLogicList(),
             res `===` nilLogicList()),
-        freshTypedVars { l_hd: Term<A>, l_tl: Term<LogicList<A>>,
-          res_hd: Term<B>, res_tl: Term<LogicList<B>> ->
+        freshTypedVars { l_hd: Term<A> l_tl: Term<LogicList<A>> res_hd: Term<B> 
+          res_tl: Term<LogicList<B>> ->
         and(l `===` (l_hd + l_tl),
             res `===` (res_hd + res_tl),
-            f(i, l_hd, res_hd),
-            mapio_helper(f, NextNaturalNumber(i), l_tl, res_tl))
+            f(i l_hd res_hd),
+            mapio_helper(f NextNaturalNumber(i) l_tl res_tl))
         })
 
 context(RelationalContext)
 fun <B : Term<B>, A : Term<A>> mapio(f: (Term<PeanoLogicNumber>, Term<A>, Term<B>) -> Goal,
       l: Term<LogicList<A>>, res: Term<LogicList<B>>): Goal =
-  mapio_helper(f, ZeroNaturalNumber, l, res)
+  mapio_helper(f ZeroNaturalNumber l res)
 
 context(RelationalContext)
 fun <A : Term<A>> memo(e: Term<A>, l: Term<LogicList<A>>,
       res: Term<LogicBool>): Goal =
   conde(and(l `===` nilLogicList(),
             res `===` false.toLogicBool()),
-        freshTypedVars { hd: Term<A>, tl: Term<LogicList<A>> ->
+        freshTypedVars { hd: Term<A> tl: Term<LogicList<A>> ->
         and(l `===` (hd + tl),
             conde(and(hd `===` e,
                       res `===` true.toLogicBool()),
                   and(hd `!==` e,
-                      memo(e, tl, res))))
+                      memo(e tl res))))
         })
 
 context(RelationalContext)
 fun <A : Term<A>> ntho(l: Term<LogicList<A>>, n: Term<PeanoLogicNumber>,
       rez: Term<A>): Goal =
-  freshTypedVars { hd: Term<A>, tl: Term<LogicList<A>> ->
+  freshTypedVars { hd: Term<A> tl: Term<LogicList<A>> ->
   and(l `===` (hd + tl),
       conde(and(n `===` ZeroNaturalNumber,
                 hd `===` rez),
             freshTypedVars { prev: Term<PeanoLogicNumber> ->
             and(n `===` NextNaturalNumber(prev),
-                ntho(tl, prev, rez))
+                ntho(tl prev rez))
             }))
   }
 
@@ -95,12 +95,11 @@ fun <A : Term<A>> for_allo(p: (Term<A>, Term<LogicBool>) -> Goal,
       l: Term<LogicList<A>>, res: Term<LogicBool>): Goal =
   conde(and(l `===` nilLogicList(),
             res `===` true.toLogicBool()),
-        freshTypedVars { hd: Term<A>, tl: Term<LogicList<A>>,
-          p_res: Term<LogicBool> ->
+        freshTypedVars { hd: Term<A> tl: Term<LogicList<A>> p_res: Term<LogicBool> ->
         and(l `===` (hd + tl),
-            p(hd, p_res),
+            p(hd p_res),
             conde(and(p_res `===` true.toLogicBool(),
-                      for_allo(p, tl, res)),
+                      for_allo(p tl res)),
                   and(p_res `===` false.toLogicBool(),
                       res `===` false.toLogicBool())))
         })
@@ -112,48 +111,40 @@ fun <C : Term<C>, B : Term<B>, A : Term<A>> fold_left2o(f: (Term<A>, Term<B>, Te
   conde(and(l1 `===` nilLogicList(),
             l2 `===` nilLogicList(),
             res `===` acc),
-        freshTypedVars { hd1: Term<B>, tl1: Term<LogicList<B>>, hd2: Term<C>,
-          tl2: Term<LogicList<C>>, new_acc: Term<A> ->
+        freshTypedVars { hd1: Term<B> tl1: Term<LogicList<B>> hd2: Term<C> 
+          tl2: Term<LogicList<C>> new_acc: Term<A> ->
         and(l1 `===` (hd1 + tl1),
             l2 `===` (hd2 + tl2),
-            f(acc, hd1, hd2, new_acc),
-            fold_left2o(f, new_acc, tl1, tl2, res))
+            f(acc hd1 hd2 new_acc),
+            fold_left2o(f new_acc tl1 tl2 res))
         })
 
 context(RelationalContext)
 fun <ID : Term<ID>> substitute_typ(subst: Term<LogicList<Jarg<Jtype<ID>>>>,
       typ: Term<Jtype<ID>>, res: Term<Jtype<ID>>): Goal =
-  conde(freshTypedVars { param: Term<Jtype<ID>>,
-          new_param: Term<Jtype<ID>> ->
+  conde(freshTypedVars { param: Term<Jtype<ID>> new_param: Term<Jtype<ID>> ->
         and(typ `===` Array_(param),
             res `===` Array_(new_param),
-            substitute_typ(subst, param, new_param))
+            substitute_typ(subst param new_param))
         },
-        freshTypedVars { id: Term<ID>,
-          args: Term<LogicList<Jarg<Jtype<ID>>>>,
+        freshTypedVars { id: Term<ID> args: Term<LogicList<Jarg<Jtype<ID>>>> 
           new_args: Term<LogicList<Jarg<Jtype<ID>>>> ->
-        and(typ `===` Class_(id, args),
-            res `===` Class_(id, new_args),
+        and(typ `===` Class_(id args),
+            res `===` Class_(id new_args),
             mapo({ targ: Term<Jarg<Jtype<ID>>>, res: Term<Jarg<Jtype<ID>>> -> 
-                 substitute_arg(subst, targ, res) },
-            args, new_args))
+                 substitute_arg(subst targ res) } args new_args))
         },
-        freshTypedVars { id: Term<ID>,
-          args: Term<LogicList<Jarg<Jtype<ID>>>>,
+        freshTypedVars { id: Term<ID> args: Term<LogicList<Jarg<Jtype<ID>>>> 
           new_args: Term<LogicList<Jarg<Jtype<ID>>>> ->
-        and(typ `===` Interface(id, args),
-            res `===` Interface(id, new_args),
+        and(typ `===` Interface(id args),
+            res `===` Interface(id new_args),
             mapo({ targ: Term<Jarg<Jtype<ID>>>, res: Term<Jarg<Jtype<ID>>> -> 
-                 substitute_arg(subst, targ, res) },
-            args, new_args))
+                 substitute_arg(subst targ res) } args new_args))
         },
-        freshTypedVars { typs: Term<LogicList<Jtype<ID>>>,
-          new_typs: Term<LogicList<Jtype<ID>>> ->
+        freshTypedVars { typs: Term<LogicList<Jtype<ID>>> new_typs: Term<LogicList<Jtype<ID>>> ->
         and(typ `===` Intersect(typs),
             res `===` Intersect(new_typs),
-            mapo({ typ: Term<Jtype<ID>>, res: Term<Jtype<ID>> -> substitute_typ(subst,
-                                                                 typ, res) },
-            typs, new_typs))
+            mapo({ typ: Term<Jtype<ID>>, res: Term<Jtype<ID>> -> substitute_typ(subst typ res) } typs new_typs))
         },
         and(typ `===` Null(),
             res `===` Null()))
@@ -162,21 +153,21 @@ context(RelationalContext)
 fun <ID : Term<ID>> substitute_arg(subst: Term<LogicList<Jarg<Jtype<ID>>>>,
       targ: Term<Jarg<Jtype<ID>>>, res: Term<Jarg<Jtype<ID>>>): Goal =
   conde(freshTypedVars { index: Term<PeanoLogicNumber> ->
-        and((targ `===` Type(Var(_f(), index, _f(), _f()))),
-            ntho(subst, index, res))
+        and((targ `===` Type(Var(_f() index _f() _f()))),
+            ntho(subst index res))
         },
-        freshTypedVars { typ: Term<Jtype<ID>>, new_typ: Term<Jtype<ID>> ->
+        freshTypedVars { typ: Term<Jtype<ID>> new_typ: Term<Jtype<ID>> ->
         and(targ `===` Type(typ),
             res `===` Type(new_typ),
-            substitute_typ(subst, typ, new_typ))
+            substitute_typ(subst typ new_typ))
         },
         and(targ `===` Wildcard(None()),
             res `===` Wildcard(None())),
-        freshTypedVars { p: Term<Polarity/*237*/>, typ: Term<Jtype<ID>>,
+        freshTypedVars { p: Term<Polarity/*338*/> typ: Term<Jtype<ID>> 
           new_typ: Term<Jtype<ID>> ->
-        and(targ `===` Wildcard(Some(LogicPair(p, typ))),
-            res `===` Wildcard(Some(LogicPair(p, new_typ))),
-            substitute_typ(subst, typ, new_typ))
+        and(targ `===` Wildcard(Some(LogicPair(p typ))),
+            res `===` Wildcard(Some(LogicPair(p new_typ))),
+            substitute_typ(subst typ new_typ))
         })
 
 // CLASSTABLE 
@@ -257,9 +248,9 @@ object: VERIFIER {
   override fun  params(id: Term<LogicInt>,
         p: Term<LogicList<Jtype<LogicInt>>>): Goal =
     freshTypedVars { decl: Term<Decl<LogicInt>> ->
-    and(CT.decl_by_id(id, decl),
-        conde((decl `===` C(p, _f(), _f())),
-              (decl `===` I(p, _f()))))
+    and(CT.decl_by_id(id decl),
+        conde((decl `===` C(p _f() _f())),
+              (decl `===` I(p _f()))))
     }
   
   
@@ -271,30 +262,27 @@ object: VERIFIER {
           and(targ `===` Type(t),
               cc_targ `===` CC_type(t))
           },
-          freshTypedVars { param: Term<Jtype<LogicInt>>,
-            params_val: Term<LogicList<Jtype<LogicInt>>> ->
+          freshTypedVars { param: Term<Jtype<LogicInt>> params_val: Term<LogicList<Jtype<LogicInt>>> ->
           and(targ `===` Wildcard(None()),
-              cc_targ `===` CC_var(CT.new_var(), i, CC_subst(param),
-                            Some(Null())),
-              params(id, params_val),
-              ntho(params_val, i, param))
+              cc_targ `===` CC_var(CT.new_var() i CC_subst(param) Some(
+                                                                  Null())),
+              params(id params_val),
+              ntho(params_val i param))
           },
-          freshTypedVars { t: Term<Jtype<LogicInt>>,
-            subst: Term<Jtype<LogicInt>>,
+          freshTypedVars { t: Term<Jtype<LogicInt>> subst: Term<Jtype<LogicInt>> 
             params_val: Term<LogicList<Jtype<LogicInt>>> ->
-          and(targ `===` Wildcard(Some(LogicPair(Super(), t))),
-              cc_targ `===` CC_var(CT.new_var(), i, CC_subst(subst), Some(t)),
-              params(id, params_val),
-              ntho(params_val, i, subst))
+          and(targ `===` Wildcard(Some(LogicPair(Super() t))),
+              cc_targ `===` CC_var(CT.new_var() i CC_subst(subst) Some(t)),
+              params(id params_val),
+              ntho(params_val i subst))
           },
-          freshTypedVars { t: Term<Jtype<LogicInt>>,
-            t2: Term<Jtype<LogicInt>>,
+          freshTypedVars { t: Term<Jtype<LogicInt>> t2: Term<Jtype<LogicInt>> 
             params_val: Term<LogicList<Jtype<LogicInt>>> ->
-          and(targ `===` Wildcard(Some(LogicPair(Extends(), t))),
-              cc_targ `===` CC_var(CT.new_var(), i, CC_subst.cc_inter(t, t2),
+          and(targ `===` Wildcard(Some(LogicPair(Extends() t))),
+              cc_targ `===` CC_var(CT.new_var() i CC_subst.cc_inter(t t2) 
                             Some(Null())),
-              params(id, params_val),
-              ntho(params_val, i, t2))
+              params(id params_val),
+              ntho(params_val i t2))
           })
   
   
@@ -305,9 +293,9 @@ object: VERIFIER {
           and(raw_element `===` CC_type(t),
               targ `===` Type(t))
           },
-          freshTypedVars { id: Term<LogicInt>, i: Term<PeanoLogicNumber> ->
-          and((raw_element `===` CC_var(id, i, _f(), _f())),
-              targ `===` Type(Var(id, i, Null(), None())))
+          freshTypedVars { id: Term<LogicInt> i: Term<PeanoLogicNumber> ->
+          and((raw_element `===` CC_var(id i _f() _f())),
+              targ `===` Type(Var(id i Null() None())))
           })
   
   
@@ -315,27 +303,23 @@ object: VERIFIER {
   override fun  targs_helper(subst: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
         cc_typ: Term<ClosureConversionType<LogicInt>>,
         res: Term<Jarg<Jtype<LogicInt>>>): Goal =
-    conde(freshTypedVars { t: Term<Jtype<LogicInt>>,
-            new_t: Term<Jtype<LogicInt>> ->
+    conde(freshTypedVars { t: Term<Jtype<LogicInt>> new_t: Term<Jtype<LogicInt>> ->
           and(cc_typ `===` CC_type(t),
               res `===` Type(new_t),
-              substitute_typ(subst, t, new_t))
+              substitute_typ(subst t new_t))
           },
-          freshTypedVars { id: Term<LogicInt>, i: Term<PeanoLogicNumber>,
-            p: Term<Jtype<LogicInt>>, new_p: Term<Jtype<LogicInt>>,
-            lwb: Term<LogicOption<Jtype<LogicInt>>> ->
-          and(cc_typ `===` CC_var(id, i, CC_subst(p), lwb),
-              res `===` Type(Var(id, i, new_p, lwb)),
-              substitute_typ(subst, p, new_p))
+          freshTypedVars { id: Term<LogicInt> i: Term<PeanoLogicNumber> 
+            p: Term<Jtype<LogicInt>> new_p: Term<Jtype<LogicInt>> lwb: Term<LogicOption<Jtype<LogicInt>>> ->
+          and(cc_typ `===` CC_var(id i CC_subst(p) lwb),
+              res `===` Type(Var(id i new_p lwb)),
+              substitute_typ(subst p new_p))
           },
-          freshTypedVars { id : Term<LogicInt>,  i : Term<PeanoLogicNumber>,
-           t : Term<Jtype<LogicInt>>,  p : Term<Jtype<LogicInt>>,
-           lwb : Term<LogicOption<Jtype<LogicInt>>> ->
-          freshTypedVars { upb: Term<Jtype<LogicInt>>,
-            new_p: Term<Jtype<LogicInt>> ->
-          and(cc_typ `===` CC_var(id, i, CC_subst.cc_inter(t, p), lwb),
-              res `===` Type(Var(id, i, upb, lwb)),
-              substitute_typ(subst, p, new_p),
+          fresh { id : Term<LogicInt>  i : Term<PeanoLogicNumber>  t : Term<Jtype<LogicInt>> 
+           p : Term<Jtype<LogicInt>>  lwb : Term<LogicOption<Jtype<LogicInt>>> ->
+          freshTypedVars { upb: Term<Jtype<LogicInt>> new_p: Term<Jtype<LogicInt>> ->
+          and(cc_typ `===` CC_var(id i CC_subst.cc_inter(t p) lwb),
+              res `===` Type(Var(id i upb lwb)),
+              substitute_typ(subst p new_p),
               conde(freshTypedVars { ts: Term<LogicList<Jtype<LogicInt>>> ->
                     and(new_p `===` Intersect(ts),
                         upb `===` Intersect((t + ts)))
@@ -348,14 +332,12 @@ object: VERIFIER {
   context(RelationalContext)
   override fun  targs_pred(less_minus_less: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,
         targ: Term<Jarg<Jtype<LogicInt>>>, res: Term<LogicBool>): Goal =
-    conde(freshTypedVars { upb: Term<Jtype<LogicInt>>,
-            lwb: Term<Jtype<LogicInt>> ->
-          and((targ `===` Type(Var(_f(), _f(), upb, Some(lwb)))),
-              less_minus_less(lwb, upb, res))
+    conde(freshTypedVars { upb: Term<Jtype<LogicInt>> lwb: Term<Jtype<LogicInt>> ->
+          and((targ `===` Type(Var(_f() _f() upb Some(lwb)))),
+              less_minus_less(lwb upb res))
           },
           and(res `===` true.toLogicBool(),
-              (targ `!==` Type(Var(wildcard(), wildcard(), wildcard(),
-                               Some(wildcard()))))))
+              (targ `!==` Type(Var(wildcard() wildcard() wildcard() Some(wildcard()))))))
   
   
   context(RelationalContext)
@@ -388,19 +370,16 @@ object: VERIFIER {
                           conde(and(acc `===` false.toLogicBool(),
                                     res `===` false.toLogicBool()),
                                 and(acc `===` true.toLogicBool(),
-                                    less_equal_less(less_minus_less, ta, tb,
-                                    res))) },
-              true.toLogicBool(), targs_a, targs_b, res)),
+                                    less_equal_less(less_minus_less ta tb res))) } true.toLogicBool() targs_a targs_b res)),
           freshTypedVars { super_: Term<LogicOption<Jtype<LogicInt>>> ->
           and(id_a `!==` id_b,
-              CT.get_superclass_by_id(id_a, id_b, super_),
-              conde(freshTypedVars { targs_b2: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
+              CT.get_superclass_by_id(id_a id_b super_),
+              conde(freshTypedVars { targs_b2: Term<LogicList<Jarg<Jtype<LogicInt>>>> 
                       new_targs_b2: Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
-                    and(conde(super_ `===` Some(Class_(id_b, targs_b2)),
-                              super_ `===` Some(Interface(id_b, targs_b2))),
+                    and(conde(super_ `===` Some(Class_(id_b targs_b2)),
+                              super_ `===` Some(Interface(id_b targs_b2))),
                         mapo({ arg: Term<Jarg<Jtype<LogicInt>>>, res: Term<Jarg<Jtype<LogicInt>>> -> 
-                             substitute_arg(targs_a, arg, res) },
-                        targs_b2, new_targs_b2),
+                             substitute_arg(targs_a arg res) } targs_b2 new_targs_b2),
                         conde(and(targs_b `===` new_targs_b2,
                                   res `===` true.toLogicBool()),
                               and(res `===` false.toLogicBool(),
@@ -415,69 +394,57 @@ object: VERIFIER {
   override fun  minus_less_minus(less_minus_less: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,
         type_a: Term<Jtype<LogicInt>>, type_b: Term<Jtype<LogicInt>>,
         res: Term<LogicBool>): Goal =
-    conde(freshTypedVars { id_a: Term<LogicInt>,
-            targs_a: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
+    conde(freshTypedVars { id_a: Term<LogicInt> targs_a: Term<LogicList<Jarg<Jtype<LogicInt>>>> 
             converted: Term<LogicOption<LogicList<Jarg<Jtype<LogicInt>>>>> ->
-          and(type_a `===` Class_(id_a, targs_a),
-              capture_conversion(less_minus_less, id_a, targs_a, converted),
+          and(type_a `===` Class_(id_a targs_a),
+              capture_conversion(less_minus_less id_a targs_a converted),
               conde(and(converted `===` None(),
                         res `===` false.toLogicBool()),
                     freshTypedVars { targs_a: Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
                     and(converted `===` Some(targs_a),
-                        conde(freshTypedVars { id_b: Term<LogicInt>,
-                                targs_b: Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
-                              and(conde(type_b `===` Interface(id_b, targs_b),
-                                        type_b `===` Class_(id_b, targs_b)),
-                                  class_int_sub(less_minus_less, id_a,
-                                  targs_a, id_b, targs_b, res))
+                        conde(freshTypedVars { id_b: Term<LogicInt> targs_b: Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
+                              and(conde(type_b `===` Interface(id_b targs_b),
+                                        type_b `===` Class_(id_b targs_b)),
+                                  class_int_sub(less_minus_less id_a targs_a id_b targs_b res))
                               },
                               freshTypedVars { typ: Term<Jtype<LogicInt>> ->
-                              and((type_b `===` Var(_f(), _f(), _f(),
-                                                Some(typ))),
+                              and((type_b `===` Var(_f() _f() _f() Some(typ))),
                                   conde(and(typ `===` type_a,
                                             res `===` true.toLogicBool()),
                                         and(res `===` false.toLogicBool(),
                                             typ `!==` type_a)))
                               },
                               and(res `===` false.toLogicBool(),
-                                  (type_b `!==` Var(wildcard(), wildcard(),
-                                                wildcard(), Some(wildcard()))),
-                                  (type_b `!==` Interface(wildcard(),
-                                                wildcard())),
-                                  (type_b `!==` Class_(wildcard(),
-                                                wildcard())))))
+                                  (type_b `!==` Var(wildcard() wildcard() wildcard() 
+                                                Some(wildcard()))),
+                                  (type_b `!==` Interface(wildcard() wildcard())),
+                                  (type_b `!==` Class_(wildcard() wildcard())))))
                     }))
           },
-          freshTypedVars { id_a: Term<LogicInt>,
-            targs_a: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
+          freshTypedVars { id_a: Term<LogicInt> targs_a: Term<LogicList<Jarg<Jtype<LogicInt>>>> 
             converted: Term<LogicOption<LogicList<Jarg<Jtype<LogicInt>>>>> ->
-          and(type_a `===` Interface(id_a, targs_a),
-              capture_conversion(less_minus_less, id_a, targs_a, converted),
+          and(type_a `===` Interface(id_a targs_a),
+              capture_conversion(less_minus_less id_a targs_a converted),
               conde(and(converted `===` None(),
                         res `===` false.toLogicBool()),
                     freshTypedVars { targs_a: Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
                     and(converted `===` Some(targs_a),
-                        conde(freshTypedVars { id_b: Term<LogicInt>,
-                                targs_b: Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
-                              and(type_b `===` Interface(id_b, targs_b),
-                                  class_int_sub(less_minus_less, id_a,
-                                  targs_a, id_b, targs_b, res))
+                        conde(freshTypedVars { id_b: Term<LogicInt> targs_b: Term<LogicList<Jarg<Jtype<LogicInt>>>> ->
+                              and(type_b `===` Interface(id_b targs_b),
+                                  class_int_sub(less_minus_less id_a targs_a id_b targs_b res))
                               },
                               freshTypedVars { typ: Term<Jtype<LogicInt>> ->
-                              and((type_b `===` Var(_f(), _f(), _f(),
-                                                Some(typ))),
+                              and((type_b `===` Var(_f() _f() _f() Some(typ))),
                                   conde(and(typ `===` type_a,
                                             res `===` true.toLogicBool()),
                                         and(res `===` false.toLogicBool(),
                                             typ `!==` type_a)))
                               },
                               and(res `===` false.toLogicBool(),
-                                  (type_b `!==` Var(wildcard(), wildcard(),
-                                                wildcard(), Some(wildcard()))),
-                                  (type_b `!==` Class_(wildcard(),
-                                                wildcard())),
-                                  (type_b `!==` Interface(wildcard(),
-                                                wildcard())))))
+                                  (type_b `!==` Var(wildcard() wildcard() wildcard() 
+                                                Some(wildcard()))),
+                                  (type_b `!==` Class_(wildcard() wildcard())),
+                                  (type_b `!==` Interface(wildcard() wildcard())))))
                     }))
           },
           freshTypedVars { ta: Term<Jtype<LogicInt>> ->
@@ -492,26 +459,24 @@ object: VERIFIER {
                                   type_b `!==` CT.cloneable_t,
                                   conde(freshTypedVars { tb: Term<Jtype<LogicInt>> ->
                                         and(type_b `===` Array_(tb),
-                                            minus_less_minus(less_minus_less,
-                                            ta, tb, res))
+                                            minus_less_minus(less_minus_less ta tb res))
                                         },
                                         and(res `===` false.toLogicBool(),
                                             (type_b `!==` Array_(wildcard()))))))),
                     and(ta `!==` CT.object_t,
                         conde(freshTypedVars { tb: Term<Jtype<LogicInt>> ->
                               and(type_b `===` Array_(tb),
-                                  minus_less_minus(less_minus_less, ta, tb,
-                                  res))
+                                  minus_less_minus(less_minus_less ta tb res))
                               },
                               and(res `===` false.toLogicBool(),
                                   (type_b `!==` Array_(wildcard())))))))
           },
           freshTypedVars { ts: Term<LogicList<Jtype<LogicInt>>> ->
           and(type_a `===` Intersect(ts),
-              memo(type_b, ts, res))
+              memo(type_b ts res))
           },
           freshTypedVars { upb_typ: Term<Jtype<LogicInt>> ->
-          and((type_a `===` Var(_f(), _f(), upb_typ, _f())),
+          and((type_a `===` Var(_f() _f() upb_typ _f())),
               conde(and(upb_typ `===` type_b,
                         res `===` true.toLogicBool()),
                     and(res `===` false.toLogicBool(),

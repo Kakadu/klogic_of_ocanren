@@ -1,3 +1,16 @@
+let has_attr name xs =
+  try
+    let _ =
+      List.find
+        (function
+           | { Parsetree.attr_name = { txt }; _ } -> String.equal txt name)
+        xs
+    in
+    true
+  with
+  | Not_found -> false
+;;
+
 type ('inh, 'b, 'syn) action = 'inh -> 'b -> 'syn * 'b
 
 open Typedtree
@@ -49,6 +62,8 @@ let default (type inh syn) : (inh, syn) t =
   ; stru_item =
       (fun self inh s ->
         match s.str_desc with
+        (* | Tstr_module { mb_attributes = attrs } when has_attr "skip_from_klogic" attrs ->
+          inh, s *)
         | Tstr_value (_, []) -> assert false
         | Tstr_value (rec_flag, vbh :: vbtl) ->
           let syn, vbh = self.value_binding self inh vbh in

@@ -307,11 +307,19 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
   }
 ;;
 
+let do_skip_vb vb = has_attr "skip_from_klogic" vb.Typedtree.vb_attributes
+
 let do_skip_structure_item item =
   match item.Typedtree.str_desc with
   | Tstr_module { mb_attributes = attrs } | Tstr_eval (_, attrs) ->
     has_attr "skip_from_klogic" attrs
-  | _ -> false
+  | _ ->
+    Format.printf
+      "Check: @[%a@] as false \n"
+      Pprintast.structure
+      (Untypeast.untype_structure
+         { str_items = [ item ]; str_type = []; str_final_env = Env.empty });
+    false
 ;;
 
 let translate fallback : (Inh_info.t, unit) Tast_folder.t =
@@ -427,8 +435,17 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
                      AST.Fold_syntax_macro.(upper @@ transform rez) *)
               in
               (), si)
+          | { Typedtree.vb_pat =
+                { pat_desc = Tpat_construct ({ txt = Lident "()" }, _, _, _); _ }
+            ; _
+            }
           | { Typedtree.vb_pat = { pat_desc = Tpat_any; _ }; _ } -> (), si
-          | _ -> assert false
+          | vb ->
+            Format.eprintf
+              "Unsupported: %a\n"
+              Pprintast.pattern
+              (Untypeast.untype_pattern vb.vb_pat);
+            assert false
         in
         if do_skip_structure_item si
         then (), si
@@ -436,10 +453,18 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
           Tast_pattern.(
             parse
               (choice
-                 [ tstr_value __
-                   |> map1 ~f:(fun vbs ->
-                     let _ = List.iter ~f:(fun x -> ignore (on_rel_decl x)) vbs in
-                     (), si)
+                 [ as__ (tstr_value __)
+                   |> map2 ~f:(fun si vbs ->
+                     if do_skip_structure_item si
+                     then (), si
+                     else (
+                       let _ =
+                         List.iter
+                           ~f:(fun x ->
+                             if do_skip_vb x then () else ignore (on_rel_decl x))
+                           vbs
+                       in
+                       (), si))
                  ; tstr_module
                      __
                      (tmod_functor

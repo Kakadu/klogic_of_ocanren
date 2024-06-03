@@ -24,7 +24,7 @@ context(RelationalContext)
 fun  only_classes_interfaces_and_arrays(q: Term<Jtype<LogicInt>>): Goal =
   pause { and(q `!==` Null(),
               (q `!==` Intersect(wildcard())),
-              (q `!==` Var(wildcard(), wildcard(), wildcard(), wildcard())))
-  }// Put epilogue here 
+              (q `!==` Var(wildcard() wildcard() wildcard() wildcard())))// Put epilogue here 
 
+  }
 
