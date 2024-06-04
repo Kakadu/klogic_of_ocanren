@@ -51,16 +51,41 @@ let pp_ast_as_scheme inh_info =
         fprintf ppf ")@]"
       | `Arbitrary (args, tl) ->
         fprintf ppf "@[(";
-        pp_print_list (term_helper ~q) ppf args;
+        pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt " ") (term_helper ~q) ppf args;
         fprintf ppf " . %a)@]" (term_helper ~q) tl)
     | Call_rel (path, [ l ])
       when match Format.asprintf "%a" Path.print path with
            | "Scheme_ast!.Gterm.symb" -> true
-           | _ -> false -> fprintf ppf "@[('symb %a)@]" (term_helper ~q) l
+           | _ -> false ->
+      fprintf ppf "@[(%ssymb %a)@]" (if q then "" else "'") (term_helper ~q) l
     | Call_rel (path, [ l; r ])
       when match Format.asprintf "%a" Path.print path with
            | "OCanren!.Std.pair" | "OCanren!.Std.Pair.pair" -> true
-           | _ -> false -> fprintf ppf "@[%a %a)@]" (term_helper ~q) l (term_helper ~q) r
+           | _ -> false -> fprintf ppf "@[(%a %a)@]" (term_helper ~q) l (term_helper ~q) r
+    | Call_rel (path, [ l ])
+      when match Format.asprintf "%a" Path.print path with
+           | "Scheme_ast!.Gterm.seq" -> true
+           | _ -> false ->
+      fprintf ppf "@[(%sseq %a)@]" (if q then "" else "'") (term_helper ~q) l
+    | Call_rel (path, [ l ])
+      when match Format.asprintf "%a" Path.print path with
+           | "Scheme_ast.Gresult.val_" | "Scheme_ast!.Gresult.val_" -> true
+           | _ -> false ->
+      fprintf ppf "@[(%sval %a)@]" (if q then "" else "'") (term_helper ~q) l
+    | Call_rel (path, [ a; b; c ])
+      when match Format.asprintf "%a" Path.print path with
+           | "Scheme_ast.Gresult.closure" | "Scheme_ast!.Gresult.closure" -> true
+           | _ -> false ->
+      fprintf
+        ppf
+        "@[(%sclosure %a %a %a)@]"
+        (if q then "" else "'")
+        (term_helper ~q)
+        a
+        (term_helper ~q)
+        b
+        (term_helper ~q)
+        c
     | Tapp (_, _) | Tunit -> assert false
     | ( Pause _ | St_abstr _ | St_app _
       | Mplus (_, _)
@@ -129,7 +154,7 @@ let pp_ast_as_scheme inh_info =
     | Unify (l, r) ->
       (* TODO: if left argument is an empty list, swap the arguments to make Kotlin typecheck this *)
       fprintf ppf "(== %a %a)" on_term l on_term r
-    | Diseq (l, r) -> fprintf ppf "(=/= %a %a)" default l default r
+    | Diseq (l, r) -> fprintf ppf "(=/= %a %a)" on_term l on_term r
     | Call_rel (path, [ Tunit ]) when path_is_none path ->
       failwith "not implemented" (* fprintf ppf "None()" *)
     | Call_rel (p, args) ->
@@ -139,7 +164,7 @@ let pp_ast_as_scheme inh_info =
         | exception Not_found -> Format.asprintf "%a" Pp_kotlin.print_path p
         | s -> s
       in
-      fprintf ppf "@[(%s %a)@]" kotlin_func (pp_list default) args
+      fprintf ppf "@[(%s %a)@]" kotlin_func (pp_list on_term) args
     | Tapp (Tident path, [ Tunit ]) when path_is_none path -> fprintf ppf "None()"
     | Tapp (f, args) ->
       Format.printf "Application %d\n%!" __LINE__;
@@ -219,8 +244,8 @@ let pp_rvb_as_scheme inh_info ppf { Rvb.name; args; body } =
       ~init:S.empty
       args
   in *)
-  fprintf ppf "#|\n%a\n|#\n%!" AST.pp body;
   let body = AST.simplify_ast body in
+  fprintf ppf "#|\n%a\n|#\n%!" AST.pp body;
   fprintf ppf "@[<v 2>";
   fprintf
     ppf

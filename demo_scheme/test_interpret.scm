@@ -14,8 +14,8 @@
 
 (include "scheme_interpret.scm")
 
-; (printf "~a\n"
-;   (run 5 (q) (fresh (b) (appendo q b '(1 2 3)))))
+(printf "~a\n"
+   (run 5 (q) (evalo q '() '(val ,q))))
 
 ; (printf "~a\n"
 ;   (run 1 (q) (pluso (build-num 2) (build-num 2) q)))

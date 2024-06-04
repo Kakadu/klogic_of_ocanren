@@ -17,9 +17,10 @@
   (:standard
    -rectypes
    ;-dsource
+   -dtypedtree
    ;
    ))
- (inline_tests)
+ ;
  (preprocessor_deps %{project_root}/ocaml/bench/pp5+dump.exe)
  (preprocess
   (pps
@@ -28,10 +29,16 @@
    OCanren-ppx.ppx_distrib
    OCanren-ppx.ppx_repr
    ppx_optcomp
-   ppx_expect
+   ;ppx_expect
    --
    -pp
    ;"ocaml/bench/pp5+dump.exe -D TRACE"
    "ocaml/bench/pp5+dump.exe"
    ;
    )))
+
+(library
+ (name scheme_tests)
+ (modules scheme_tests)
+ (libraries scheme_interpret)
+ (inline_tests))

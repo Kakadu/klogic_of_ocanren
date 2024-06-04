@@ -3,10 +3,11 @@
   https://raw.githubusercontent.com/rozplokhas/OCanren/master/regression/test015.ml
 *)
 
+(*  *)
 open Printf
 open OCanren
 open Scheme_ast
-
+(*  *)
 (* include Counters.Make () [@skip_from_klogic] *)
 
 let list_combine3 xs ys zs =
@@ -48,13 +49,32 @@ let[@skip_from_klogic] ( ==== ) = OCanren.( === )
 let[@skip_from_klogic] ( ====^ ) = OCanren.( === )
 let[@skip_from_klogic] ( ===!! ) = OCanren.( === )
 let[@skip_from_klogic] ( ==!! ) = OCanren.( === )
-let[@skip_from_klogic] ( =/= ) = OCanren.( =/= )
+
+(* let[@skip_from_klogic] ( =/= ) = OCanren.( =/= ) *)
 let[@skip_from_klogic] ( =//= ) = OCanren.( =/= )
+
 (*
    let demo : string ilogic -> goal =
  fun term ->
   let open OCanren.Std in
   term === !!"list"
+;; *)
+(*
+   let demo : string ilogic -> goal =
+ fun term ->
+  let open OCanren.Std in
+  term === !!"list"
+;;
+
+let demo2 : string ilogic -> goal =
+ fun term ->
+  let open OCanren.Std in
+  term =/= !!"list"
+;; *)
+(* let not_closure : Gresult.injected -> goal =
+ fun term ->
+  let open OCanren.Std in
+  fresh (x body env) (term =/= closure x body env)
 ;; *)
 
 let rec lookupo : _ -> fenv -> Gresult.injected -> goal =
@@ -79,11 +99,11 @@ let rec proper_listo : (Gterm.injected Std.List.injected as 'i) -> fenv -> 'i ->
  fun es env rs ->
   let open OCanren.Std in
   conde
-    [ Std.nil () ====^ es &&& (Std.nil () ====^ rs)
+    [ Std.nil () === es &&& (Std.nil () === rs)
     ; fresh
         (e d te td)
-        (es ====^ e % d)
-        (rs ====^ te % td)
+        (es === e % d)
+        (rs === te % td)
         (evalo e env (val_ te))
         (proper_listo d env td)
     ]
@@ -94,7 +114,7 @@ and evalo : Gterm.injected -> fenv -> Gresult.injected -> goal =
   conde
     [ fresh
         t
-        (term === seq (symb !!"quote" %< t))
+        (term === seq (symb !!"quote" % (t % nil ())))
         (r === val_ t)
         (not_in_envo !!"quote" env)
     ; fresh
@@ -105,18 +125,19 @@ and evalo : Gterm.injected -> fenv -> Gresult.injected -> goal =
         (proper_listo es env rs)
     ; fresh s (term === symb s) (lookupo s env r)
     ; fresh
-        (func arge arg x body env')
-        (term === seq (func %< arge))
+        (func arge arg x body env2)
+        (term === seq (func % (arge % nil ())))
         (evalo arge env arg)
-        (evalo func env (closure x body env'))
-        (evalo body (Std.pair x arg % env') r)
+        (evalo func env (closure x body env2))
+        (evalo body (Std.pair x arg % env2) r)
     ; fresh
         (x body)
-        (term === seq (symb !!"lambda" % (seq !<(symb x) %< body)))
+        (term === seq (symb !!"lambda" % (seq (symb x % nil ()) % (body % nil ()))))
         (not_in_envo !!"lambda" env)
         (r === closure x body env)
     ]
 ;;
+
 (*
    let s tl = seq (Std.list Fun.id tl)
 let nil = Std.nil ()

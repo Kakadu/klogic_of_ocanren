@@ -1,6 +1,6 @@
 
 ;;; There are 4 relations
-; lookupo 234
+; lookupo 266
 #|
 (AST.Fresh (
                                                [("rest", ?); ("y", ?);
@@ -22,11 +22,10 @@
                                                                  ?))
                                                               ));
                                                             (AST.Infix_conj2 (
+                                                               (AST.Diseq (?,
+                                                                  ?)),
                                                                (AST.Call_rel (
-                                                                  =/=/1435,
-                                                                  [?; ?])),
-                                                               (AST.Call_rel (
-                                                                  lookupo/1437,
+                                                                  lookupo/1408,
                                                                   [?; ?; ?]))
                                                                ))
                                                             ])
@@ -36,15 +35,15 @@
 (define lookupo
   (lambda (x env t)
   (fresh (rest y v)
-    (== `(,y ,v) . ,rest) env)
+    (== `((,y ,v) . ,rest) env)
     (conde ((== y x)
           (== v t))
-          ((equal_slash_equal y x)
+          ((=/= y x)
           (lookupo x rest t))
           )
      
     )))
-; not_in_envo 234
+; not_in_envo 266
 #|
 (AST.Conde
                         [(AST.Fresh ([("y", ?); ("v", ?); ("rest", ?)],
@@ -56,8 +55,8 @@
                                             [?; ?])),
                                          ?))
                                       ));
-                                    (AST.Call_rel (=/=/1435, [?; ?]));
-                                    (AST.Call_rel (not_in_envo/1798, [?; ?]))
+                                    (AST.Diseq (?, ?));
+                                    (AST.Call_rel (not_in_envo/1769, [?; ?]))
                                     ]))
                             ));
                           (AST.Unify (AST.T_list_nil, ?))])
@@ -65,36 +64,34 @@
 (define not_in_envo
   (lambda (x env)
   (conde ((fresh (y v rest)
-            (== env `(,y ,v) . ,rest))
-            (equal_slash_equal y x)
+            (== env `((,y ,v) . ,rest))
+            (=/= y x)
             (not_in_envo x rest)
             ))
         ((== '() env))
         )
    ))
-; proper_listo 234
+; proper_listo 266
 #|
 (AST.Conde
-                         [(AST.Infix_conj2 (
-                             (AST.Call_rel (====^/1432, [AST.T_list_nil; ?])),
-                             (AST.Call_rel (====^/1432, [AST.T_list_nil; ?]))
-                             ));
+                         [(AST.Infix_conj2 ((AST.Unify (AST.T_list_nil, ?)),
+                             (AST.Unify (AST.T_list_nil, ?))));
                            (AST.Fresh (
                               [("e", ?); ("d", ?); ("te", ?); ("td", ?)],
                               (AST.Pause
                                  (AST.Conj_multi
-                                    [(AST.Call_rel (====^/1432,
-                                        [?; (AST.T_list_cons (?, ?))]));
-                                      (AST.Call_rel (====^/1432,
-                                         [?; (AST.T_list_cons (?, ?))]));
-                                      (AST.Call_rel (evalo/1806,
+                                    [(AST.Unify (?, (AST.T_list_cons (?, ?))
+                                        ));
+                                      (AST.Unify (?, (AST.T_list_cons (?, ?))
+                                         ));
+                                      (AST.Call_rel (evalo/1777,
                                          [?; ?;
                                            (AST.Call_rel (
                                               Scheme_ast!.Gresult.val_, 
                                               [?]))
                                            ]
                                          ));
-                                      (AST.Call_rel (proper_listo/1805,
+                                      (AST.Call_rel (proper_listo/1776,
                                          [?; ?; ?]))
                                       ]))
                               ))
@@ -102,17 +99,17 @@
 |#
 (define proper_listo
   (lambda (es env rs)
-  (conde ((equal_equal_equal_equal_hat '() es)
-        (equal_equal_equal_equal_hat '() rs))
+  (conde ((== '() es)
+        (== '() rs))
         ((fresh (e d te td)
-           (equal_equal_equal_equal_hat es `(,e . ,d))
-           (equal_equal_equal_equal_hat rs `(,te . ,td))
-           (evalo e env (Scheme_ast.Gresult.val_ te))
+           (== es `(,e . ,d))
+           (== rs `(,te . ,td))
+           (evalo e env `(val ,te))
            (proper_listo d env td)
            ))
         )
    ))
-; evalo 234
+; evalo 266
 #|
 (AST.Conde
                   [(AST.Fresh ([("t", ?)],
@@ -120,11 +117,10 @@
                          (AST.Conj_multi
                             [(AST.Unify (?,
                                 (AST.Call_rel (Scheme_ast!.Gterm.seq,
-                                   [(AST.Call_rel (OCanren!.Std.%<,
-                                       [(AST.Call_rel (
-                                           Scheme_ast!.Gterm.symb,
-                                           [(AST.T_string "quote")]));
-                                         ?]
+                                   [(AST.T_list_cons (
+                                       (AST.Call_rel (Scheme_ast!.Gterm.symb,
+                                          [(AST.T_string "quote")])),
+                                       (AST.T_list_cons (?, AST.T_list_nil))
                                        ))
                                      ]
                                    ))
@@ -133,7 +129,7 @@
                                  (AST.Call_rel (Scheme_ast!.Gresult.val_, 
                                     [?]))
                                  ));
-                              (AST.Call_rel (not_in_envo/1798,
+                              (AST.Call_rel (not_in_envo/1769,
                                  [(AST.T_string "quote"); ?]))
                               ]))
                       ));
@@ -157,9 +153,9 @@
                                        ]
                                      ))
                                   ));
-                               (AST.Call_rel (not_in_envo/1798,
+                               (AST.Call_rel (not_in_envo/1769,
                                   [(AST.T_string "list"); ?]));
-                               (AST.Call_rel (proper_listo/1805, [?; ?; ?]))]))
+                               (AST.Call_rel (proper_listo/1776, [?; ?; ?]))]))
                        ));
                     (AST.Fresh ([("s", ?)],
                        (AST.Pause
@@ -167,30 +163,32 @@
                              [(AST.Unify (?,
                                  (AST.Call_rel (Scheme_ast!.Gterm.symb, [?]))
                                  ));
-                               (AST.Call_rel (lookupo/1437, [?; ?; ?]))]))
+                               (AST.Call_rel (lookupo/1408, [?; ?; ?]))]))
                        ));
                     (AST.Fresh (
                        [("func", ?); ("arge", ?); ("arg", ?); ("x", ?);
                          ("body", ?)],
-                       (AST.Fresh ([("env'", ?)],
+                       (AST.Fresh ([("env2", ?)],
                           (AST.Pause
                              (AST.Conj_multi
                                 [(AST.Unify (?,
                                     (AST.Call_rel (Scheme_ast!.Gterm.seq,
-                                       [(AST.Call_rel (OCanren!.Std.%<,
-                                           [?; ?]))
+                                       [(AST.T_list_cons (?,
+                                           (AST.T_list_cons (?,
+                                              AST.T_list_nil))
+                                           ))
                                          ]
                                        ))
                                     ));
-                                  (AST.Call_rel (evalo/1806, [?; ?; ?]));
-                                  (AST.Call_rel (evalo/1806,
+                                  (AST.Call_rel (evalo/1777, [?; ?; ?]));
+                                  (AST.Call_rel (evalo/1777,
                                      [?; ?;
                                        (AST.Call_rel (
                                           Scheme_ast!.Gresult.closure,
                                           [?; ?; ?]))
                                        ]
                                      ));
-                                  (AST.Call_rel (evalo/1806,
+                                  (AST.Call_rel (evalo/1777,
                                      [?;
                                        (AST.T_list_cons (
                                           (AST.Call_rel (OCanren!.Std.pair,
@@ -210,25 +208,24 @@
                                         (AST.Call_rel (
                                            Scheme_ast!.Gterm.symb,
                                            [(AST.T_string "lambda")])),
-                                        (AST.Call_rel (OCanren!.Std.%<,
-                                           [(AST.Call_rel (
-                                               Scheme_ast!.Gterm.seq,
-                                               [(AST.Call_rel (
-                                                   OCanren!.Std.!<,
-                                                   [(AST.Call_rel (
-                                                       Scheme_ast!.Gterm.symb,
-                                                       [?]))
-                                                     ]
-                                                   ))
-                                                 ]
-                                               ));
-                                             ?]
+                                        (AST.T_list_cons (
+                                           (AST.Call_rel (
+                                              Scheme_ast!.Gterm.seq,
+                                              [(AST.T_list_cons (
+                                                  (AST.Call_rel (
+                                                     Scheme_ast!.Gterm.symb,
+                                                     [?])),
+                                                  AST.T_list_nil))
+                                                ]
+                                              )),
+                                           (AST.T_list_cons (?,
+                                              AST.T_list_nil))
                                            ))
                                         ))
                                       ]
                                     ))
                                  ));
-                               (AST.Call_rel (not_in_envo/1798,
+                               (AST.Call_rel (not_in_envo/1769,
                                   [(AST.T_string "lambda"); ?]));
                                (AST.Unify (?,
                                   (AST.Call_rel (Scheme_ast!.Gresult.closure,
@@ -241,64 +238,31 @@
 (define evalo
   (lambda (term env r)
   (conde ((fresh (t)
-            (== term `#| (AST.Call_rel (Scheme_ast!.Gterm.seq,
-                            [(AST.Call_rel (OCanren!.Std.%<,
-                                [(AST.Call_rel (Scheme_ast!.Gterm.symb,
-                                    [(AST.T_string "quote")]));
-                                  ?]
-                                ))
-                              ]
-                            )) |#)
-            (== r `#| (AST.Call_rel (Scheme_ast!.Gresult.val_, [?])) |#)
+            (== term `(seq ((symb 'quote),t)))
+            (== r `(val ,t))
             (not_in_envo 'quote env)
             ))
         ((fresh (es rs)
-           (== term `#| (AST.Call_rel (Scheme_ast!.Gterm.seq,
-                           [(AST.T_list_cons (
-                               (AST.Call_rel (Scheme_ast!.Gterm.symb,
-                                  [(AST.T_string "list")])),
-                               ?))
-                             ]
-                           )) |#)
-           (== r `#| (AST.Call_rel (Scheme_ast!.Gresult.val_,
-                        [(AST.Call_rel (Scheme_ast!.Gterm.seq, [?]))])) |#)
+           (== term `(seq ((symb 'list) . ,es)))
+           (== r `(val (seq ,rs)))
            (not_in_envo 'list env)
            (proper_listo es env rs)
            ))
         ((fresh (s)
-           (== term `('symb ,s))
+           (== term `(symb ,s))
            (lookupo s env r)
            ))
         ((fresh ( func   arge   arg   x   body )
-         (fresh (env')
-           (== term `#| (AST.Call_rel (Scheme_ast!.Gterm.seq,
-                           [(AST.Call_rel (OCanren!.Std.%<, [?; ?]))])) |#)
+         (fresh (env2)
+           (== term `(seq (,func,arge)))
            (evalo arge env arg)
-           (evalo func env (Scheme_ast.Gresult.closure x body env_prime))
-           (evalo body `(,x ,arg) . ,env_prime) r)
+           (evalo func env `(closure ,x ,body ,env2))
+           (evalo body `((,x ,arg) . ,env2) r)
            ) ))
         ((fresh (x body)
-           (== term `#| (AST.Call_rel (Scheme_ast!.Gterm.seq,
-                           [(AST.T_list_cons (
-                               (AST.Call_rel (Scheme_ast!.Gterm.symb,
-                                  [(AST.T_string "lambda")])),
-                               (AST.Call_rel (OCanren!.Std.%<,
-                                  [(AST.Call_rel (Scheme_ast!.Gterm.seq,
-                                      [(AST.Call_rel (OCanren!.Std.!<,
-                                          [(AST.Call_rel (
-                                              Scheme_ast!.Gterm.symb, 
-                                              [?]))
-                                            ]
-                                          ))
-                                        ]
-                                      ));
-                                    ?]
-                                  ))
-                               ))
-                             ]
-                           )) |#)
+           (== term `(seq ((symb 'lambda)(seq ((symb ,x))),body)))
            (not_in_envo 'lambda env)
-           (== r `#| (AST.Call_rel (Scheme_ast!.Gresult.closure, [?; ?; ?])) |#)
+           (== r `(closure ,x ,body ,env))
            ))
         )
    ))

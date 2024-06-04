@@ -239,6 +239,14 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
       |> map2 ~f:(fun a b -> T_list_cons (a, b))
     ;;
 
+    (* let tsingleton () =
+      texp_apply1
+        (texp_ident
+           (choice [ path [ "OCanren!"; "Std"; "!<" ]; path [ "OCanren"; "Std"; "!<" ] ]))
+        __
+      |> map1 ~f:(fun a -> T_list_singleton a)
+    ;; *)
+
     let tint () =
       texp_apply1
         (texp_ident (path [ "OCanren!"; "!!" ] ||| path [ "OCanren"; "!!" ]))
@@ -266,7 +274,7 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
     let pat () =
       choice
         [ tnil ()
-        ; tcons ()
+        ; tcons () (* ; tsingleton () *)
         ; tint ()
         ; tbool ()
         ; tstring ()
