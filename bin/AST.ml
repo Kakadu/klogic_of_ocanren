@@ -18,10 +18,11 @@ type 'a ast =
   | Wildcard of string * (Types.type_expr[@printer fun fmt _ -> fprintf fmt "?"]) * 'a
   | Unify of 'a * 'a
   | Diseq of 'a * 'a
-  | Call_rel of (Path.t[@printer fun fmt _ -> fprintf fmt "?"]) * 'a list
+  | Call_rel of (Path.t[@printer Path.print]) * 'a list
   | Tapp of 'a * 'a list (** Application of terms. Is similar to Call_rel *)
   | T_int of int
   | T_bool of bool
+  | T_string of string
   | T_list_init of 'a list
   | T_list_nil
   | T_list_cons of 'a * 'a
@@ -30,7 +31,11 @@ type 'a ast =
   (** TODO: Types? *)
   | Tident of Path.t [@printer fun fmt _ -> fprintf fmt "?"] (** TODO: Do we need this? *)
   | Tunit
-  | Other of (Typedtree.expression[@printer fun fmt _ -> fprintf fmt "?"])
+  | Other of
+      (Typedtree.expression
+      [@printer
+        fun fmt e ->
+          Format.fprintf fmt "'%a'" Pprintast.expression (Untypeast.untype_expression e)])
 [@@deriving show]
 
 let rec pp fmt x = pp_ast pp fmt x
@@ -69,7 +74,8 @@ let map_ast f = function
   | T_list_cons (h, tl) -> T_list_cons (f h, f tl)
   | Tabstr (args, body) -> Tabstr (args, f body)
   | T_list_init xs -> T_list_init (List.map ~f xs)
-  | (Tunit | Tident _ | Other _ | T_list_nil | T_int _ | T_bool _) as rez -> rez
+  | (Tunit | Tident _ | Other _ | T_list_nil | T_int _ | T_bool _ | T_string _) as rez ->
+    rez
   | Unify (a, b) -> Unify (f a, f b)
   | Diseq (a, b) -> Diseq (f a, f b)
 ;;
@@ -78,7 +84,7 @@ let has_vars_inside =
   let exception Found in
   let rec helper = function
     | Tident _ -> raise Found
-    | Other _ | T_int _ | T_bool _ | Tunit | T_list_nil -> ()
+    | Other _ | T_int _ | T_bool _ | Tunit | T_list_nil | T_string _ -> ()
     | ( Pause _ | St_abstr _ | St_app _
       | Mplus (_, _)
       | Conde _ | Conj_multi _
@@ -829,6 +835,7 @@ let pp_ast_as_kotlin inh_info =
     | Infix_conj2 (l, r) -> fprintf ppf "@[and(%a,@, %a)@]" nopar l nopar r
     | T_int n -> fprintf ppf "%d.toLogic()" n
     | T_bool n -> fprintf ppf "%b.toLogicBool()" n
+    | T_string _ -> fprintf ppf "/* not implemented */"
     | T_list_init ls ->
       fprintf ppf "@[%a@]" (pp_print_list ~pp_sep:pp_print_space helper) ls
     | T_list_nil -> fprintf ppf "nilLogicList()"

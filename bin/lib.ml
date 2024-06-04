@@ -246,6 +246,13 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
       |> map1 ~f:(fun n -> T_int n)
     ;;
 
+    let tstring () =
+      texp_apply1
+        (texp_ident (path [ "OCanren!"; "!!" ] ||| path [ "OCanren"; "!!" ]))
+        (estring __)
+      |> map1 ~f:(fun n -> T_string n)
+    ;;
+
     let tbool () =
       texp_apply1
         (texp_ident (path [ "OCanren!"; "!!" ] ||| path [ "OCanren"; "!!" ]))
@@ -262,6 +269,7 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
         ; tcons ()
         ; tint ()
         ; tbool ()
+        ; tstring ()
         ; pat_pause ()
         ; pat_fresh ()
         ; pat_wildcard ()

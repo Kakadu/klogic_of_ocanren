@@ -50,22 +50,28 @@ let[@skip_from_klogic] ( ===!! ) = OCanren.( === )
 let[@skip_from_klogic] ( ==!! ) = OCanren.( === )
 let[@skip_from_klogic] ( =/= ) = OCanren.( =/= )
 let[@skip_from_klogic] ( =//= ) = OCanren.( =/= )
+(*
+   let demo : string ilogic -> goal =
+ fun term ->
+  let open OCanren.Std in
+  term === !!"list"
+;; *)
 
 let rec lookupo : _ -> fenv -> Gresult.injected -> goal =
  fun x env t ->
   let open OCanren.Std in
   fresh
     (rest y v)
-    (Std.Pair.pair y v % rest ===! env)
-    (conde [ y ===!! x &&& (v ==!! t); y =/= x &&& lookupo x rest t ])
+    (Std.Pair.pair y v % rest === env)
+    (conde [ y === x &&& (v === t); y =/= x &&& lookupo x rest t ])
 ;;
 
 let rec not_in_envo : _ -> fenv -> goal =
  fun x env ->
   let open OCanren.Std in
   conde
-    [ fresh (y v rest) (env ===! Std.pair y v % rest) (y =/= x) (not_in_envo x rest)
-    ; nil () ===! env
+    [ fresh (y v rest) (env === Std.pair y v % rest) (y =/= x) (not_in_envo x rest)
+    ; nil () === env
     ]
 ;;
 
@@ -88,31 +94,31 @@ and evalo : Gterm.injected -> fenv -> Gresult.injected -> goal =
   conde
     [ fresh
         t
-        (term ==== seq (symb !!"quote" %< t))
-        (r ==!! val_ t)
+        (term === seq (symb !!"quote" %< t))
+        (r === val_ t)
         (not_in_envo !!"quote" env)
     ; fresh
         (es rs)
-        (term ==== seq (symb !!"list" % es))
-        (r ==!! val_ (seq rs))
+        (term === seq (symb !!"list" % es))
+        (r === val_ (seq rs))
         (not_in_envo !!"list" env)
         (proper_listo es env rs)
-    ; fresh s (term ==== symb s) (lookupo s env r)
+    ; fresh s (term === symb s) (lookupo s env r)
     ; fresh
         (func arge arg x body env')
-        (term ==== seq (func %< arge))
+        (term === seq (func %< arge))
         (evalo arge env arg)
         (evalo func env (closure x body env'))
         (evalo body (Std.pair x arg % env') r)
     ; fresh
         (x body)
-        (term ==== seq (symb !!"lambda" % (seq !<(symb x) %< body)))
+        (term === seq (symb !!"lambda" % (seq !<(symb x) %< body)))
         (not_in_envo !!"lambda" env)
-        (r ==!! closure x body env)
+        (r === closure x body env)
     ]
 ;;
-
-let s tl = seq (Std.list Fun.id tl)
+(*
+   let s tl = seq (Std.list Fun.id tl)
 let nil = Std.nil ()
 let quineso q = evalo q nil (val_ q)
 let twineso q p = q =/= p &&& evalo q nil (val_ p) &&& evalo p nil (val_ q)
@@ -158,3 +164,4 @@ let find_thrines ~verbose n =
 let find100quines = find_quines 100
 let find15twines = find_twines 15
 let find2thrines = find_thrines 2
+*)

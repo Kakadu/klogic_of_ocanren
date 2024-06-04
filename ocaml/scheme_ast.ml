@@ -376,7 +376,6 @@ module Gresult = struct
 end
 
 let gresult_reifier = Gresult.reify
-let ( !! ) x = inj x
 
 module Env = struct
   type logic = (GT.string OCanren.logic, Gresult.logic) Std.Pair.logic Std.List.logic

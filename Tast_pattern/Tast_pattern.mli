@@ -96,6 +96,7 @@ val path : string list -> (Path.t, 'a, 'a) t
 val path_pident : (Ident.t, 'a, 'b) t -> (Path.t, 'a, 'b) t
 val eint : (int, 'a, 'b) t -> (expression, 'a, 'b) t
 val ebool : (expression, bool -> 'a, 'a) t
+val estring : (string, 'a, 'b) t -> (expression, 'a, 'b) t
 val econst : (Asttypes.constant, 'a, 'b) t -> (expression, 'a, 'b) t
 
 [%%if ocaml_version < (4, 11, 0)]

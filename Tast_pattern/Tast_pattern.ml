@@ -384,6 +384,19 @@ let eint (T f0) =
       | _ -> fail loc "eint")
 ;;
 
+let estring (T f0) =
+  T
+    (fun ctx loc x k ->
+      (* let _ = log "<eint> %a\n%!" MyPrinttyped.expr x in *)
+      match x.exp_desc with
+      | Texp_constant (Asttypes.Const_string (s, _, _)) ->
+        ctx.matched <- ctx.matched + 1;
+        let ans = f0 ctx loc s k in
+        (* log "eint succeeded %a\n%!" MyPrinttyped.expr x; *)
+        ans
+      | _ -> fail loc "estring")
+;;
+
 let ebool =
   T
     (fun ctx loc x k ->

@@ -33,6 +33,7 @@ let pp_ast_as_scheme inh_info =
       | s -> fprintf ppf "%s" s)
     | T_int n -> fprintf ppf "%d" n
     | T_bool n -> fprintf ppf "%b" n
+    | T_string s -> fprintf ppf "'%s" s
     | T_list_init ls ->
       fprintf ppf "@[%a@]" (pp_print_list ~pp_sep:pp_print_space (term_helper ~q)) ls
     | T_list_nil -> fprintf ppf "'()"
@@ -51,19 +52,29 @@ let pp_ast_as_scheme inh_info =
         fprintf ppf "@[(";
         pp_print_list (term_helper ~q) ppf args;
         fprintf ppf " . %a)@]" (term_helper ~q) tl)
+    | Call_rel (path, [ l ])
+      when match Format.asprintf "%a" Path.print path with
+           | "Scheme_ast!.Gterm.symb" -> true
+           | _ -> false -> fprintf ppf "@[('symb %a)@]" (term_helper ~q) l
+    | Call_rel (path, [ l; r ])
+      when match Format.asprintf "%a" Path.print path with
+           | "OCanren!.Std.pair" | "OCanren!.Std.Pair.pair" -> true
+           | _ -> false -> fprintf ppf "@[%a %a)@]" (term_helper ~q) l (term_helper ~q) r
     | Tapp (_, _) | Tunit -> assert false
-    | Pause _ | St_abstr _ | St_app _
-    | Mplus (_, _)
-    | Conde _ | Conj_multi _
-    | Infix_conj2 (_, _)
-    | New_scope _
-    | Bind (_, _)
-    | Fresh (_, _)
-    | Wildcard (_, _, _)
-    | Unify (_, _)
-    | Diseq (_, _)
-    | Call_rel (_, _)
-    | Tabstr _ | Other _ -> assert false
+    | ( Pause _ | St_abstr _ | St_app _
+      | Mplus (_, _)
+      | Conde _ | Conj_multi _
+      | Infix_conj2 (_, _)
+      | New_scope _
+      | Bind (_, _)
+      | Fresh (_, _)
+      | Wildcard (_, _, _)
+      | Unify (_, _)
+      | Diseq (_, _)
+      | Call_rel (_, _)
+      | Tabstr _ | Other _ ) as other ->
+      Format.eprintf "@[%a@]\n%!" AST.pp other;
+      fprintf ppf "#| %a |#" AST.pp other
   and quoted_term eta = term_helper ~q:true eta
   and non_quoted eta = term_helper ~q:false eta in
   let on_term ppf = function
@@ -157,8 +168,13 @@ let pp_ast_as_scheme inh_info =
       List.iter xs ~f:(default ppf);
       fprintf ppf ")@]"
     | Infix_conj2 (l, r) -> fprintf ppf "@[and(%a,@, %a)@]" default l default r
-    | (T_int _ | T_bool _ | Tident _ | T_list_init _ | T_list_nil | T_list_cons _) as term
-      -> on_term ppf term
+    | ( T_int _
+      | T_bool _
+      | Tident _
+      | T_list_init _
+      | T_list_nil
+      | T_list_cons _
+      | T_string _ ) as term -> on_term ppf term
     (* | Tident p ->
       let repr = Path.name p in
       if SS.mem repr !wcs
@@ -202,13 +218,12 @@ let pp_rvb_as_scheme inh_info ppf { Rvb.name; args; body } =
       ~init:S.empty
       args
   in *)
-  (* fprintf ppf "@[context(RelationalContext)@]@ "; *)
+  fprintf ppf "#|\n%a\n|#\n%!" AST.pp body;
   let body = AST.simplify_ast body in
   fprintf ppf "@[<v 2>";
   fprintf ppf "@[<v 2>@[(define %a@]@ @[(lambda (%a)@]@]@ " print_ident name pp_args args;
   fprintf ppf "@[%a@]" (pp_ast_as_scheme inh_info) body;
   fprintf ppf "))@]@ ";
-  (* fprintf ppf "#|\n%a\n|#\n%!" AST.pp body; *)
   ()
 ;;
 
