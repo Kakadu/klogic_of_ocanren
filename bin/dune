@@ -13,7 +13,7 @@
 
 (library
  (name klogic_of_ocanren_lib)
- (modules Trans_config AST Pp_scheme lib)
+ (modules Trans_config AST Pp_scheme Pp_kotlin lib)
  (flags
   (:standard -rectypes))
  (libraries str Tast_pattern ppxlib.stdppx compiler-libs.common ppx_deriving)

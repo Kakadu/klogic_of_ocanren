@@ -315,12 +315,12 @@ let translate_expr fallback : (unit, ('a ast as 'a)) Tast_folder.t =
   }
 ;;
 
-let do_skip_vb vb = has_attr "skip_from_klogic" vb.Typedtree.vb_attributes
+let do_skip_vb vb = Tast_folder.has_attr "skip_from_klogic" vb.Typedtree.vb_attributes
 
 let do_skip_structure_item item =
   match item.Typedtree.str_desc with
   | Tstr_module { mb_attributes = attrs } | Tstr_eval (_, attrs) ->
-    has_attr "skip_from_klogic" attrs
+    Tast_folder.has_attr "skip_from_klogic" attrs
   | _ ->
     Format.printf
       "Check: @[%a@] as false \n"
@@ -436,7 +436,7 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
                 | rez ->
                   let rvb = Rvb.mk name args rez in
                   Inh_info.add_rvb inh rvb;
-                  Format.printf "\027[m@[%a\027[m\n" (pp_rvb_as_kotlin inh) rvb
+                  Format.printf "\027[m@[%a\027[m\n" (Pp_kotlin.pp_rvb_as_kotlin inh) rvb
                 (* Format.printf
                      "\027[31m@[<v 2>%a@]@ %!\027[m"
                      (AST.Fold_syntax_macro.pp inh)
@@ -489,7 +489,7 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
                      (* functor logging *)
                      Format.printf
                        "%a"
-                       (pp_functor_as_kotlin ~name ~typ ~arg_name ~arg_typ inh)
+                       (Pp_kotlin.pp_functor_as_kotlin ~name ~typ ~arg_name ~arg_typ inh)
                        (List.rev new_inh_info.rvbs);
                      (), si)
                  ; tstr_attribute (attribute (string "klogic.ident.mangle") __)
@@ -581,7 +581,7 @@ let translate fallback : (Inh_info.t, unit) Tast_folder.t =
                   } ->
                 Inh_info.add_modtype inh txt sign;
                 (* modtype logging *)
-                Format.printf "%a" (pp_modtype_as_kotlin inh txt) sign;
+                Format.printf "%a" (Pp_kotlin.pp_modtype_as_kotlin inh txt) sign;
                 (* log "%s %d" __FILE__ __LINE__; *)
                 (), si
               | Tstr_attribute _ | Tstr_type _ | Tstr_open _ -> (), si
@@ -615,7 +615,7 @@ let analyze_cmt _source_file out_file stru =
       | Trans_config.Kotlin ->
         Printf.fprintf ch "%s\n" (Inh_info.get_preamble Trans_config.Kotlin info);
         Printf.fprintf ch "// There are %d relations\n" (List.length info.Inh_info.rvbs);
-        Inh_info.iter_vbs info ~f:(pp_item ~toplevel:true info ppf);
+        Inh_info.iter_vbs info ~f:(Pp_kotlin.pp_item ~toplevel:true info ppf);
         Printf.fprintf ch "%s\n" (Inh_info.get_epilogue Trans_config.Kotlin info);
         Format.pp_print_flush ppf ();
         flush ch

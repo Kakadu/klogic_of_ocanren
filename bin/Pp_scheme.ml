@@ -29,7 +29,8 @@ let pp_ast_as_scheme inh_info =
       then fprintf ppf "_f()"
       else  *)
       (match Inh_info.lookup_expr_exn inh_info repr with
-      | exception Not_found -> fprintf ppf "%s%a" (if q then "," else "") print_path p
+      | exception Not_found ->
+        fprintf ppf "%s%a" (if q then "," else "") Pp_kotlin.print_path p
       | s -> fprintf ppf "%s" s)
     | T_int n -> fprintf ppf "%d" n
     | T_bool n -> fprintf ppf "%b" n
@@ -86,7 +87,7 @@ let pp_ast_as_scheme inh_info =
       then fprintf ppf "_f()"
       else (
         match Inh_info.lookup_expr_exn inh_info repr with
-        | exception Not_found -> fprintf ppf "%a" print_path p
+        | exception Not_found -> fprintf ppf "%a" Pp_kotlin.print_path p
         | s -> fprintf ppf "%s" s)
     | t ->
       if AST.has_vars_inside t
@@ -106,8 +107,8 @@ let pp_ast_as_scheme inh_info =
       when match rhs with
            | Pause _ -> false
            | _ -> true ->
-      (match check_uses v1 rhs with
-      | Uses_count.Once -> with_once_used v1 (fun () -> default ppf rhs)
+      (match Pp_kotlin.check_uses v1 rhs with
+      | Pp_kotlin.Uses_count.Once -> with_once_used v1 (fun () -> default ppf rhs)
       | _ -> fprintf ppf "@[(fresh (%s) %a)]" v1 default rhs)
     | Fresh (args, Pause (Conj_multi xs)) | Fresh (args, Conj_multi xs) ->
       fprintf ppf "@[<v 2>@[(fresh (";
@@ -135,7 +136,7 @@ let pp_ast_as_scheme inh_info =
       let kotlin_func =
         let repr = Path.name p in
         match Inh_info.lookup_expr_exn inh_info repr with
-        | exception Not_found -> Format.asprintf "%a" print_path p
+        | exception Not_found -> Format.asprintf "%a" Pp_kotlin.print_path p
         | s -> s
       in
       fprintf ppf "@[(%s %a)@]" kotlin_func (pp_list default) args
@@ -196,7 +197,7 @@ let pp_ast_as_scheme inh_info =
       fprintf ppf "@[{ ";
       List.iteri names ~f:(fun i (name, _) ->
         if i <> 0 then fprintf ppf ", ";
-        fprintf ppf "@[%a @]" print_ident name);
+        fprintf ppf "@[%a @]" Pp_kotlin.print_ident name);
       fprintf ppf " -> %a }@]" default rhs
     | Tunit -> fprintf ppf "" (* fprintf ppf "/* Unit */" *)
     | Other e -> fprintf ppf "@[{| Other %a |}@]" Pprintast.expression (MyUntype.expr e)
@@ -209,7 +210,7 @@ let pp_rvb_as_scheme inh_info ppf { Rvb.name; args; body } =
   let pp_args ppf =
     pp_print_list
       ~pp_sep:(fun ppf () -> fprintf ppf " ")
-      (fun ppf (name, _) -> fprintf ppf "%a" print_ident name)
+      (fun ppf (name, _) -> fprintf ppf "%a" Pp_kotlin.print_ident name)
       ppf
   in
   (* let tvars =
@@ -221,7 +222,13 @@ let pp_rvb_as_scheme inh_info ppf { Rvb.name; args; body } =
   fprintf ppf "#|\n%a\n|#\n%!" AST.pp body;
   let body = AST.simplify_ast body in
   fprintf ppf "@[<v 2>";
-  fprintf ppf "@[<v 2>@[(define %a@]@ @[(lambda (%a)@]@]@ " print_ident name pp_args args;
+  fprintf
+    ppf
+    "@[<v 2>@[(define %a@]@ @[(lambda (%a)@]@]@ "
+    Pp_kotlin.print_ident
+    name
+    pp_args
+    args;
   fprintf ppf "@[%a@]" (pp_ast_as_scheme inh_info) body;
   fprintf ppf "))@]@ ";
   ()
