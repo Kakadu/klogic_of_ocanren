@@ -47,7 +47,7 @@ let pp_ast_as_scheme inh_info =
       (match classify [] lst with
       | `Finite ts ->
         fprintf ppf "@[(";
-        pp_print_list (term_helper ~q) ppf ts;
+        pp_print_list ~pp_sep:(fun ppf () -> fprintf ppf " ") (term_helper ~q) ppf ts;
         fprintf ppf ")@]"
       | `Arbitrary (args, tl) ->
         fprintf ppf "@[(";
