@@ -77,25 +77,25 @@ let demo2 : string ilogic -> goal =
   fresh (x body env) (term =/= closure x body env)
 ;; *)
 
-let rec lookupo : _ -> fenv -> Gresult.injected -> goal =
+let rec lookupo2 : _ -> fenv -> Gresult.injected -> goal =
  fun x env t ->
   let open OCanren.Std in
   fresh
     (rest y v)
     (Std.Pair.pair y v % rest === env)
-    (conde [ y === x &&& (v === t); y =/= x &&& lookupo x rest t ])
+    (conde [ y === x &&& (v === t); y =/= x &&& lookupo2 x rest t ])
 ;;
 
-let rec not_in_envo : _ -> fenv -> goal =
+let rec not_in_envo2 : _ -> fenv -> goal =
  fun x env ->
   let open OCanren.Std in
   conde
-    [ fresh (y v rest) (env === Std.pair y v % rest) (y =/= x) (not_in_envo x rest)
+    [ fresh (y v rest) (env === Std.pair y v % rest) (y =/= x) (not_in_envo2 x rest)
     ; nil () === env
     ]
 ;;
 
-let rec proper_listo : (Gterm.injected Std.List.injected as 'i) -> fenv -> 'i -> goal =
+let rec proper_listo2 : (Gterm.injected Std.List.injected as 'i) -> fenv -> 'i -> goal =
  fun es env rs ->
   let open OCanren.Std in
   conde
@@ -104,11 +104,11 @@ let rec proper_listo : (Gterm.injected Std.List.injected as 'i) -> fenv -> 'i ->
         (e d te td)
         (es === e % d)
         (rs === te % td)
-        (evalo e env (val_ te))
-        (proper_listo d env td)
+        (evalo2 e env (val_ te))
+        (proper_listo2 d env td)
     ]
 
-and evalo : Gterm.injected -> fenv -> Gresult.injected -> goal =
+and evalo2 : Gterm.injected -> fenv -> Gresult.injected -> goal =
  fun term env r ->
   let open OCanren.Std in
   conde
@@ -116,24 +116,24 @@ and evalo : Gterm.injected -> fenv -> Gresult.injected -> goal =
         t
         (term === seq (symb !!"quote" % (t % nil ())))
         (r === val_ t)
-        (not_in_envo !!"quote" env)
+        (not_in_envo2 !!"quote" env)
     ; fresh
         (es rs)
         (term === seq (symb !!"list" % es))
         (r === val_ (seq rs))
-        (not_in_envo !!"list" env)
-        (proper_listo es env rs)
-    ; fresh s (term === symb s) (lookupo s env r)
+        (not_in_envo2 !!"list" env)
+        (proper_listo2 es env rs)
+    ; fresh s (term === symb s) (lookupo2 s env r)
     ; fresh
         (func arge arg x body env2)
         (term === seq (func % (arge % nil ())))
-        (evalo arge env arg)
-        (evalo func env (closure x body env2))
-        (evalo body (Std.pair x arg % env2) r)
+        (evalo2 arge env arg)
+        (evalo2 func env (closure x body env2))
+        (evalo2 body (Std.pair x arg % env2) r)
     ; fresh
         (x body)
         (term === seq (symb !!"lambda" % (seq (symb x % nil ()) % (body % nil ()))))
-        (not_in_envo !!"lambda" env)
+        (not_in_envo2 !!"lambda" env)
         (r === closure x body env)
     ]
 ;;

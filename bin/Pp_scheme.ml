@@ -238,14 +238,8 @@ let pp_rvb_as_scheme inh_info ppf { Rvb.name; args; body } =
       (fun ppf (name, _) -> fprintf ppf "%a" Pp_kotlin.print_ident name)
       ppf
   in
-  (* let tvars =
-    List.fold_left
-      ~f:(fun acc (_, typ) -> S.union acc (collect_type_variables typ))
-      ~init:S.empty
-      args
-  in *)
   let body = AST.simplify_ast body in
-  fprintf ppf "#|\n%a\n|#\n%!" AST.pp body;
+  (* fprintf ppf "#|\n%a\n|#\n%!" AST.pp body; *)
   fprintf ppf "@[<v 2>";
   fprintf
     ppf

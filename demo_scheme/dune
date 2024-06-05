@@ -45,8 +45,10 @@
  (deps
   ./scheme_interpret.scm
   test_interpret.scm
+  default_quines.scm
   %{project_root}/faster-miniKanren/mk.scm
   %{project_root}/faster-miniKanren/mk-vicare.scm
+  %{project_root}/faster-miniKanren/numbers.scm
   ;
   ))
 

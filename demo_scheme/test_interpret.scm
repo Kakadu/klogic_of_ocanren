@@ -1,23 +1,33 @@
 (include "../faster-miniKanren/mk-vicare.scm")
 (include "../faster-miniKanren/mk.scm")
 
-; (define build-num
-;   (lambda (n)
-;     (cond
-;       ((odd? n)
-;        (cons 1
-;          (build-num (quotient (- n 1) 2))))
-;       ((and (not (zero? n)) (even? n))
-;        (cons 0
-;          (build-num (quotient n 2))))
-;       ((zero? n) '()))))
+(display "Smoke test for default quines with absento\n")
+(include "default_quines.scm")
 
-(include "scheme_interpret.scm")
-
+; (myrun 2
+;    (lambda (p)
+;       (fresh (q r s)
+;             (== p `(,q ,r s))
+;             (eval-expo q '() `(val_ ,r))
+;             (eval-expo r '() `(val_ ,s))
+;             (eval-expo s '() `(val_ ,q)))))
 (printf "~a\n"
-   (run 5 (q) (evalo q '() '(val ,q))))
-
-; (printf "~a\n"
-;   (run 1 (q) (pluso (build-num 2) (build-num 2) q)))
-; (printf "~a\n"
-;   (run 1 (q) (multo (build-num 2) (build-num 3) q)))
+(run 2
+   (p)
+      (fresh (q r s)
+            (== p `(,q ,r ,s))
+            (eval-expo q '() r)
+            (eval-expo r '() s)
+            (eval-expo s '() q))))
+(display "Smoke testing of synthesized interpreter\n")
+(include "scheme_interpret.scm")
+(printf "~a\n"
+   (run 2 (q) (evalo2 q '() `(val ,q))))
+(printf "~a\n"
+(run 2 (p)
+      (fresh (q r s)
+            (== p `(,q ,r ,s))
+            (evalo2 q '() `(val_ ,q))
+         ;   (evalo2 r '() `(val_ ,s))
+         ;   (evalo2 s '() `(val_ ,q))
+         )))
