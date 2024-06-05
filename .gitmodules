@@ -9,11 +9,8 @@
 	branch = wildcard
 	shallow = true
 
-[submodule "faster-minikanren"]
-	path = faster-minikanren
-	url = https://github.com/Kakadu/faster-minikanren.git
-	branch = master
 [submodule "faster-miniKanren"]
 	path = faster-miniKanren
 	url = https://github.com/Kakadu/faster-minikanren.git
-	branch = master
+	branch = pinning-rework
+	shallow = true
