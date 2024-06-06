@@ -90,6 +90,8 @@ module Gterm = struct
   type logic = (StringLo.logic, logic ListLo.logic) t OCanren.logic
   [@@deriving gt ~options:{ fmt; gmap }]
 
+  let verbose_print fmt : logic -> unit = GT.fmt logic fmt
+
   (* let _ : (Format.formatter -> logic -> unit) -> logic fmt_logic_t = new fmt_logic_t
   let __ () =
   GT.transform ground (fun (_:Format.formatter -> ground -> unit) -> assert false) Format.std_formatter (Symb "!!")
@@ -285,6 +287,50 @@ module Gterm = struct
     }
   ;;
 
+  let pp_as_ocanren ppf =
+    GT.transform_gc
+      gcata_logic
+      (fun fself ->
+        object
+          inherit [_] fmt_logic_t fself as super
+
+          method! c_Value ppf p x =
+            let open FCPM in
+            parse
+              (conde
+                 [ psymb (pv __) |> map1 ~f:(fun s -> `Atom s)
+                 ; plambda __ __ |> map2 ~f:(fun arg body -> `Lambda (arg, body))
+                 ; pseq (manyl __) |> map1 ~f:(fun xs -> `GSeq xs)
+                 ; pseq __ |> map1 ~f:(fun ls -> `Seq ls)
+                 ; psymb __ |> map1 ~f:(fun s -> `Any_sym s)
+                 ; __ |> map1 ~f:(fun ls -> `Any ls)
+                 ])
+              ()
+              ~on_error:(fun _ ->
+                Format.fprintf ppf "FUCK%!";
+                super#c_Value ppf p x)
+              p
+              (let open Format in
+               function
+               | `Atom s -> Format.fprintf ppf "%s" s
+               | `Lambda (arg, body) ->
+                 Format.fprintf ppf "(lambda (%a) %a)" fself arg fself body
+               | `GSeq [] -> Format.fprintf ppf "()"
+               | `GSeq (h :: tl) ->
+                 Format.fprintf ppf "(%a" fself h;
+                 List.iter (fprintf ppf " %a" fself) tl;
+                 fprintf ppf ")"
+               | `Seq xs -> GT.fmt ListLo.logic fself ppf xs
+               | `Any_sym (Var (idx, _)) -> Format.fprintf ppf "_.%d" idx
+               | `Any_sym (s : StringLo.logic) ->
+                 fprintf ppf "Any %a" (GT.fmt StringLo.logic) s
+               | `Any _ -> super#c_Value ppf p x)
+
+          method! c_Var ppf _ idx _ = Format.fprintf ppf "_.%d" idx
+        end)
+      ppf
+  ;;
+
   type injected = (GT.string OCanren.ilogic, injected Std.List.groundi) t ilogic
 
   let show_rterm = Format.asprintf "%a" (GT.fmt ground)
@@ -292,9 +338,13 @@ module Gterm = struct
 
   (** Contructors *)
 
-  let list xs = seq (Std.list Fun.id (symb !!"list" :: xs))
-  let app f x = seq (Std.list Fun.id [ f; x ])
+  let list : injected list -> injected =
+   fun xs -> seq (Std.list Fun.id (symb !!"list" :: xs))
+  ;;
+
+  let app : injected -> injected -> injected = fun f x -> seq (Std.list Fun.id [ f; x ])
   let quote x = app (symb !!"quote") x
+  let seq_ xs : injected = seq (Std.list Fun.id xs)
 end
 
 module Gresult = struct

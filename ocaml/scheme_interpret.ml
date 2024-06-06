@@ -138,11 +138,10 @@ and evalo2 : Gterm.injected -> fenv -> Gresult.injected -> goal =
     ]
 ;;
 
-(*
-   let s tl = seq (Std.list Fun.id tl)
+let s tl = seq (Std.list Fun.id tl)
 let nil = Std.nil ()
-let quineso q = evalo q nil (val_ q)
-let twineso q p = q =/= p &&& evalo q nil (val_ p) &&& evalo p nil (val_ q)
+let quineso q = evalo2 q nil (val_ q)
+(* let twineso q p = fresh () (q =/= p) (evalo2 q nil (val_ p)) (evalo2 p nil (val_ q))
 
 let thrineso p q r =
   (* let (=//=) = diseqtrace @@ show_reif_term in *)
@@ -151,12 +150,12 @@ let thrineso p q r =
     (p =//= q)
     (q =//= r)
     (r =//= p)
-    (evalo p nil (val_ q))
-    (evalo q nil (val_ r))
-    (evalo r nil (val_ p))
-;;
-
-let wrap_term rr = rr#reify Gterm.reify |> show_lterm
+    (evalo2 p nil (val_ q))
+    (evalo2 q nil (val_ r))
+    (evalo2 r nil (val_ p))
+;; *)
+(*
+   let wrap_term rr = rr#reify Gterm.reify |> show_lterm
 let wrap_result rr = rr#reify gresult_reifier |> show_lresult
 
 let find_quines ~verbose n =
@@ -184,5 +183,4 @@ let find_thrines ~verbose n =
 
 let find100quines = find_quines 100
 let find15twines = find_twines 15
-let find2thrines = find_thrines 2
-*)
+let find2thrines = find_thrines 2 *)

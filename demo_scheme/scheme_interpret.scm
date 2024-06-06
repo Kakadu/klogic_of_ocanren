@@ -1,5 +1,5 @@
 
-;;; There are 4 relations
+;;; There are 5 relations
 ; lookupo2 260
 (define lookupo2
                                             (lambda (x env t)
@@ -10,7 +10,7 @@
                                                     ((=/= y x)
                                                     (lookupo2 x rest t))
                                                     )
-
+                                               
                                               )))
 ; not_in_envo2 260
 (define not_in_envo2
@@ -40,7 +40,7 @@
 (define evalo2
                (lambda (term env r)
                (conde ((fresh (t)
-                         (== term `(seq ((symb 'quote),t)))
+                         (== term `(seq ((symb 'quote) ,t)))
                          (== r `(val ,t))
                          (not_in_envo2 'quote env)
                          ))
@@ -56,16 +56,20 @@
                         ))
                      ((fresh ( func   arge   arg   x   body )
                       (fresh (env2)
-                        (== term `(seq (,func,arge)))
+                        (== term `(seq (,func ,arge)))
                         (evalo2 arge env arg)
                         (evalo2 func env `(closure ,x ,body ,env2))
                         (evalo2 body `((,x ,arg) . ,env2) r)
                         ) ))
                      ((fresh (x body)
-                        (== term `(seq ((symb 'lambda)(seq ((symb ,x))),body)))
+                        (== term `(seq ((symb 'lambda) (seq ((symb ,x))) ,body)))
                         (not_in_envo2 'lambda env)
                         (== r `(closure ,x ,body ,env))
                         ))
                      )
                 ))
+; quineso 260
+(define quineso
+                (lambda (q)
+                (evalo2 q nil `(val ,q))))
 

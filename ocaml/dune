@@ -41,4 +41,13 @@
  (name scheme_tests)
  (modules scheme_tests)
  (libraries scheme_interpret)
- (inline_tests))
+ (flags
+  (:standard -rectypes))
+ (inline_tests)
+ (preprocess
+  (pps
+   OCanren-ppx.ppx_fresh
+   GT.ppx_all
+   OCanren-ppx.ppx_distrib
+   OCanren-ppx.ppx_repr
+   ppx_expect)))
