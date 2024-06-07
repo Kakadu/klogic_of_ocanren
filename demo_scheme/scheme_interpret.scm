@@ -1,5 +1,5 @@
 
-;;; There are 5 relations
+;;; There are 4 relations
 ; lookupo2 260
 (define lookupo2
                                             (lambda (x env t)
@@ -68,8 +68,4 @@
                         ))
                      )
                 ))
-; quineso 260
-(define quineso
-                (lambda (q)
-                (evalo2 q nil `(val ,q))))
 

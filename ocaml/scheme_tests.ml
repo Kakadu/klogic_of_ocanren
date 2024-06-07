@@ -70,14 +70,16 @@ let%expect_test "list" =
 
 let%expect_test "first quine" =
   find_quines ~verbose:true 1;
-  [%expect {| ((lambda (_.2464) (list _.2464 (list (quote quote) _.2464))) (quote (lambda (_.2464) (list _.2464 (list (quote quote) _.2464))))) |}];
+  [%expect
+    {| ((lambda (_.2464) (list _.2464 (list (quote quote) _.2464))) (quote (lambda (_.2464) (list _.2464 (list (quote quote) _.2464))))) |}];
   OCanren.(run q)
     (fun q -> Scheme_interpret.evalo2 q (Std.nil ()) (Gresult.val_ q))
     (fun rr -> rr#reify Gterm.reify)
   |> Stream.take ~n:1
   |> List.iter (fun x ->
     Format.printf "%a\n\n%a\n%!" Gterm.verbose_print x (GT.fmt Gterm.logic) x);
-  [%expect {|
+  [%expect
+    {|
     (seq ((seq ((symb 'lambda) (seq ((symb '_.2464 [=/= list; =/= quote]) )) (seq ((symb 'list) (symb '_.2464 [=/= list; =/= quote]) (seq ((symb 'list) (seq ((symb 'quote) (symb 'quote) )) (symb '_.2464 [=/= list; =/= quote]) )) )) )) (seq ((symb 'quote) (seq ((symb 'lambda) (seq ((symb '_.2464 [=/= list; =/= quote]) )) (seq ((symb 'list) (symb '_.2464 [=/= list; =/= quote]) (seq ((symb 'list) (seq ((symb 'quote) (symb 'quote) )) (symb '_.2464 [=/= list; =/= quote]) )) )) )) )) ))
 
     ((lambda (_.2464) (list _.2464 (list (quote quote) _.2464))) (quote (lambda (_.2464) (list _.2464 (list (quote quote) _.2464))))) |}]
@@ -85,7 +87,8 @@ let%expect_test "first quine" =
 
 let%expect_test " " =
   find_quines ~verbose:true 1;
-  [%expect {| ((lambda (_.2464) (list _.2464 (list (quote quote) _.2464))) (quote (lambda (_.2464) (list _.2464 (list (quote quote) _.2464))))) |}];
+  [%expect
+    {| ((lambda (_.2464) (list _.2464 (list (quote quote) _.2464))) (quote (lambda (_.2464) (list _.2464 (list (quote quote) _.2464))))) |}];
   let open Scheme_ast in
   let open Scheme_ast.Gterm in
   OCanren.(run q)
@@ -106,14 +109,15 @@ let%expect_test " " =
                       ]
                   ]
               ])
-        (start === seq_ [ half; half ])
-        (Scheme_interpret.evalo2 q (Std.nil ()) (Gresult.val_ q)))
+        (start === seq_ [ half; quote half ])
+        (Scheme_interpret.evalo2 start (Std.nil ()) (Gresult.val_ q)))
     (fun rr -> rr#reify Gterm.reify)
   |> Stream.take ~n:1
   |> List.iter (fun x ->
     Format.printf "%a\n\n%a\n%!" Gterm.verbose_print x (GT.fmt Gterm.logic) x);
   [%expect {|
-    (seq ((seq ((symb 'lambda) (seq ((symb '_.2467 [=/= list; =/= quote]) )) (seq ((symb 'list) (symb '_.2467 [=/= list; =/= quote]) (seq ((symb 'list) (seq ((symb 'quote) (symb 'quote) )) (symb '_.2467 [=/= list; =/= quote]) )) )) )) (seq ((symb 'quote) (seq ((symb 'lambda) (seq ((symb '_.2467 [=/= list; =/= quote]) )) (seq ((symb 'list) (symb '_.2467 [=/= list; =/= quote]) (seq ((symb 'list) (seq ((symb 'quote) (symb 'quote) )) (symb '_.2467 [=/= list; =/= quote]) )) )) )) )) ))
+    (seq ((seq ((symb 'lambda) (seq ((symb '_.197 [=/= list; =/= quote]) )) (seq ((symb 'list) (symb '_.197 [=/= list; =/= quote]) (seq ((symb 'list) (seq ((symb 'quote) (symb 'quote) )) (symb '_.197 [=/= list; =/= quote]) )) )) )) (seq ((symb 'quote) (seq ((symb 'lambda) (seq ((symb '_.197 [=/= list; =/= quote]) )) (seq ((symb 'list) (symb '_.197 [=/= list; =/= quote]) (seq ((symb 'list) (seq ((symb 'quote) (symb 'quote) )) (symb '_.197 [=/= list; =/= quote]) )) )) )) )) ))
 
-    ((lambda (_.2467) (list _.2467 (list (quote quote) _.2467))) (quote (lambda (_.2467) (list _.2467 (list (quote quote) _.2467))))) |}]
+    ((lambda (_.197) (list _.197 (list (quote quote) _.197))) (quote (lambda (_.197) (list _.197 (list (quote quote) _.197)))))
+    |}]
 ;;

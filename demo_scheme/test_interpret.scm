@@ -23,20 +23,23 @@
  "~a\n"
  (run 1
       (start q)
-      (fresh (half t2467 t3 t4 t5)
-             (== start `(seq (,half ,half)))
+      (fresh (half t2467 t3 t4 t5 t6)
+             (== start `(seq (,half (seq ((symb 'quote) ,half)))))
              (== half
-                 `(seq ((symb 'lambda) (seq ((symb ,t2467)))
-                           (seq ((symb 'list) ,t4 (seq (,t3 ,t5))))
-                                       ; (seq ((symb 'list)
-                                       ;      (symb ,t2467)
-                                       ;      (seq ((symb 'list) (seq ((symb 'quote) (symb 'quote)))
-                                       ;                         (symb ,t2467)))))
-                                                               )))
-             (evalo2 start '() `(val ,q)))))
-(printf "~a\n"
-     (run 1 (q)
-          (evalo2 q '() `(val_ ,q))))
+                 `(seq ((symb 'lambda)
+                         (seq ((symb ,t2467)))
+                         (seq ((symb 'list)
+                               (symb ,t2467)
+                               (seq ((symb 'list)
+                                     (seq ((symb 'quote) (symb 'quote)))
+                                     (symb ,t2467))))))))
+             (evalo2 q '() `(val ,q))
+             ;(== start q)
+          )))
+
+(printf "Looking for first quine ~a\n"
+      (run 1 (q)
+           (evalo2 q '() `(val ,q))))
 
 ; (printf "~a\n"
 ; (run 2 (p)

@@ -138,9 +138,9 @@ and evalo2 : Gterm.injected -> fenv -> Gresult.injected -> goal =
     ]
 ;;
 
-let s tl = seq (Std.list Fun.id tl)
+(* let s tl = seq (Std.list Fun.id tl)
 let nil = Std.nil ()
-let quineso q = evalo2 q nil (val_ q)
+let quineso q = evalo2 q nil (val_ q) *)
 (* let twineso q p = fresh () (q =/= p) (evalo2 q nil (val_ p)) (evalo2 p nil (val_ q))
 
 let thrineso p q r =
