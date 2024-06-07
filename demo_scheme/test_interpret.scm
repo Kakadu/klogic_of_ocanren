@@ -34,6 +34,9 @@
                                        ;                         (symb ,t2467)))))
                                                                )))
              (evalo2 start '() `(val ,q)))))
+(printf "~a\n"
+     (run 1 (q)
+          (evalo2 q '() `(val_ ,q))))
 
 ; (printf "~a\n"
 ; (run 2 (p)

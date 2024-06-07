@@ -1,6 +1,17 @@
 open OCanren
 open Scheme_ast
 
+let s tl = Gterm.seq (Std.list Fun.id tl)
+let nil = Std.nil ()
+let quineso q = Scheme_interpret.evalo2 q nil (Gresult.val_ q)
+
+let find_quines ~verbose n =
+  run q quineso (fun r -> r#reify Gterm.reify)
+  |> OCanren.Stream.take ~n
+  |> List.iter (fun q ->
+    if verbose then Printf.printf "%s\n" (Gterm.show_lterm q) else ())
+;;
+
 let%expect_test "fresh symbol" =
   let open Gterm in
   OCanren.(run q)
@@ -10,7 +21,7 @@ let%expect_test "fresh symbol" =
     (fun rr -> rr#reify Gterm.reify)
   |> Stream.take ~n:1
   |> List.iter (fun x -> Format.printf "%a\n%!" (GT.fmt Gterm.logic) x);
-  [%expect "_.1"]
+  [%expect "_.11"]
 ;;
 
 let%expect_test "lambda" =
@@ -54,24 +65,27 @@ let%expect_test "list" =
     (fun rr -> rr#reify Gterm.reify)
   |> Stream.take ~n:1
   |> List.iter (fun x -> Format.printf "%a\n%!" (GT.fmt Gterm.logic) x);
-  [%expect {| (list _.1 (list (quote quote) _.1)) |}]
+  [%expect {| (list _.11 (list (quote quote) _.11)) |}]
 ;;
 
 let%expect_test "first quine" =
-  Scheme_interpret.find_quines ~verbose:true 1;
-  [%expect {|  |}];
+  find_quines ~verbose:true 1;
+  [%expect {| ((lambda (_.2464) (list _.2464 (list (quote quote) _.2464))) (quote (lambda (_.2464) (list _.2464 (list (quote quote) _.2464))))) |}];
   OCanren.(run q)
     (fun q -> Scheme_interpret.evalo2 q (Std.nil ()) (Gresult.val_ q))
     (fun rr -> rr#reify Gterm.reify)
   |> Stream.take ~n:1
   |> List.iter (fun x ->
     Format.printf "%a\n\n%a\n%!" Gterm.verbose_print x (GT.fmt Gterm.logic) x);
-  [%expect {|  |}]
+  [%expect {|
+    (seq ((seq ((symb 'lambda) (seq ((symb '_.2464 [=/= list; =/= quote]) )) (seq ((symb 'list) (symb '_.2464 [=/= list; =/= quote]) (seq ((symb 'list) (seq ((symb 'quote) (symb 'quote) )) (symb '_.2464 [=/= list; =/= quote]) )) )) )) (seq ((symb 'quote) (seq ((symb 'lambda) (seq ((symb '_.2464 [=/= list; =/= quote]) )) (seq ((symb 'list) (symb '_.2464 [=/= list; =/= quote]) (seq ((symb 'list) (seq ((symb 'quote) (symb 'quote) )) (symb '_.2464 [=/= list; =/= quote]) )) )) )) )) ))
+
+    ((lambda (_.2464) (list _.2464 (list (quote quote) _.2464))) (quote (lambda (_.2464) (list _.2464 (list (quote quote) _.2464))))) |}]
 ;;
 
 let%expect_test " " =
-  Scheme_interpret.find_quines ~verbose:true 1;
-  [%expect {|  |}];
+  find_quines ~verbose:true 1;
+  [%expect {| ((lambda (_.2464) (list _.2464 (list (quote quote) _.2464))) (quote (lambda (_.2464) (list _.2464 (list (quote quote) _.2464))))) |}];
   let open Scheme_ast in
   let open Scheme_ast.Gterm in
   OCanren.(run q)
@@ -98,5 +112,8 @@ let%expect_test " " =
   |> Stream.take ~n:1
   |> List.iter (fun x ->
     Format.printf "%a\n\n%a\n%!" Gterm.verbose_print x (GT.fmt Gterm.logic) x);
-  [%expect {|  |}]
+  [%expect {|
+    (seq ((seq ((symb 'lambda) (seq ((symb '_.2467 [=/= list; =/= quote]) )) (seq ((symb 'list) (symb '_.2467 [=/= list; =/= quote]) (seq ((symb 'list) (seq ((symb 'quote) (symb 'quote) )) (symb '_.2467 [=/= list; =/= quote]) )) )) )) (seq ((symb 'quote) (seq ((symb 'lambda) (seq ((symb '_.2467 [=/= list; =/= quote]) )) (seq ((symb 'list) (symb '_.2467 [=/= list; =/= quote]) (seq ((symb 'list) (seq ((symb 'quote) (symb 'quote) )) (symb '_.2467 [=/= list; =/= quote]) )) )) )) )) ))
+
+    ((lambda (_.2467) (list _.2467 (list (quote quote) _.2467))) (quote (lambda (_.2467) (list _.2467 (list (quote quote) _.2467))))) |}]
 ;;

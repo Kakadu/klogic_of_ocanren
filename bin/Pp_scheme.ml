@@ -78,7 +78,7 @@ let pp_ast_as_scheme inh_info =
            | _ -> false ->
       fprintf
         ppf
-        "@[(%sclosure %a %a %a)@]"
+        "@[(%sclosure (%a %a %a))@]"
         (if q then "" else "'")
         (term_helper ~q)
         a
