@@ -3,7 +3,7 @@
 (define zero '())
 
 ;;; There are 23 relations
-; full_addero 219
+; full_addero 260
 
 (define full_addero
   (lambda (b x y r c)
@@ -16,15 +16,15 @@
         ((== 0 b) (== 1 x) (== 1 y) (== 0 r) (== 1 c))
         ((== 1 b) (== 1 x) (== 1 y) (== 1 r) (== 1 c))
         )
-   )) ; zeroo 219
+   )); zeroo 260
 (define zeroo
-                    (lambda (n)
-                    (== n '())))
-; poso 219
+                   (lambda (n)
+                   (== n '())))
+; poso 260
 (define poso
              (lambda (n)
              (fresh (h  t ) (== n `(,h . ,t)) )))
-; appendo 219
+; appendo 260
 (define appendo
                 (lambda (l s out)
                 (conde ((== l '())
@@ -36,11 +36,11 @@
                          ))
                       )
                  ))
-; gt1o 219
+; gt1o 260
 (define gt1o
              (lambda (n)
-             (fresh (a  ad  dd ) (== n `(,a,ad . ,dd)) )))
-; addero 219
+             (fresh (a  ad  dd ) (== n `(,a ,ad . ,dd)) )))
+; addero 260
 (define addero
                (lambda (d n m r)
                (conde ((== 0 d) (== m '()) (== n r))
@@ -49,7 +49,7 @@
                      ((== 1 d) (== n '()) (poso m) (inc (addero 0 m one r)))
                      ((== n one) (== m one)
                       (fresh (a c)
-                        (== `(,a,c) r)
+                        (== `(,a ,c) r)
                         (full_addero d 1 1 a c)
                         ))
                      ((== n one)
@@ -59,7 +59,7 @@
                      (gen_addero d n m r))
                      )
                 ))
-; gen_addero 219
+; gen_addero 260
 (define gen_addero
                    (lambda (d n m r)
                    (fresh ( a   b   c   e   x )
@@ -72,15 +72,15 @@
                      (full_addero d a b c e)
                      (addero e x y z)
                      ) )))
-; pluso 219
+; pluso 260
 (define pluso
               (lambda (n m k)
               (addero 0 n m k)))
-; minuso 219
+; minuso 260
 (define minuso
                (lambda (n m k)
                (pluso m k n)))
-; bound_multo 219
+; bound_multo 260
 (define bound_multo
                     (lambda (q p n m)
                     (conde ((== q zero)
@@ -98,7 +98,7 @@
                              ) ))
                           )
                      ))
-; multo 219
+; multo 260
 (define multo
               (lambda (n m p)
               (conde ((== n zero)
@@ -130,7 +130,7 @@
                        ))
                     )
                ))
-; odd_multo 219
+; odd_multo 260
 (define odd_multo
                   (lambda (x n m p)
                   (fresh (q)
@@ -138,7 +138,7 @@
                     (multo x m q)
                     (pluso `(0 . ,q) m p)
                     )))
-; eqlo 219
+; eqlo 260
 (define eqlo
              (lambda (n m)
              (conde ((== n zero)
@@ -154,7 +154,7 @@
                       ))
                    )
               ))
-; ltlo 219
+; ltlo 260
 (define ltlo
              (lambda (n m)
              (conde ((== n zero)
@@ -170,13 +170,13 @@
                       ))
                    )
               ))
-; lelo 219
+; lelo 260
 (define lelo
              (lambda (n m)
              (conde ((eqlo n m))
                    ((ltlo n m))
                    ) ))
-; lto 219
+; lto 260
 (define lto
             (lambda (n m)
             (conde ((ltlo n m))
@@ -187,18 +187,18 @@
                     ))
                   )
              ))
-; leo 219
+; leo 260
 (define leo
             (lambda (n m)
             (conde ((== n m))
                   ((lto n m))
                   ) ))
-; splito 219
+; splito 260
 (define splito
                (lambda (n r l h)
                (conde ((== n zero) (== h zero) (== l zero))
                      ((fresh (b n_)
-                        (== n `(0,b . ,n_))
+                        (== n `(0 ,b . ,n_))
                         (== r zero)
                         (== h `(,b . ,n_))
                         (== l zero)
@@ -210,7 +210,7 @@
                         (== l one)
                         ))
                      ((fresh (b n_ a r_)
-                        (== n `(0,b . ,n_))
+                        (== n `(0 ,b . ,n_))
                         (== `(,a . ,r_) r)
                         (== l zero)
                         (splito `(,b . ,n_) r_ zero h)
@@ -230,7 +230,7 @@
                         ))
                      )
                 ))
-; divo 219
+; divo 260
 (define divo
              (lambda (n m q r)
              (conde ((== r n) (== q zero) (lto n m))
@@ -250,7 +250,7 @@
                       ) ))
                    )
               ))
-; repeated_mul 219
+; repeated_mul 260
 (define repeated_mul
                      (lambda (n q nq)
                      (conde ((poso n) (== q zero) (== nq one))
@@ -264,7 +264,7 @@
                              ))
                            )
                       ))
-; exp2 219
+; exp2 260
 (define exp2
              (lambda (n b q)
              (conde ((== n one)
@@ -287,7 +287,7 @@
                       ))
                    )
               ))
-; logo 219
+; logo 260
 (define logo
              (lambda (n b q r)
              (conde ((== n one) (poso b) (== q zero) (== r zero))
@@ -295,16 +295,16 @@
                    ((== q one) (gt1o b) (eqlo n b) (pluso r b n))
                    ((== b one) (poso q) (pluso r one n))
                    ((== b zero) (poso q) (== r n))
-                   ((== (01) b)
+                   ((== (0 1) b)
                    (fresh (a ad dd)
                      (poso dd)
-                     (== n `(,a,ad . ,dd))
+                     (== n `(,a ,ad . ,dd))
                      (exp2 n '() q)
                      (fresh (s ) (splito n dd r s) )
                      ))
                    ((fresh (a  ad  add  ddd )
                     (conde ((== b three))
-                          ((== b `(,a,ad,add . ,ddd)))
+                          ((== b `(,a ,ad ,add . ,ddd)))
                           )
                       ) (ltlo b n)
                     (fresh ( bw1   bw   nw   nw1   ql1 )
@@ -338,8 +338,8 @@
                         )
                       ) ))
                    )
-              )) ; expo 219
+              )); expo 260
 (define expo
-                              (lambda (b q n)
-                              (logo n b q zero)))
+                             (lambda (b q n)
+                             (logo n b q zero)))
 

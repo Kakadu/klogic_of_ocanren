@@ -16,7 +16,6 @@ import utils.LogicInt.Companion.toLogic
 import utils.Some
 import utils.None
 import utils.LogicOption
-//import utils.None
 
 @Suppress("UNCHECKED_CAST")
 fun <T: Term<T>> None(): LogicOption<T> = utils.None as LogicOption<T>
@@ -163,7 +162,7 @@ fun <ID : Term<ID>> substitute_arg(subst: Term<LogicList<Jarg<Jtype<ID>>>>,
         },
         and(targ `===` Wildcard(None()),
             res `===` Wildcard(None())),
-        freshTypedVars { p: Term<Polarity/*338*/> typ: Term<Jtype<ID>> 
+        freshTypedVars { p: Term<Polarity/*94*/> typ: Term<Jtype<ID>> 
           new_typ: Term<Jtype<ID>> ->
         and(targ `===` Wildcard(Some(LogicPair(p typ))),
             res `===` Wildcard(Some(LogicPair(p new_typ))),

@@ -249,7 +249,7 @@ let pp_rvb_as_scheme inh_info ppf { Rvb.name; args; body } =
     pp_args
     args;
   fprintf ppf "@[%a@]" (pp_ast_as_scheme inh_info) body;
-  fprintf ppf "))@]@ ";
+  fprintf ppf "))@]@,";
   ()
 ;;
 

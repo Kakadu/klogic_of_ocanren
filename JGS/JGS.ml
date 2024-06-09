@@ -21,7 +21,6 @@ import utils.LogicInt.Companion.toLogic
 import utils.Some
 import utils.None
 import utils.LogicOption
-//import utils.None
 
 @Suppress("UNCHECKED_CAST")
 fun <T: Term<T>> None(): LogicOption<T> = utils.None as LogicOption<T>
@@ -604,7 +603,7 @@ module Verifier (CT : CLASSTABLE) : VERIFIER = struct
                  (targs_b2 new_targs_b2)
                  (conde
                     [ super_ === Std.some (class_ id_b targs_b2)
-                    ; super_ === Std.some (interface  id_b targs_b2)
+                    ; super_ === Std.some (interface id_b targs_b2)
                     ])
                  (mapo
                     (fun arg res -> substitute_arg targs_a arg res)
