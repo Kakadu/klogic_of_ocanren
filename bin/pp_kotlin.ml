@@ -463,6 +463,10 @@ let check_uses ident ast =
   | exception Manyuses -> Uses_count.Many
 ;;
 
+let pp_list ppf =
+  Format.pp_print_list ~pp_sep:(fun ppf () -> Format.fprintf ppf ",@ ") ppf
+;;
+
 let pp_ast_as_kotlin inh_info =
   let path_is_none path =
     (* Format.eprintf "log[path_is_none]: %a\n%!" Path.print path; *)
@@ -515,7 +519,7 @@ let pp_ast_as_kotlin inh_info =
       fprintf ppf " ->@]@ %a@ @[}@]@]" default e
     | Fresh (xs, e) ->
       (* fprintf ppf "/* NOTE: fresh without delay */@ "; *)
-      fprintf ppf "@[<hov>@[fresh {";
+      fprintf ppf "@[<hov>@[freshTypedVars {";
       pp_list
         (fun ppf (name, typ) ->
           fprintf ppf "@[ %s : %a@]" name (pp_typ_as_kotlin inh_info) typ)

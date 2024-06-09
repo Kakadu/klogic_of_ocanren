@@ -29,11 +29,11 @@ fun  pause(f: () -> Goal): Goal = { st -> ThunkStream { f()(st) } }
 context(RelationalContext)
 fun <B : Term<B>, A : Term<A>> list_same_length(xs: Term<LogicList<A>>,
       ys: Term<LogicList<B>>): Goal =
-  conde(freshTypedVars { h1: Term<A> h2: Term<B> tl1: Term<LogicList<A>> 
+  conde(freshTypedVars { h1: Term<A>, h2: Term<B>, tl1: Term<LogicList<A>>,
           tl2: Term<LogicList<B>> ->
         and(xs `===` (h1 + tl1),
             ys `===` (h2 + tl2),
-            list_same_length(tl1 tl2))
+            list_same_length(tl1, tl2))
         },
         and(xs `===` nilLogicList(),
             ys `===` nilLogicList()))
@@ -89,28 +89,32 @@ object: CLOSURE {
         t: Term<Jtype<LogicInt>>): Goal =
     conde(freshTypedVars { elems: Term<Jtype<LogicInt>> ->
           (t `===` Array_(elems)) },
-          freshTypedVars { id: Term<LogicInt> actual_params: Term<LogicList<Jarg<Jtype<LogicInt>>>> 
-            expected_params: Term<LogicList<Jtype<LogicInt>>> super_: Term<Jtype<LogicInt>> 
+          freshTypedVars { id: Term<LogicInt>,
+            actual_params: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
+            expected_params: Term<LogicList<Jtype<LogicInt>>>,
+            super_: Term<Jtype<LogicInt>>,
             supers: Term<LogicList<Jtype<LogicInt>>> ->
-          and(t `===` Class_(id actual_params),
-              CT.decl_by_id(id C(expected_params super_ supers)),
-              list_same_length(expected_params actual_params))
+          and(t `===` Class_(id, actual_params),
+              CT.decl_by_id(id, C(expected_params, super_, supers)),
+              list_same_length(expected_params, actual_params))
           },
-          freshTypedVars { id: Term<LogicInt> actual_params: Term<LogicList<Jarg<Jtype<LogicInt>>>> 
-            expected_params: Term<LogicList<Jtype<LogicInt>>> supers: Term<LogicList<Jtype<LogicInt>>> ->
-          and(t `===` Interface(id actual_params),
-              CT.decl_by_id(id I(expected_params supers)),
-              list_same_length(expected_params actual_params))
+          freshTypedVars { id: Term<LogicInt>,
+            actual_params: Term<LogicList<Jarg<Jtype<LogicInt>>>>,
+            expected_params: Term<LogicList<Jtype<LogicInt>>>,
+            supers: Term<LogicList<Jtype<LogicInt>>> ->
+          and(t `===` Interface(id, actual_params),
+              CT.decl_by_id(id, I(expected_params, supers)),
+              list_same_length(expected_params, actual_params))
           },
-          freshTypedVars { id: Term<LogicInt> index: Term<PeanoLogicNumber> 
-            upb: Term<Jtype<LogicInt>> lwb: Term<Jtype<LogicInt>> ->
-          and(t `===` Var(id index upb Some(lwb)),
+          freshTypedVars { id: Term<LogicInt>, index: Term<PeanoLogicNumber>,
+            upb: Term<Jtype<LogicInt>>, lwb: Term<Jtype<LogicInt>> ->
+          and(t `===` Var(id, index, upb, Some(lwb)),
               upb `!==` lwb,
-              closure_subtyping(lwb upb))
+              closure_subtyping(lwb, upb))
           },
-          freshTypedVars { id: Term<LogicInt> index: Term<PeanoLogicNumber> 
+          freshTypedVars { id: Term<LogicInt>, index: Term<PeanoLogicNumber>,
             upb: Term<Jtype<LogicInt>> ->
-          (t `===` Var(id index upb None())) },
+          (t `===` Var(id, index, upb, None())) },
           t `===` Null(),
           freshTypedVars { args: Term<LogicList<Jtype<LogicInt>>> ->
           (t `===` Intersect(args)) })
@@ -124,8 +128,10 @@ object: CLOSURE {
     pause { and(open_direct_subtyping({ a: Term<Jtype<LogicInt>>, b: Term<Jtype<LogicInt>>, 
                                       rez: Term<LogicBool> -> pause { 
                                                               and(rez `===` true.toLogicBool(),
-                                                                  closure_subtyping(a b))
-                                                              } } ta tb true.toLogicBool()),
+                                                                  closure_subtyping(a,
+                                                                  b))
+                                                              } },
+                ta, tb, true.toLogicBool()),
                 is_correct_type(ta),
                 is_correct_type(tb))
     }
@@ -138,14 +144,15 @@ object: CLOSURE {
     pause { and(query_constr,
                 only_classes_interfaces_and_arrays(ta),
                 only_classes_interfaces_and_arrays(tb),
-                conde(direct_subtyping(ta tb),
+                conde(direct_subtyping(ta, tb),
                       freshTypedVars { ti: Term<Jtype<LogicInt>> ->
                       and(tb `!==` ti,
                           ta `!==` ti,
                           ta `!==` tb,
                           only_classes_interfaces_and_arrays(ti),
-                          direct_subtyping(ti tb),
-                          less_minus_less(direct_subtyping query_constr ta ti))
+                          direct_subtyping(ti, tb),
+                          less_minus_less(direct_subtyping, query_constr, ta,
+                          ti))
                       }))
     }
   
@@ -157,14 +164,15 @@ object: CLOSURE {
     pause { and(query_constr,
                 only_classes_interfaces_and_arrays(ta),
                 only_classes_interfaces_and_arrays(tb),
-                conde(direct_subtyping(ta tb),
+                conde(direct_subtyping(ta, tb),
                       freshTypedVars { ti: Term<Jtype<LogicInt>> ->
                       and(tb `!==` ti,
                           ta `!==` ti,
                           ta `!==` tb,
                           only_classes_interfaces_and_arrays(ti),
-                          direct_subtyping(ta ti),
-                          greater_minus_greater(direct_subtyping query_constr ti tb))
+                          direct_subtyping(ta, ti),
+                          greater_minus_greater(direct_subtyping,
+                          query_constr, ti, tb))
                       }))
     }
   
@@ -174,8 +182,9 @@ object: CLOSURE {
         direct_subtyping: (Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>) -> Goal,
         query_constr: Goal, ta: Term<Jtype<LogicInt>>,
         tb: Term<Jtype<LogicInt>>): Goal =
-    debug_var_handler(ta less_minus_less(direct_subtyping query_constr ta tb) 
-    greater_minus_greater(direct_subtyping query_constr ta tb))
+    debug_var_handler(ta,
+    less_minus_less(direct_subtyping, query_constr, ta, tb),
+    greater_minus_greater(direct_subtyping, query_constr, ta, tb))
   
   
   context(RelationalContext)
@@ -183,12 +192,18 @@ object: CLOSURE {
         open_direct_subtyping: ((Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal, Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,
         query_constr: Goal, ta: Term<Jtype<LogicInt>>,
         tb: Term<Jtype<LogicInt>>): Goal =
-    minus_less_minus(open_direct_subtyping { ta: Term<Jtype<LogicInt>>, 
-                                           tb: Term<Jtype<LogicInt>> -> 
-                                           closure(debug_var_handler open_direct_subtyping query_constr ta tb) } 
+    minus_less_minus(open_direct_subtyping,
+    { ta: Term<Jtype<LogicInt>>, tb: Term<Jtype<LogicInt>> -> closure(debug_var_handler,
+                                                              open_direct_subtyping,
+                                                              query_constr,
+                                                              ta, tb) },
     { eta: Term<Jtype<LogicInt>> -> is_correct_type({ ta: Term<Jtype<LogicInt>>, 
                                                     tb: Term<Jtype<LogicInt>> -> 
-                                                    closure(debug_var_handler open_direct_subtyping query_constr ta tb) } eta) } ta tb)
+                                                    closure(debug_var_handler,
+                                                    open_direct_subtyping,
+                                                    query_constr, ta, tb) },
+                                    eta) },
+    ta, tb)
   
   
   context(RelationalContext)
@@ -196,9 +211,12 @@ object: CLOSURE {
         open_direct_subtyping: ((Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal, Term<Jtype<LogicInt>>, Term<Jtype<LogicInt>>, Term<LogicBool>) -> Goal,
         query_constr: Goal, ta: Term<Jtype<LogicInt>>,
         tb: Term<Jtype<LogicInt>>): Goal =
-    less_minus_greater(debug_var_handler { ta: Term<Jtype<LogicInt>>, 
-                                         tb: Term<Jtype<LogicInt>> -> 
-                                         direct_subtyping(debug_var_handler open_direct_subtyping query_constr ta tb) } query_constr ta tb)
+    less_minus_greater(debug_var_handler,
+    { ta: Term<Jtype<LogicInt>>, tb: Term<Jtype<LogicInt>> -> direct_subtyping(debug_var_handler,
+                                                              open_direct_subtyping,
+                                                              query_constr,
+                                                              ta, tb) },
+    query_constr, ta, tb)
   
   }}
 // Put epilogue here 

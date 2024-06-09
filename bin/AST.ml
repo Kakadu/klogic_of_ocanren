@@ -51,10 +51,6 @@ module Rvb = struct
   let mk name args body = { name; args; body }
 end
 
-(* let pp_comma_list ppf =
-  Format.pp_print_list ~pp_sep:(fun ppf () -> Format.fprintf ppf ",@ ") ppf
-;; *)
-
 let pp_list ppf = Format.pp_print_list ~pp_sep:(fun ppf () -> Format.fprintf ppf " ") ppf
 
 let map_ast f = function
