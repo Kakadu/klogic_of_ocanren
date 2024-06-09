@@ -52,19 +52,9 @@
   ;
   ))
 
-;(copy %{project_root}/faster-miniKanren/mk.scm .)
-
-; (cram
-;  (deps
-;   ;   %{project_root}/faster-miniKanren/mk.scm
-;   ../../faster-miniKanren/mk.scm
-;   ;
-;   ))
-
 (cram
+ (applies_to term_functions_test)
  (deps
-  ;%{project_root}/faster-miniKanren/private-unstable.rkt
-  ;   ../faster-miniKanren/private-unstable.rkt
-  ;%{project_root}/faster-minikanren/mk.scm
-  ;
-  ))
+  term_functions.scm
+  %{project_root}/faster-miniKanren/mk.scm
+  %{project_root}/faster-miniKanren/mk-vicare.scm))
